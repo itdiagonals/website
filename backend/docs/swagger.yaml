@@ -1,0 +1,657 @@
+definitions:
+  domain.AuthSessionSummary:
+    properties:
+      created_at:
+        type: string
+      current:
+        type: boolean
+      device_name:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      ip_address:
+        type: string
+      last_seen_at:
+        type: string
+      user_agent:
+        type: string
+    type: object
+  domain.Cart:
+    properties:
+      customer_id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/domain.CartItem'
+        type: array
+    type: object
+  domain.CartItem:
+    properties:
+      available_stock:
+        type: integer
+      base_price:
+        type: number
+      gender:
+        type: string
+      image_url:
+        type: string
+      product_id:
+        type: integer
+      product_name:
+        type: string
+      quantity:
+        type: integer
+      selected_color_hex:
+        type: string
+      selected_color_name:
+        type: string
+      selected_size:
+        type: string
+      stock_message:
+        type: string
+      stock_sufficient:
+        type: boolean
+      subtotal:
+        type: number
+    type: object
+  domain.Product:
+    properties:
+      base_price:
+        type: number
+      care_guide_id:
+        type: integer
+      category_id:
+        type: integer
+      cover_image_id:
+        type: integer
+      description:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      season_id:
+        type: integer
+      slug:
+        type: string
+      stock:
+        type: integer
+    type: object
+  domain.ProductCareGuide:
+    properties:
+      id:
+        type: integer
+      instructions:
+        type: object
+      title:
+        type: string
+    type: object
+  domain.ProductColorOption:
+    properties:
+      color_name:
+        type: string
+      hex_code:
+        type: string
+    type: object
+  domain.ProductDetail:
+    properties:
+      available_colors:
+        items:
+          $ref: '#/definitions/domain.ProductColorOption'
+        type: array
+      available_sizes:
+        items:
+          $ref: '#/definitions/domain.ProductSizeOption'
+        type: array
+      base_price:
+        type: number
+      care_guide:
+        $ref: '#/definitions/domain.ProductCareGuide'
+      category:
+        $ref: '#/definitions/domain.ProductReference'
+      cover_image_alt:
+        type: string
+      cover_image_url:
+        type: string
+      description:
+        type: string
+      detail_info:
+        type: object
+      gallery:
+        items:
+          $ref: '#/definitions/domain.ProductMediaItem'
+        type: array
+      gender:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      season:
+        $ref: '#/definitions/domain.ProductReference'
+      slug:
+        type: string
+      stock:
+        type: integer
+    type: object
+  domain.ProductMediaItem:
+    properties:
+      alt:
+        type: string
+      id:
+        type: integer
+      url:
+        type: string
+    type: object
+  domain.ProductReference:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  domain.ProductSizeOption:
+    properties:
+      size:
+        type: string
+    type: object
+  handler.AddToCartRequest:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      selected_color_hex:
+        type: string
+      selected_color_name:
+        type: string
+      selected_size:
+        type: string
+    required:
+    - product_id
+    - quantity
+    - selected_color_name
+    - selected_size
+    type: object
+  handler.AuthSessionsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.AuthSessionSummary'
+        type: array
+    type: object
+  handler.CartResponse:
+    properties:
+      data:
+        $ref: '#/definitions/domain.Cart'
+    type: object
+  handler.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  handler.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handler.ProductDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/domain.ProductDetail'
+    type: object
+  handler.ProductListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Product'
+        type: array
+    type: object
+  handler.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  handler.RemoveFromCartRequest:
+    properties:
+      product_id:
+        type: integer
+      selected_color_hex:
+        type: string
+      selected_color_name:
+        type: string
+      selected_size:
+        type: string
+    required:
+    - product_id
+    - selected_color_name
+    - selected_size
+    type: object
+  handler.StatusResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  handler.UpdateCartQuantityRequest:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      selected_color_hex:
+        type: string
+      selected_color_name:
+        type: string
+      selected_size:
+        type: string
+    required:
+    - product_id
+    - quantity
+    - selected_color_name
+    - selected_size
+    type: object
+info:
+  contact: {}
+  description: Customer auth and product catalog API for the Diagonals website backend.
+  title: Diagonals API
+  version: "1.0"
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a customer and create a new active session for the
+        current device or browser
+      parameters:
+      - description: Login payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Login customer account
+      tags:
+      - Auth
+  /api/v1/auth/logout:
+    post:
+      description: Revoke the authenticated session for the current device or browser
+        and clear auth cookies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout current session
+      tags:
+      - Auth
+  /api/v1/auth/logout-all:
+    post:
+      description: Revoke all active sessions for the authenticated customer and clear
+        auth cookies on the current device
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout all sessions
+      tags:
+      - Auth
+  /api/v1/auth/refresh:
+    post:
+      description: Validate the refresh token from HttpOnly cookie against the current
+        session, rotate it, and update auth cookies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new customer in Go-owned tables and issue access and
+        refresh tokens
+      parameters:
+      - description: Registration payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Register customer account
+      tags:
+      - Auth
+  /api/v1/auth/sessions:
+    get:
+      description: List all active sessions for the authenticated customer across
+        devices and browsers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.AuthSessionsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List active sessions
+      tags:
+      - Auth
+  /api/v1/cart:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated customer's Redis-backed shopping cart
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CartResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my cart
+      tags:
+      - Cart
+  /api/v1/cart/add:
+    post:
+      consumes:
+      - application/json
+      description: Add a product to the authenticated customer's Redis-backed shopping
+        cart
+      parameters:
+      - description: Cart item payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add item to cart
+      tags:
+      - Cart
+  /api/v1/cart/quantity:
+    patch:
+      consumes:
+      - application/json
+      description: Update the quantity of a specific product variant in the authenticated
+        customer's cart
+      parameters:
+      - description: Cart quantity update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateCartQuantityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update cart item quantity
+      tags:
+      - Cart
+  /api/v1/cart/remove:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a specific product variant from the authenticated customer's
+        Redis-backed shopping cart
+      parameters:
+      - description: Cart item removal payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RemoveFromCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove item from cart
+      tags:
+      - Cart
+  /api/v1/products:
+    get:
+      consumes:
+      - application/json
+      description: Get all products from Payload-owned catalog tables, optionally
+        filtered by category slug
+      parameters:
+      - description: Category slug
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ProductListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get all products
+      tags:
+      - Products
+  /api/v1/products/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Get a single product with available size and color options from
+        Payload-owned catalog tables by slug
+      parameters:
+      - description: Product slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ProductDetailResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get product by slug
+      tags:
+      - Products
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
