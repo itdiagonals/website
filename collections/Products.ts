@@ -1,13 +1,10 @@
 import type { CollectionConfig } from 'payload'
 
-import { createCatalogSyncHooks } from './catalogSync.ts'
-
 export const Products: CollectionConfig = {
   slug: 'products',
   admin: {
     useAsTitle: 'name',
   },
-  hooks: createCatalogSyncHooks('products'),
   fields: [
     {
       name: 'name',
@@ -60,6 +57,15 @@ export const Products: CollectionConfig = {
       type: 'number',
       required: true,
       min: 0,
+    },
+    {
+      name: 'weight',
+      type: 'number',
+      required: true,
+      min: 0,
+      admin: {
+        description: 'Berat produk dalam gram',
+      },
     },
     {
       name: 'stock',

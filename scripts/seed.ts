@@ -1,25 +1,8 @@
-import { loadEnvConfig } from '@next/env'
-
-loadEnvConfig(process.cwd())
-
-const baseURL = process.env.SEED_BASE_URL || 'http://localhost:3000'
+import { seedCatalog } from '../lib/seedCatalog.ts'
 
 const seed = async () => {
-  const response = await fetch(`${baseURL}/api/dev/seed`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-seed-secret': process.env.PAYLOAD_SECRET || '',
-    },
-    method: 'POST',
-  })
-
-  const body = await response.json()
-
-  if (!response.ok) {
-    throw new Error(body.message || 'Seed request failed')
-  }
-
-  console.log('Seed completed successfully:', body)
+  const result = await seedCatalog()
+  console.log('Seed completed successfully:', result)
 }
 
 seed()
