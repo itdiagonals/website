@@ -1,13 +1,10 @@
 import type { CollectionConfig } from 'payload'
 
-import { createCatalogSyncHooks } from './catalogSync.ts'
-
 export const Seasons: CollectionConfig = {
   slug: 'seasons',
   admin: {
     useAsTitle: 'name',
   },
-  hooks: createCatalogSyncHooks('seasons'),
   fields: [
     {
       name: 'name',

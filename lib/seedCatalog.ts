@@ -226,6 +226,7 @@ export const seedCatalog = async () => {
     season: season.id,
     slug: 'cross-player-jersey',
     stock: 48,
+    weight: 300,
   })
 
   await upsertBySlug(payload, 'products', 'cross-player-shorts', {
@@ -246,6 +247,7 @@ export const seedCatalog = async () => {
     season: season.id,
     slug: 'cross-player-shorts',
     stock: 32,
+    weight: 250,
   })
 
   await upsertBySlug(payload, 'products', 'cross-player-cap', {
@@ -266,6 +268,7 @@ export const seedCatalog = async () => {
     season: season.id,
     slug: 'cross-player-cap',
     stock: 24,
+    weight: 150,
   })
 
   return {

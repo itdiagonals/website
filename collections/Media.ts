@@ -1,13 +1,10 @@
 import type { CollectionConfig } from 'payload'
 
-import { createCatalogSyncHooks } from './catalogSync.ts'
-
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: {
     useAsTitle: 'alt',
   },
-  hooks: createCatalogSyncHooks('media'),
   access: {
     read: () => true,
   },

@@ -29,8 +29,9 @@ var allMigrations = []Migration{
 	migration0001InitGoTables,
 	migration0002InitCartTables,
 	migration0003InitAuthSessionsTable,
-	migration0004InitCatalogReadModelTables,
-	migration0005InitCatalogSyncProcessedEvents,
+	migration0004InitCustomerAddressesTable,
+	migration0005InitWilayahTable,
+	migration0006AlterTransactionsForLogisticsAndPayment,
 }
 
 func Apply(db *gorm.DB) error {

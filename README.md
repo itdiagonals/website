@@ -11,8 +11,7 @@ The local stack uses separate Postgres databases for Payload and the Go backend 
 
 - Payload CMS owns the CMS database and admin panel.
 - Go backend owns its own database and serves customer auth, cart, and product API endpoints.
-- Catalog data is mirrored from Payload into backend-owned read model tables through a signed internal sync flow.
-- Backend public product endpoints read only from backend-owned catalog tables.
+- Backend public product endpoints read catalog data directly from Payload-owned tables.
 
 ## Prerequisites
 
@@ -32,25 +31,21 @@ Root `.env` is used by Next.js / Payload.
 
 - `PAYLOAD_DATABASE_URL`: Payload database connection
 - `PAYLOAD_ENABLE_PUSH`: local-only schema push flag for Payload dedicated database
-- `BACKEND_CATALOG_SYNC_URL`: internal backend endpoint used by Payload sync
-- `CATALOG_SYNC_SECRET`: shared secret for signed catalog sync requests
 - `REDIS_URL`: Redis connection for local stack
 - `S3_*`: MinIO / object storage settings
 
 `backend/.env` is used by the Go backend.
 
-- `BACKEND_DATABASE_URL`: backend database connection
 - `REFRESH_TOKEN_SECRET`: refresh token signing secret
 - `ACCESS_TOKEN_SECRET`: access token signing secret
-- `CATALOG_SYNC_SECRET`: same shared secret as root `.env`
 - `BACKEND_GIN_MODE`: backend runtime mode
 - `BACKEND_TRUSTED_PROXIES`: trusted proxy allowlist for Gin
 
 Important:
 
-- Keep `CATALOG_SYNC_SECRET` identical in both env files.
 - For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable because Payload uses its own dedicated database.
 - For production, set `PAYLOAD_ENABLE_PUSH=false`.
+- The Go backend reads `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` from `backend/.env`.
 
 ## Local setup from zero
 
@@ -71,14 +66,13 @@ docker compose down -v
 3. Start the local infrastructure.
 
 ```bash
-docker compose up -d --build
+docker compose up -d payload-postgres backend-postgres redis minio minio-init
 ```
 
 This starts:
 
 - Payload Postgres on `localhost:5432`
 - Backend Postgres on `localhost:5433`
-- Backend API on `localhost:8080`
 - Redis on `localhost:6379`
 - MinIO on `localhost:9000`
 
@@ -90,27 +84,33 @@ pnpm dev
 
 The app runs on `http://localhost:3000`.
 
-Backend migrations now run automatically when the backend container starts.
+5. In another terminal, run backend migrations.
 
-5. Seed the Payload catalog database.
+```bash
+cd backend
+go run ./cmd/migration
+```
+
+6. Start the backend locally.
+
+```bash
+cd backend
+go run .
+```
+
+7. Seed the Payload catalog database.
 
 ```bash
 pnpm seed
 ```
 
-6. Run the initial catalog sync so backend read model tables are populated.
-
-```bash
-pnpm sync:catalog
-```
-
-7. Verify the backend product API.
+8. Verify the backend product API.
 
 ```powershell
 Invoke-RestMethod http://localhost:8080/api/v1/products
 ```
 
-If setup is healthy, you should receive product data from the backend-owned catalog read model.
+If setup is healthy, you should receive product data read directly from the Payload database.
 
 ## Daily development flow
 
@@ -118,12 +118,12 @@ After the first bootstrap, normal local development is:
 
 1. `docker compose up -d`
 2. start Next.js / Payload: `pnpm dev`
+3. start backend locally from `backend/`: `go run .`
 
 Catalog behavior:
 
 - `pnpm seed` is only needed when you want to recreate starter catalog data.
-- `pnpm sync:catalog` is mainly for first sync or reconciliation.
-- after initial sync, create/update/delete in Payload should sync automatically to backend.
+- create/update/delete in Payload is reflected immediately because the backend reads the Payload database directly.
 
 ## Useful commands
 
@@ -145,34 +145,30 @@ Hard reset local data:
 docker compose down -v
 ```
 
-Show backend container logs:
-
-```bash
-docker compose logs -f backend
-```
-
-Restart backend container:
-
-```bash
-docker compose restart backend
-```
-
 Start Next.js / Payload:
 
 ```bash
 pnpm dev
 ```
 
+Start backend locally:
+
+```bash
+cd backend
+go run .
+```
+
+Run backend migrations:
+
+```bash
+cd backend
+go run ./cmd/migration
+```
+
 Seed catalog:
 
 ```bash
 pnpm seed
-```
-
-Backfill / reconcile backend catalog read model:
-
-```bash
-pnpm sync:catalog
 ```
 
 Lint frontend / Next code:
@@ -186,20 +182,6 @@ Compile-test backend packages:
 ```bash
 cd backend
 go test ./...
-```
-
-## Catalog sync details
-
-Catalog data is mirrored into backend-owned read model tables through a signed internal sync endpoint.
-
-- initial population is done with `pnpm sync:catalog`
-- later updates are pushed automatically by Payload collection hooks
-- sync events are idempotent through `eventId` tracking in the backend
-
-If catalog data ever drifts, re-run:
-
-```bash
-pnpm sync:catalog
 ```
 
 ## Customer auth model
@@ -219,10 +201,9 @@ Before production deployment, make sure all of the following are done:
 1. Set `PAYLOAD_ENABLE_PUSH=false`.
 2. Replace all local secrets with strong production secrets.
 3. Keep Payload and backend databases separated.
-4. Expose the catalog sync endpoint only on trusted internal networks.
-5. Inject production backend connection strings through the deploy platform instead of relying on local-only `localhost` values.
-6. Set `BACKEND_GIN_MODE=release`.
-7. Set `BACKEND_TRUSTED_PROXIES` to the actual proxy or ingress IP ranges.
+4. Inject deployment-safe values for `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL`.
+5. Set `BACKEND_GIN_MODE=release`.
+6. Set `BACKEND_TRUSTED_PROXIES` to the actual proxy or ingress IP ranges.
 7. Add regular backup and restore procedures for both databases.
 
 ## Troubleshooting
@@ -239,10 +220,5 @@ If backend products return `null` or an empty list:
 
 1. make sure backend migrations were run
 2. make sure `pnpm seed` finished successfully
-3. re-run `pnpm sync:catalog`
-
-If catalog sync fails, verify:
-
-1. Next.js is running on port `3000`
-2. backend API is running on port `8080`
-3. `CATALOG_SYNC_SECRET` matches in root `.env` and `backend/.env`
+3. make sure Payload schema has been pushed to `payload`
+4. make sure `backend/.env` points `PAYLOAD_DATABASE_URL` to `localhost:5432` and `BACKEND_DATABASE_URL` to `localhost:5433`

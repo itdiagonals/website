@@ -9,6 +9,7 @@ import (
 
 type CustomerRepository interface {
 	Create(context context.Context, customer *domain.Customer) error
+	FindByID(context context.Context, customerID uint) (*domain.Customer, error)
 	FindByEmail(context context.Context, email string) (*domain.Customer, error)
 }
 
@@ -22,6 +23,17 @@ func NewCustomerRepository(db *gorm.DB) CustomerRepository {
 
 func (repository *customerRepository) Create(context context.Context, customer *domain.Customer) error {
 	return repository.db.WithContext(context).Create(customer).Error
+}
+
+func (repository *customerRepository) FindByID(context context.Context, customerID uint) (*domain.Customer, error) {
+	var customer domain.Customer
+
+	err := repository.db.WithContext(context).Where("id = ?", customerID).First(&customer).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &customer, nil
 }
 
 func (repository *customerRepository) FindByEmail(context context.Context, email string) (*domain.Customer, error) {

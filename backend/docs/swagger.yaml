@@ -56,6 +56,56 @@ definitions:
       subtotal:
         type: number
     type: object
+  domain.Customer:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      password_hash:
+        type: string
+      phone:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.CustomerAddress:
+    properties:
+      city:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: integer
+      district:
+        type: string
+      full_address:
+        type: string
+      id:
+        type: integer
+      is_primary:
+        type: boolean
+      phone_number:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      village:
+        type: string
+    type: object
   domain.Product:
     properties:
       base_price:
@@ -79,6 +129,8 @@ definitions:
       slug:
         type: string
       stock:
+        type: integer
+      weight:
         type: integer
     type: object
   domain.ProductCareGuide:
@@ -137,6 +189,8 @@ definitions:
         type: string
       stock:
         type: integer
+      weight:
+        type: integer
     type: object
   domain.ProductMediaItem:
     properties:
@@ -160,6 +214,87 @@ definitions:
     properties:
       size:
         type: string
+    type: object
+  domain.Transaction:
+    properties:
+      courier_name:
+        type: string
+      courier_service:
+        type: string
+      created_at:
+        type: string
+      customer:
+        $ref: '#/definitions/domain.Customer'
+      customer_id:
+        type: integer
+      id:
+        type: integer
+      order_id:
+        type: string
+      shipping_address:
+        $ref: '#/definitions/domain.CustomerAddress'
+      shipping_address_id:
+        type: integer
+      shipping_cost:
+        type: number
+      shipping_status:
+        type: string
+      snap_token:
+        type: string
+      status:
+        description: 'Status stores the payment status, for example: pending, paid,
+          failed.'
+        type: string
+      total_amount:
+        type: number
+      tracking_number:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Wilayah:
+    properties:
+      code:
+        type: string
+      level:
+        type: string
+      name:
+        type: string
+      parent_code:
+        type: string
+    type: object
+  handler.AddAddressRequest:
+    properties:
+      city:
+        type: string
+      district:
+        type: string
+      full_address:
+        type: string
+      is_primary:
+        type: boolean
+      phone_number:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      title:
+        type: string
+      village:
+        type: string
+    required:
+    - city
+    - district
+    - full_address
+    - phone_number
+    - postal_code
+    - province
+    - recipient_name
+    - title
+    - village
     type: object
   handler.AddToCartRequest:
     properties:
@@ -190,6 +325,36 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/domain.Cart'
+    type: object
+  handler.CheckoutRequest:
+    properties:
+      address_id:
+        type: integer
+      courier_name:
+        type: string
+      courier_service:
+        type: string
+    required:
+    - address_id
+    - courier_name
+    - courier_service
+    type: object
+  handler.CheckoutResponse:
+    properties:
+      data:
+        $ref: '#/definitions/domain.Transaction'
+    type: object
+  handler.CustomerAddressListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.CustomerAddress'
+        type: array
+    type: object
+  handler.CustomerAddressResponse:
+    properties:
+      data:
+        $ref: '#/definitions/domain.CustomerAddress'
     type: object
   handler.ErrorResponse:
     properties:
@@ -247,6 +412,33 @@ definitions:
     - selected_color_name
     - selected_size
     type: object
+  handler.ShippingRatesData:
+    properties:
+      address_id:
+        type: integer
+      rates:
+        items:
+          $ref: '#/definitions/service.RajaOngkirRate'
+        type: array
+      subtotal:
+        type: number
+      total_weight:
+        type: integer
+    type: object
+  handler.ShippingRatesRequest:
+    properties:
+      address_id:
+        type: integer
+      couriers:
+        type: string
+    required:
+    - address_id
+    type: object
+  handler.ShippingRatesResponse:
+    properties:
+      data:
+        $ref: '#/definitions/handler.ShippingRatesData'
+    type: object
   handler.StatusResponse:
     properties:
       message:
@@ -272,12 +464,102 @@ definitions:
     - selected_color_name
     - selected_size
     type: object
+  handler.WilayahListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Wilayah'
+        type: array
+    type: object
+  service.RajaOngkirRate:
+    properties:
+      courier_code:
+        type: string
+      courier_name:
+        type: string
+      estimated_days:
+        type: string
+      estimated_range:
+        type: string
+      price:
+        type: number
+      service_code:
+        type: string
+      service_name:
+        type: string
+    type: object
 info:
   contact: {}
   description: Customer auth and product catalog API for the Diagonals website backend.
   title: Diagonals API
   version: "1.0"
 paths:
+  /api/v1/addresses:
+    get:
+      consumes:
+      - application/json
+      description: Get all detailed shipping addresses for the authenticated customer
+        ordered by primary status first
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CustomerAddressListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my addresses
+      tags:
+      - Addresses
+    post:
+      consumes:
+      - application/json
+      description: Add a detailed shipping address for the authenticated customer,
+        including village, district, city, province, postal code, and street details
+      parameters:
+      - description: Customer address payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AddAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.CustomerAddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add customer address
+      tags:
+      - Addresses
   /api/v1/auth/login:
     post:
       consumes:
@@ -594,11 +876,94 @@ paths:
       summary: Remove item from cart
       tags:
       - Cart
+  /api/v1/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Validate the authenticated customer's address, cart, shipping rate,
+        and Midtrans payment request, then create a pending transaction and clear
+        the cart
+      parameters:
+      - description: Checkout payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.CheckoutResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Checkout current cart
+      tags:
+      - Checkout
+  /api/v1/checkout/rates:
+    post:
+      consumes:
+      - application/json
+      description: Calculate available courier and service options for the authenticated
+        customer's current cart and selected shipping address
+      parameters:
+      - description: Shipping rates payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ShippingRatesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.ShippingRatesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get available checkout couriers
+      tags:
+      - Checkout
   /api/v1/products:
     get:
       consumes:
       - application/json
-      description: Get all products from Payload-owned catalog tables, optionally
+      description: Get all products from the backend-owned catalog read model, optionally
         filtered by category slug
       parameters:
       - description: Category slug
@@ -624,7 +989,7 @@ paths:
       consumes:
       - application/json
       description: Get a single product with available size and color options from
-        Payload-owned catalog tables by slug
+        the backend-owned catalog read model by slug
       parameters:
       - description: Product slug
         in: path
@@ -649,6 +1014,47 @@ paths:
       summary: Get product by slug
       tags:
       - Products
+  /api/v1/wilayah/search:
+    get:
+      consumes:
+      - application/json
+      description: Search wilayah master data for province, city, district, or village
+        with optional parent filtering for cascading address forms
+      parameters:
+      - description: 'Wilayah level: province, city, district, village'
+        in: query
+        name: level
+        type: string
+      - description: Parent wilayah code for cascading search
+        in: query
+        name: parent_code
+        type: string
+      - description: Search keyword
+        in: query
+        name: query
+        type: string
+      - description: Maximum result count, default 50, max 100
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.WilayahListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Search wilayah master data
+      tags:
+      - Wilayah
 securityDefinitions:
   BearerAuth:
     in: header

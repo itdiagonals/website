@@ -10,6 +10,7 @@ type Product struct {
 	Gender       string  `json:"gender" gorm:"column:gender"`
 	BasePrice    float64 `json:"base_price" gorm:"column:base_price"`
 	Stock        int     `json:"stock" gorm:"column:stock"`
+	Weight       int     `json:"weight" gorm:"column:weight"`
 	Description  string  `json:"description" gorm:"column:description"`
 	CoverImageID int     `json:"cover_image_id" gorm:"column:cover_image_id"`
 }

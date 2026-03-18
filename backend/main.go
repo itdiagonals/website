@@ -31,10 +31,8 @@ func main() {
 	}
 	gin.SetMode(ginMode)
 
-	db, err := config.ConnectDatabase()
-	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
-	}
+	config.ConnectDB()
+	config.InitMidtrans()
 
 	redisClient, err := config.ConnectRedis()
 	if err != nil {
@@ -49,7 +47,7 @@ func main() {
 		log.Fatalf("failed to configure trusted proxies: %v", err)
 	}
 
-	routes.SetupRoutes(router, db, redisClient)
+	routes.SetupRoutes(router, config.DBBackend, config.DBPayload, redisClient)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

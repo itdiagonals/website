@@ -10,13 +10,9 @@ import (
 func main() {
 	log.Println("starting database migration")
 
-	db, err := config.ConnectDatabase()
-	if err != nil {
-		log.Printf("failed to connect database: %v", err)
-		return
-	}
+	config.ConnectDB()
 
-	if err := migrations.Apply(db); err != nil {
+	if err := migrations.Apply(config.DBBackend); err != nil {
 		log.Printf("migration failed: %v", err)
 		return
 	}
