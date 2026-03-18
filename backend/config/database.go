@@ -1,25 +1,40 @@
 package config
 
 import (
-	"errors"
+	"log"
+
 	"os"
+	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func ConnectDatabase() (*gorm.DB, error) {
+var DBBackend *gorm.DB
+var DBPayload *gorm.DB
+
+func ConnectDB() {
 	LoadEnv()
 
-	databaseURL := os.Getenv("BACKEND_DATABASE_URL")
-	if databaseURL == "" {
-		return nil, errors.New("BACKEND_DATABASE_URL is not set")
+	backendDSN := strings.TrimSpace(os.Getenv("BACKEND_DATABASE_URL"))
+	payloadDSN := strings.TrimSpace(os.Getenv("PAYLOAD_DATABASE_URL"))
+
+	if backendDSN == "" {
+		log.Fatal("BACKEND_DATABASE_URL is not set")
+	}
+	if payloadDSN == "" {
+		log.Fatal("PAYLOAD_DATABASE_URL is not set")
 	}
 
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+	var err error
+
+	DBBackend, err = gorm.Open(postgres.Open(backendDSN), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		log.Fatal("failed to connect DBBackend: ", err)
 	}
 
-	return db, nil
+	DBPayload, err = gorm.Open(postgres.Open(payloadDSN), &gorm.Config{})
+	if err != nil {
+		log.Fatal("failed to connect DBPayload: ", err)
+	}
 }

@@ -16,6 +16,7 @@ import (
 type CartRepository interface {
 	GetCart(context context.Context, customerID uint) (*domain.Cart, error)
 	SaveCart(context context.Context, cart *domain.Cart) error
+	ClearCart(context context.Context, customerID uint) error
 }
 
 type cartRepository struct {
@@ -108,6 +109,21 @@ func (repository *cartRepository) SaveCart(context context.Context, cart *domain
 	}
 
 	repository.setCache(context, cart)
+	return nil
+}
+
+func (repository *cartRepository) ClearCart(context context.Context, customerID uint) error {
+	emptyCart := &domain.Cart{CustomerID: customerID, Items: []domain.CartItem{}}
+	if err := repository.SaveCart(context, emptyCart); err != nil {
+		return err
+	}
+
+	if repository.redisClient != nil {
+		if err := repository.redisClient.Del(context, repository.key(customerID)).Err(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

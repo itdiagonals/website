@@ -6,11 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
+func SetupRoutes(router *gin.Engine, backendDB *gorm.DB, payloadDB *gorm.DB, redisClient *redis.Client) {
 	api := router.Group("/api/v1")
 
-	registerCatalogSyncRoutes(router, db)
-	registerAuthRoutes(api, db, redisClient)
-	registerProductRoutes(api, db)
-	registerCartRoutes(router, redisClient, db)
+	registerAuthRoutes(api, backendDB, redisClient)
+	registerCustomerAddressRoutes(api, backendDB)
+	registerWilayahRoutes(api, backendDB)
+	registerProductRoutes(api, payloadDB)
+	registerCheckoutRoutes(api, backendDB, payloadDB, redisClient)
+	registerCartRoutes(router, redisClient, backendDB, payloadDB)
 }

@@ -10,10 +10,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerCartRoutes(router *gin.Engine, redisClient *redis.Client, db *gorm.DB) {
-	cartRepository := repository.NewCartRepository(db, redisClient)
-	productRepository := repository.NewProductRepository(db)
-	authSessionRepository := repository.NewAuthSessionRepository(db)
+func registerCartRoutes(router *gin.Engine, redisClient *redis.Client, backendDB *gorm.DB, payloadDB *gorm.DB) {
+	cartRepository := repository.NewCartRepository(backendDB, redisClient)
+	productRepository := repository.NewProductRepository(payloadDB)
+	authSessionRepository := repository.NewAuthSessionRepository(backendDB)
 	cartService := service.NewCartService(cartRepository, productRepository)
 	cartHandler := handler.NewCartHandler(cartService)
 

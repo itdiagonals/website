@@ -27,14 +27,14 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 func (repository *productRepository) FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error) {
 	var products []domain.Product
 
-	query := repository.db.WithContext(ctx).Table("catalog_products AS products")
+	query := repository.db.WithContext(ctx).Table("products")
 	if categorySlug != "" {
 		query = query.
-			Joins("JOIN catalog_categories categories ON categories.id = products.category_id").
+			Joins("JOIN categories ON categories.id = products.category_id").
 			Where("categories.slug = ?", categorySlug)
 	}
 
-	if err := query.Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, products.stock, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
+	if err := query.Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, products.stock, products.weight, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (repository *productRepository) FindAll(ctx context.Context, categorySlug s
 func (repository *productRepository) FindByID(ctx context.Context, id int) (*domain.Product, error) {
 	var product domain.Product
 
-	if err := repository.db.WithContext(ctx).Table("catalog_products").Where("id = ?", id).First(&product).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Table("products").Where("id = ?", id).First(&product).Error; err != nil {
 		return nil, err
 	}
 
@@ -62,7 +62,7 @@ func (repository *productRepository) FindDetailBySlug(ctx context.Context, slug 
 func (repository *productRepository) FindBySlug(ctx context.Context, slug string) (*domain.Product, error) {
 	var product domain.Product
 
-	if err := repository.db.WithContext(ctx).Table("catalog_products").Where("slug = ?", slug).First(&product).Error; err != nil {
+	if err := repository.db.WithContext(ctx).Table("products").Where("slug = ?", slug).First(&product).Error; err != nil {
 		return nil, err
 	}
 
@@ -85,12 +85,12 @@ func (repository *productRepository) findDetail(ctx context.Context, condition s
 	}{}
 
 	err := repository.db.WithContext(ctx).
-		Table("catalog_products AS products").
-		Select("products.id, products.name, products.slug, products.gender, products.base_price, products.stock, products.description, products.detail_info, products.cover_image_id, media.url AS cover_image_url, media.alt AS cover_image_alt, categories.id AS category_id, categories.name AS category_name, categories.slug AS category_slug, seasons.id AS season_id, seasons.name AS season_name, seasons.slug AS season_slug, care_guides.id AS care_guide_id, care_guides.title AS care_guide_title, care_guides.instructions AS care_guide_instructions").
-		Joins("LEFT JOIN catalog_media media ON media.id = products.cover_image_id").
-		Joins("LEFT JOIN catalog_categories categories ON categories.id = products.category_id").
-		Joins("LEFT JOIN catalog_seasons seasons ON seasons.id = products.season_id").
-		Joins("LEFT JOIN catalog_care_guides care_guides ON care_guides.id = products.care_guide_id").
+		Table("products").
+		Select("products.id, products.name, products.slug, products.gender, products.base_price, products.stock, products.weight, products.description, products.detail_info, products.cover_image_id, media.url AS cover_image_url, media.alt AS cover_image_alt, categories.id AS category_id, categories.name AS category_name, categories.slug AS category_slug, seasons.id AS season_id, seasons.name AS season_name, seasons.slug AS season_slug, care_guides.id AS care_guide_id, care_guides.title AS care_guide_title, care_guides.instructions AS care_guide_instructions").
+		Joins("LEFT JOIN media ON media.id = products.cover_image_id").
+		Joins("LEFT JOIN categories ON categories.id = products.category_id").
+		Joins("LEFT JOIN seasons ON seasons.id = products.season_id").
+		Joins("LEFT JOIN care_guides care_guides ON care_guides.id = products.care_guide_id").
 		Where(condition, value).
 		Scan(&result).Error
 	if err != nil {
@@ -136,31 +136,31 @@ func (repository *productRepository) findDetail(ctx context.Context, condition s
 
 	var colors []domain.ProductColorOption
 	if err := repository.db.WithContext(ctx).
-		Table("catalog_product_colors").
+		Table("products_available_colors").
 		Select("color_name, hex_code").
-		Where("product_id = ?", detail.ID).
-		Order("sort_order ASC").
+		Where("_parent_id = ?", detail.ID).
+		Order("_order ASC").
 		Scan(&colors).Error; err != nil {
 		return nil, err
 	}
 
 	var sizes []domain.ProductSizeOption
 	if err := repository.db.WithContext(ctx).
-		Table("catalog_product_sizes").
+		Table("products_available_sizes").
 		Select("size").
-		Where("product_id = ?", detail.ID).
-		Order("sort_order ASC").
+		Where("_parent_id = ?", detail.ID).
+		Order("_order ASC").
 		Scan(&sizes).Error; err != nil {
 		return nil, err
 	}
 
 	var gallery []domain.ProductMediaItem
 	if err := repository.db.WithContext(ctx).
-		Table("catalog_product_gallery AS gallery").
+		Table("products_gallery AS gallery").
 		Select("media.id, media.url, media.alt").
-		Joins("JOIN catalog_media media ON media.id = gallery.image_id").
-		Where("gallery.product_id = ?", detail.ID).
-		Order("gallery.sort_order ASC").
+		Joins("JOIN media ON media.id = gallery.image_id").
+		Where("gallery._parent_id = ?", detail.ID).
+		Order("gallery._order ASC").
 		Scan(&gallery).Error; err != nil {
 		return nil, err
 	}
