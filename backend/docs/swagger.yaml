@@ -35,6 +35,8 @@ definitions:
         type: number
       gender:
         type: string
+      id:
+        type: integer
       image_url:
         type: string
       product_id:
@@ -56,25 +58,6 @@ definitions:
       subtotal:
         type: number
     type: object
-  domain.Customer:
-    properties:
-      address:
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      password_hash:
-        type: string
-      phone:
-        type: string
-      updated_at:
-        type: string
-    type: object
   domain.CustomerAddress:
     properties:
       city:
@@ -83,6 +66,10 @@ definitions:
         type: string
       customer_id:
         type: integer
+      destination_area_id:
+        type: string
+      destination_area_label:
+        type: string
       district:
         type: string
       full_address:
@@ -91,7 +78,17 @@ definitions:
         type: integer
       is_primary:
         type: boolean
+      latitude:
+        type: number
+      location_source:
+        type: string
+      longitude:
+        type: number
+      map_provider:
+        type: string
       phone_number:
+        type: string
+      place_id:
         type: string
       postal_code:
         type: string
@@ -120,7 +117,11 @@ definitions:
         type: string
       gender:
         type: string
+      height:
+        type: integer
       id:
+        type: integer
+      length:
         type: integer
       name:
         type: string
@@ -131,6 +132,8 @@ definitions:
       stock:
         type: integer
       weight:
+        type: integer
+      width:
         type: integer
     type: object
   domain.ProductCareGuide:
@@ -179,7 +182,11 @@ definitions:
         type: array
       gender:
         type: string
+      height:
+        type: integer
       id:
+        type: integer
+      length:
         type: integer
       name:
         type: string
@@ -190,6 +197,8 @@ definitions:
       stock:
         type: integer
       weight:
+        type: integer
+      width:
         type: integer
     type: object
   domain.ProductMediaItem:
@@ -215,43 +224,6 @@ definitions:
       size:
         type: string
     type: object
-  domain.Transaction:
-    properties:
-      courier_name:
-        type: string
-      courier_service:
-        type: string
-      created_at:
-        type: string
-      customer:
-        $ref: '#/definitions/domain.Customer'
-      customer_id:
-        type: integer
-      id:
-        type: integer
-      order_id:
-        type: string
-      shipping_address:
-        $ref: '#/definitions/domain.CustomerAddress'
-      shipping_address_id:
-        type: integer
-      shipping_cost:
-        type: number
-      shipping_status:
-        type: string
-      snap_token:
-        type: string
-      status:
-        description: 'Status stores the payment status, for example: pending, paid,
-          failed.'
-        type: string
-      total_amount:
-        type: number
-      tracking_number:
-        type: string
-      updated_at:
-        type: string
-    type: object
   domain.Wilayah:
     properties:
       code:
@@ -267,13 +239,27 @@ definitions:
     properties:
       city:
         type: string
+      destination_area_id:
+        type: string
+      destination_area_label:
+        type: string
       district:
         type: string
       full_address:
         type: string
       is_primary:
         type: boolean
+      latitude:
+        type: number
+      location_source:
+        type: string
+      longitude:
+        type: number
+      map_provider:
+        type: string
       phone_number:
+        type: string
+      place_id:
         type: string
       postal_code:
         type: string
@@ -326,6 +312,72 @@ definitions:
       data:
         $ref: '#/definitions/domain.Cart'
     type: object
+  handler.CheckoutAddressSummary:
+    properties:
+      city:
+        type: string
+      destination_area_id:
+        type: string
+      destination_area_label:
+        type: string
+      district:
+        type: string
+      full_address:
+        type: string
+      id:
+        type: integer
+      is_primary:
+        type: boolean
+      latitude:
+        type: number
+      longitude:
+        type: number
+      phone_number:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      title:
+        type: string
+      village:
+        type: string
+    type: object
+  handler.CheckoutData:
+    properties:
+      courier_name:
+        type: string
+      courier_service:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: integer
+      id:
+        type: integer
+      order_id:
+        type: string
+      shipping_address:
+        $ref: '#/definitions/handler.CheckoutAddressSummary'
+      shipping_address_id:
+        type: integer
+      shipping_cost:
+        type: number
+      shipping_status:
+        type: string
+      snap_token:
+        type: string
+      status:
+        type: string
+      total_amount:
+        type: number
+      tracking_number:
+        type: string
+      updated_at:
+        type: string
+    type: object
   handler.CheckoutRequest:
     properties:
       address_id:
@@ -334,15 +386,21 @@ definitions:
         type: string
       courier_service:
         type: string
+      selected_cart_item_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
     required:
     - address_id
     - courier_name
     - courier_service
+    - selected_cart_item_ids
     type: object
   handler.CheckoutResponse:
     properties:
       data:
-        $ref: '#/definitions/domain.Transaction'
+        $ref: '#/definitions/handler.CheckoutData'
     type: object
   handler.CustomerAddressListResponse:
     properties:
@@ -370,6 +428,31 @@ definitions:
     required:
     - email
     - password
+    type: object
+  handler.MidtransNotificationRequest:
+    properties:
+      fraud_status:
+        type: string
+      gross_amount:
+        type: string
+      order_id:
+        type: string
+      payment_type:
+        type: string
+      signature_key:
+        type: string
+      status_code:
+        type: string
+      transaction_id:
+        type: string
+      transaction_status:
+        type: string
+    required:
+    - gross_amount
+    - order_id
+    - signature_key
+    - status_code
+    - transaction_status
     type: object
   handler.ProductDetailResponse:
     properties:
@@ -399,18 +482,10 @@ definitions:
     type: object
   handler.RemoveFromCartRequest:
     properties:
-      product_id:
+      cart_item_id:
         type: integer
-      selected_color_hex:
-        type: string
-      selected_color_name:
-        type: string
-      selected_size:
-        type: string
     required:
-    - product_id
-    - selected_color_name
-    - selected_size
+    - cart_item_id
     type: object
   handler.ShippingRatesData:
     properties:
@@ -418,7 +493,7 @@ definitions:
         type: integer
       rates:
         items:
-          $ref: '#/definitions/service.RajaOngkirRate'
+          $ref: '#/definitions/service.ShippingRate'
         type: array
       subtotal:
         type: number
@@ -431,8 +506,14 @@ definitions:
         type: integer
       couriers:
         type: string
+      selected_cart_item_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
     required:
     - address_id
+    - selected_cart_item_ids
     type: object
   handler.ShippingRatesResponse:
     properties:
@@ -446,23 +527,191 @@ definitions:
       status:
         type: string
     type: object
-  handler.UpdateCartQuantityRequest:
+  handler.TransactionHistoryAddressSummary:
     properties:
+      city:
+        type: string
+      destination_area_id:
+        type: string
+      destination_area_label:
+        type: string
+      district:
+        type: string
+      full_address:
+        type: string
+      id:
+        type: integer
+      is_primary:
+        type: boolean
+      latitude:
+        type: number
+      longitude:
+        type: number
+      phone_number:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      title:
+        type: string
+      village:
+        type: string
+    type: object
+  handler.TransactionHistoryDetail:
+    properties:
+      courier_name:
+        type: string
+      courier_service:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: integer
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/handler.TransactionHistoryDetailItem'
+        type: array
+      order_id:
+        type: string
+      shipping_address:
+        $ref: '#/definitions/handler.TransactionHistoryAddressSummary'
+      shipping_address_id:
+        type: integer
+      shipping_cost:
+        type: number
+      shipping_status:
+        type: string
+      snap_token:
+        type: string
+      status:
+        type: string
+      total_amount:
+        type: number
+      tracking_number:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  handler.TransactionHistoryDetailItem:
+    properties:
+      id:
+        type: integer
+      price:
+        type: number
       product_id:
         type: integer
       quantity:
         type: integer
-      selected_color_hex:
+      subtotal:
+        type: number
+    type: object
+  handler.TransactionHistoryDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/handler.TransactionHistoryDetail'
+    type: object
+  handler.TransactionHistoryListItem:
+    properties:
+      courier_name:
         type: string
-      selected_color_name:
+      courier_service:
         type: string
-      selected_size:
+      created_at:
+        type: string
+      id:
+        type: integer
+      order_id:
+        type: string
+      shipping_cost:
+        type: number
+      shipping_status:
+        type: string
+      status:
+        type: string
+      total_amount:
+        type: number
+    type: object
+  handler.TransactionHistoryListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/handler.TransactionHistoryListItem'
+        type: array
+      pagination:
+        $ref: '#/definitions/handler.TransactionHistoryPagination'
+    type: object
+  handler.TransactionHistoryPagination:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  handler.UpdateAddressRequest:
+    properties:
+      city:
+        type: string
+      destination_area_id:
+        type: string
+      destination_area_label:
+        type: string
+      district:
+        type: string
+      full_address:
+        type: string
+      is_primary:
+        type: boolean
+      latitude:
+        type: number
+      location_source:
+        type: string
+      longitude:
+        type: number
+      map_provider:
+        type: string
+      phone_number:
+        type: string
+      place_id:
+        type: string
+      postal_code:
+        type: string
+      province:
+        type: string
+      recipient_name:
+        type: string
+      title:
+        type: string
+      village:
         type: string
     required:
-    - product_id
+    - city
+    - district
+    - full_address
+    - phone_number
+    - postal_code
+    - province
+    - recipient_name
+    - title
+    - village
+    type: object
+  handler.UpdateCartQuantityRequest:
+    properties:
+      cart_item_id:
+        type: integer
+      quantity:
+        type: integer
+    required:
+    - cart_item_id
     - quantity
-    - selected_color_name
-    - selected_size
     type: object
   handler.WilayahListResponse:
     properties:
@@ -471,8 +720,14 @@ definitions:
           $ref: '#/definitions/domain.Wilayah'
         type: array
     type: object
-  service.RajaOngkirRate:
+  service.ShippingRate:
     properties:
+      available_collection_types:
+        items:
+          type: string
+        type: array
+      cash_on_delivery_fee:
+        type: number
       courier_code:
         type: string
       courier_name:
@@ -481,12 +736,16 @@ definitions:
         type: string
       estimated_range:
         type: string
+      insurance_fee:
+        type: number
       price:
         type: number
       service_code:
         type: string
       service_name:
         type: string
+      shipping_fee:
+        type: number
     type: object
 info:
   contact: {}
@@ -528,7 +787,8 @@ paths:
       consumes:
       - application/json
       description: Add a detailed shipping address for the authenticated customer,
-        including village, district, city, province, postal code, and street details
+        including administrative regions, street details, and optional map pin metadata
+        (latitude/longitude)
       parameters:
       - description: Customer address payload
         in: body
@@ -558,6 +818,53 @@ paths:
       security:
       - BearerAuth: []
       summary: Add customer address
+      tags:
+      - Addresses
+  /api/v1/addresses/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing shipping address for the authenticated customer,
+        including administrative regions, street details, and optional map pin metadata
+        (latitude/longitude)
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Customer address payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CustomerAddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update customer address
       tags:
       - Addresses
   /api/v1/auth/login:
@@ -794,8 +1101,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Update the quantity of a specific product variant in the authenticated
-        customer's cart
+      description: Update the quantity of a specific cart item in the authenticated
+        customer's cart by cart item id
       parameters:
       - description: Cart quantity update payload
         in: body
@@ -839,8 +1146,8 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove a specific product variant from the authenticated customer's
-        Redis-backed shopping cart
+      description: Remove a specific cart item from the authenticated customer's Redis-backed
+        shopping cart by cart item id
       parameters:
       - description: Cart item removal payload
         in: body
@@ -880,9 +1187,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Validate the authenticated customer's address, cart, shipping rate,
-        and Midtrans payment request, then create a pending transaction and clear
-        the cart
+      description: Validate the authenticated customer's address, selected cart items,
+        shipping rate, and Midtrans payment request, then create a pending transaction
+        and remove only the selected items from cart
       parameters:
       - description: Checkout payload
         in: body
@@ -923,7 +1230,7 @@ paths:
       consumes:
       - application/json
       description: Calculate available courier and service options for the authenticated
-        customer's current cart and selected shipping address
+        customer's selected cart items and shipping address
       parameters:
       - description: Shipping rates payload
         in: body
@@ -959,6 +1266,41 @@ paths:
       summary: Get available checkout couriers
       tags:
       - Checkout
+  /api/v1/payments/midtrans/notification:
+    post:
+      consumes:
+      - application/json
+      description: Verify Midtrans signature and update transaction payment status
+        by order id
+      parameters:
+      - description: Midtrans notification payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.MidtransNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Receive Midtrans payment notification
+      tags:
+      - Payments
   /api/v1/products:
     get:
       consumes:
@@ -1014,6 +1356,86 @@ paths:
       summary: Get product by slug
       tags:
       - Products
+  /api/v1/transactions:
+    get:
+      description: Get paginated transaction history for the authenticated customer,
+        optionally filtered by payment status
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by payment status (pending|paid|failed|refunded)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TransactionHistoryListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my transaction history
+      tags:
+      - Transactions
+  /api/v1/transactions/{order_id}:
+    get:
+      description: Get one transaction detail by order id for the authenticated customer
+      parameters:
+      - description: Order ID
+        in: path
+        name: order_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TransactionHistoryDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my transaction detail
+      tags:
+      - Transactions
   /api/v1/wilayah/search:
     get:
       consumes:

@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
@@ -14,18 +15,56 @@ type CheckoutHandler struct {
 }
 
 type CheckoutRequest struct {
-	AddressID      uint   `json:"address_id" binding:"required"`
-	CourierName    string `json:"courier_name" binding:"required"`
-	CourierService string `json:"courier_service" binding:"required"`
+	AddressID           uint   `json:"address_id" binding:"required"`
+	CourierName         string `json:"courier_name" binding:"required"`
+	CourierService      string `json:"courier_service" binding:"required"`
+	SelectedCartItemIDs []uint `json:"selected_cart_item_ids" binding:"required,min=1,dive,gt=0"`
 }
 
 type CheckoutResponse struct {
-	Data domain.Transaction `json:"data"`
+	Data CheckoutData `json:"data"`
+}
+
+type CheckoutData struct {
+	ID                uint                   `json:"id"`
+	OrderID           string                 `json:"order_id"`
+	CustomerID        uint                   `json:"customer_id"`
+	ShippingAddressID uint                   `json:"shipping_address_id"`
+	TotalAmount       float64                `json:"total_amount"`
+	ShippingCost      float64                `json:"shipping_cost"`
+	CourierName       string                 `json:"courier_name"`
+	CourierService    string                 `json:"courier_service"`
+	TrackingNumber    string                 `json:"tracking_number,omitempty"`
+	Status            string                 `json:"status"`
+	ShippingStatus    string                 `json:"shipping_status"`
+	SnapToken         string                 `json:"snap_token"`
+	CreatedAt         time.Time              `json:"created_at"`
+	UpdatedAt         time.Time              `json:"updated_at"`
+	ShippingAddress   CheckoutAddressSummary `json:"shipping_address"`
+}
+
+type CheckoutAddressSummary struct {
+	ID                   uint     `json:"id"`
+	Title                string   `json:"title"`
+	RecipientName        string   `json:"recipient_name"`
+	PhoneNumber          string   `json:"phone_number"`
+	Province             string   `json:"province"`
+	City                 string   `json:"city"`
+	District             string   `json:"district"`
+	Village              string   `json:"village"`
+	PostalCode           string   `json:"postal_code"`
+	FullAddress          string   `json:"full_address"`
+	Latitude             *float64 `json:"latitude,omitempty"`
+	Longitude            *float64 `json:"longitude,omitempty"`
+	DestinationAreaID    string   `json:"destination_area_id,omitempty"`
+	DestinationAreaLabel string   `json:"destination_area_label,omitempty"`
+	IsPrimary            bool     `json:"is_primary"`
 }
 
 type ShippingRatesRequest struct {
-	AddressID uint   `json:"address_id" binding:"required"`
-	Couriers  string `json:"couriers"`
+	AddressID           uint   `json:"address_id" binding:"required"`
+	Couriers            string `json:"couriers"`
+	SelectedCartItemIDs []uint `json:"selected_cart_item_ids" binding:"required,min=1,dive,gt=0"`
 }
 
 type ShippingRatesResponse struct {
@@ -33,10 +72,10 @@ type ShippingRatesResponse struct {
 }
 
 type ShippingRatesData struct {
-	AddressID   uint                      `json:"address_id"`
-	Subtotal    float64                   `json:"subtotal"`
-	TotalWeight int                       `json:"total_weight"`
-	Rates       []service.RajaOngkirRate  `json:"rates"`
+	AddressID   uint                   `json:"address_id"`
+	Subtotal    float64                `json:"subtotal"`
+	TotalWeight int                    `json:"total_weight"`
+	Rates       []service.ShippingRate `json:"rates"`
 }
 
 func NewCheckoutHandler(checkoutService service.CheckoutService) *CheckoutHandler {
@@ -45,7 +84,7 @@ func NewCheckoutHandler(checkoutService service.CheckoutService) *CheckoutHandle
 
 // GetShippingRates godoc
 // @Summary Get available checkout couriers
-// @Description Calculate available courier and service options for the authenticated customer's current cart and selected shipping address
+// @Description Calculate available courier and service options for the authenticated customer's selected cart items and shipping address
 // @Tags Checkout
 // @Security BearerAuth
 // @Accept json
@@ -77,12 +116,15 @@ func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
 	}
 
 	result, err := handler.checkoutService.GetAvailableShippingRates(context.Request.Context(), customerID, service.ShippingRatesRequest{
-		AddressID: request.AddressID,
-		Couriers:  request.Couriers,
+		AddressID:           request.AddressID,
+		Couriers:            request.Couriers,
+		SelectedCartItemIDs: request.SelectedCartItemIDs,
 	})
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrCheckoutCartEmpty),
+			errors.Is(err, service.ErrCheckoutSelectedItemsEmpty),
+			errors.Is(err, service.ErrCheckoutSelectedItemNotFound),
 			errors.Is(err, service.ErrCheckoutOriginAreaMissing),
 			errors.Is(err, service.ErrCheckoutAreaLookupFailed),
 			errors.Is(err, service.ErrInvalidShippingRequest):
@@ -105,7 +147,7 @@ func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
 
 // Checkout godoc
 // @Summary Checkout current cart
-// @Description Validate the authenticated customer's address, cart, shipping rate, and Midtrans payment request, then create a pending transaction and clear the cart
+// @Description Validate the authenticated customer's address, selected cart items, shipping rate, and Midtrans payment request, then create a pending transaction and remove only the selected items from cart
 // @Tags Checkout
 // @Security BearerAuth
 // @Accept json
@@ -137,13 +179,17 @@ func (handler *CheckoutHandler) Checkout(context *gin.Context) {
 	}
 
 	transaction, err := handler.checkoutService.Checkout(context.Request.Context(), customerID, service.CheckoutRequest{
-		AddressID:      request.AddressID,
-		CourierName:    request.CourierName,
-		CourierService: request.CourierService,
+		AddressID:           request.AddressID,
+		CourierName:         request.CourierName,
+		CourierService:      request.CourierService,
+		SelectedCartItemIDs: request.SelectedCartItemIDs,
 	})
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrCheckoutCartEmpty),
+			errors.Is(err, service.ErrCheckoutSelectedItemsEmpty),
+			errors.Is(err, service.ErrCheckoutSelectedItemNotFound),
+			errors.Is(err, service.ErrCheckoutInsufficientStock),
 			errors.Is(err, service.ErrCheckoutOriginAreaMissing),
 			errors.Is(err, service.ErrCheckoutAreaLookupFailed),
 			errors.Is(err, service.ErrCheckoutRateNotFound),
@@ -157,5 +203,45 @@ func (handler *CheckoutHandler) Checkout(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusCreated, CheckoutResponse{Data: *transaction})
+	context.JSON(http.StatusCreated, CheckoutResponse{Data: toCheckoutData(transaction)})
+}
+
+func toCheckoutData(transaction *domain.Transaction) CheckoutData {
+	if transaction == nil {
+		return CheckoutData{}
+	}
+
+	return CheckoutData{
+		ID:                transaction.ID,
+		OrderID:           transaction.OrderID,
+		CustomerID:        transaction.CustomerID,
+		ShippingAddressID: transaction.ShippingAddressID,
+		TotalAmount:       transaction.TotalAmount,
+		ShippingCost:      transaction.ShippingCost,
+		CourierName:       transaction.CourierName,
+		CourierService:    transaction.CourierService,
+		TrackingNumber:    transaction.TrackingNumber,
+		Status:            transaction.Status,
+		ShippingStatus:    transaction.ShippingStatus,
+		SnapToken:         transaction.SnapToken,
+		CreatedAt:         transaction.CreatedAt,
+		UpdatedAt:         transaction.UpdatedAt,
+		ShippingAddress: CheckoutAddressSummary{
+			ID:                   transaction.ShippingAddress.ID,
+			Title:                transaction.ShippingAddress.Title,
+			RecipientName:        transaction.ShippingAddress.RecipientName,
+			PhoneNumber:          transaction.ShippingAddress.PhoneNumber,
+			Province:             transaction.ShippingAddress.Province,
+			City:                 transaction.ShippingAddress.City,
+			District:             transaction.ShippingAddress.District,
+			Village:              transaction.ShippingAddress.Village,
+			PostalCode:           transaction.ShippingAddress.PostalCode,
+			FullAddress:          transaction.ShippingAddress.FullAddress,
+			Latitude:             transaction.ShippingAddress.Latitude,
+			Longitude:            transaction.ShippingAddress.Longitude,
+			DestinationAreaID:    transaction.ShippingAddress.DestinationAreaID,
+			DestinationAreaLabel: transaction.ShippingAddress.DestinationAreaLabel,
+			IsPrimary:            transaction.ShippingAddress.IsPrimary,
+		},
+	}
 }

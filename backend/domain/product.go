@@ -11,6 +11,9 @@ type Product struct {
 	BasePrice    float64 `json:"base_price" gorm:"column:base_price"`
 	Stock        int     `json:"stock" gorm:"column:stock"`
 	Weight       int     `json:"weight" gorm:"column:weight"`
+	Length       int     `json:"length" gorm:"column:length"`
+	Width        int     `json:"width" gorm:"column:width"`
+	Height       int     `json:"height" gorm:"column:height"`
 	Description  string  `json:"description" gorm:"column:description"`
 	CoverImageID int     `json:"cover_image_id" gorm:"column:cover_image_id"`
 }

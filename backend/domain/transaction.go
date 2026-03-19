@@ -19,8 +19,9 @@ type Transaction struct {
 	CreatedAt      time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt      time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 
-	Customer        Customer        `json:"customer,omitempty" gorm:"foreignKey:CustomerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
-	ShippingAddress CustomerAddress `json:"shipping_address,omitempty" gorm:"foreignKey:ShippingAddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Customer        Customer          `json:"customer,omitempty" gorm:"foreignKey:CustomerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	ShippingAddress CustomerAddress   `json:"shipping_address,omitempty" gorm:"foreignKey:ShippingAddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Items           []TransactionItem `json:"items,omitempty" gorm:"foreignKey:TransactionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (Transaction) TableName() string {

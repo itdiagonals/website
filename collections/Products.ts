@@ -68,6 +68,33 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: 'length',
+      type: 'number',
+      required: true,
+      min: 1,
+      admin: {
+        description: 'Panjang produk dalam sentimeter',
+      },
+    },
+    {
+      name: 'width',
+      type: 'number',
+      required: true,
+      min: 1,
+      admin: {
+        description: 'Lebar produk dalam sentimeter',
+      },
+    },
+    {
+      name: 'height',
+      type: 'number',
+      required: true,
+      min: 1,
+      admin: {
+        description: 'Tinggi produk dalam sentimeter',
+      },
+    },
+    {
       name: 'stock',
       type: 'number',
       required: true,

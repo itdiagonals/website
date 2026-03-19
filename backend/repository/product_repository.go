@@ -14,6 +14,8 @@ type ProductRepository interface {
 	FindDetailByID(ctx context.Context, id int) (*domain.ProductDetail, error)
 	FindDetailBySlug(ctx context.Context, slug string) (*domain.ProductDetail, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Product, error)
+	DecreaseStockIfAvailable(ctx context.Context, productID int, quantity int) (bool, error)
+	IncreaseStock(ctx context.Context, productID int, quantity int) error
 }
 
 type productRepository struct {
@@ -34,7 +36,7 @@ func (repository *productRepository) FindAll(ctx context.Context, categorySlug s
 			Where("categories.slug = ?", categorySlug)
 	}
 
-	if err := query.Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, products.stock, products.weight, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
+	if err := query.Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, products.stock, products.weight, products.length, products.width, products.height, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
 		return nil, err
 	}
 
@@ -69,6 +71,33 @@ func (repository *productRepository) FindBySlug(ctx context.Context, slug string
 	return &product, nil
 }
 
+func (repository *productRepository) DecreaseStockIfAvailable(ctx context.Context, productID int, quantity int) (bool, error) {
+	if productID <= 0 || quantity <= 0 {
+		return false, nil
+	}
+
+	result := repository.db.WithContext(ctx).
+		Table("products").
+		Where("id = ? AND stock >= ?", productID, quantity).
+		Update("stock", gorm.Expr("stock - ?", quantity))
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return result.RowsAffected > 0, nil
+}
+
+func (repository *productRepository) IncreaseStock(ctx context.Context, productID int, quantity int) error {
+	if productID <= 0 || quantity <= 0 {
+		return nil
+	}
+
+	return repository.db.WithContext(ctx).
+		Table("products").
+		Where("id = ?", productID).
+		Update("stock", gorm.Expr("stock + ?", quantity)).Error
+}
+
 func (repository *productRepository) findDetail(ctx context.Context, condition string, value any) (*domain.ProductDetail, error) {
 	result := struct {
 		domain.ProductDetail
@@ -86,7 +115,7 @@ func (repository *productRepository) findDetail(ctx context.Context, condition s
 
 	err := repository.db.WithContext(ctx).
 		Table("products").
-		Select("products.id, products.name, products.slug, products.gender, products.base_price, products.stock, products.weight, products.description, products.detail_info, products.cover_image_id, media.url AS cover_image_url, media.alt AS cover_image_alt, categories.id AS category_id, categories.name AS category_name, categories.slug AS category_slug, seasons.id AS season_id, seasons.name AS season_name, seasons.slug AS season_slug, care_guides.id AS care_guide_id, care_guides.title AS care_guide_title, care_guides.instructions AS care_guide_instructions").
+		Select("products.id, products.name, products.slug, products.gender, products.base_price, products.stock, products.weight, products.length, products.width, products.height, products.description, products.detail_info, products.cover_image_id, media.url AS cover_image_url, media.alt AS cover_image_alt, categories.id AS category_id, categories.name AS category_name, categories.slug AS category_slug, seasons.id AS season_id, seasons.name AS season_name, seasons.slug AS season_slug, care_guides.id AS care_guide_id, care_guides.title AS care_guide_title, care_guides.instructions AS care_guide_instructions").
 		Joins("LEFT JOIN media ON media.id = products.cover_image_id").
 		Joins("LEFT JOIN categories ON categories.id = products.category_id").
 		Joins("LEFT JOIN seasons ON seasons.id = products.season_id").

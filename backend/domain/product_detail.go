@@ -35,6 +35,9 @@ type ProductDetail struct {
 	BasePrice       float64              `json:"base_price" gorm:"column:base_price"`
 	Stock           int                  `json:"stock" gorm:"column:stock"`
 	Weight          int                  `json:"weight" gorm:"column:weight"`
+	Length          int                  `json:"length" gorm:"column:length"`
+	Width           int                  `json:"width" gorm:"column:width"`
+	Height          int                  `json:"height" gorm:"column:height"`
 	Description     string               `json:"description" gorm:"column:description"`
 	DetailInfo      any                  `json:"detail_info" gorm:"-" swaggertype:"object"`
 	Category        ProductReference     `json:"category" gorm:"-"`

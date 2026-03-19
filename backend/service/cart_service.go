@@ -34,7 +34,9 @@ func (error *InsufficientStockError) Error() string {
 type CartService interface {
 	AddToCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
 	GetMyCart(context context.Context, customerID uint) (*domain.Cart, error)
+	RemoveFromCartByID(context context.Context, customerID uint, cartItemID uint) (*domain.Cart, error)
 	RemoveFromCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
+	UpdateQuantityByID(context context.Context, customerID uint, cartItemID uint, quantity int) (*domain.Cart, error)
 	UpdateQuantity(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
 }
 
@@ -205,6 +207,39 @@ func (service *cartService) RemoveFromCart(context context.Context, customerID u
 	return cart, nil
 }
 
+func (service *cartService) RemoveFromCartByID(context context.Context, customerID uint, cartItemID uint) (*domain.Cart, error) {
+	if customerID == 0 || cartItemID == 0 {
+		return nil, ErrInvalidCartItem
+	}
+
+	cart, err := service.cartRepository.GetCart(context, customerID)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredItems := make([]domain.CartItem, 0, len(cart.Items))
+	removed := false
+	for _, existingItem := range cart.Items {
+		if existingItem.ID == cartItemID {
+			removed = true
+			continue
+		}
+
+		filteredItems = append(filteredItems, existingItem)
+	}
+
+	if !removed {
+		return nil, ErrCartItemNotFound
+	}
+
+	cart.Items = filteredItems
+	if err := service.cartRepository.SaveCart(context, cart); err != nil {
+		return nil, err
+	}
+
+	return cart, nil
+}
+
 func (service *cartService) UpdateQuantity(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error) {
 	item.SelectedSize = strings.TrimSpace(item.SelectedSize)
 	item.SelectedColorName = strings.TrimSpace(item.SelectedColorName)
@@ -269,6 +304,80 @@ func (service *cartService) UpdateQuantity(context context.Context, customerID u
 	}
 
 	return cart, nil
+}
+
+func (service *cartService) UpdateQuantityByID(context context.Context, customerID uint, cartItemID uint, quantity int) (*domain.Cart, error) {
+	if customerID == 0 || cartItemID == 0 || quantity <= 0 {
+		return nil, ErrInvalidCartItem
+	}
+
+	cart, err := service.cartRepository.GetCart(context, customerID)
+	if err != nil {
+		return nil, err
+	}
+
+	itemIndex := findCartItemIndexByID(cart.Items, cartItemID)
+	if itemIndex == -1 {
+		return nil, ErrCartItemNotFound
+	}
+
+	targetItem := cart.Items[itemIndex]
+	detail, err := service.productRepository.FindDetailByID(context, targetItem.ProductID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrCartProductNotFound
+		}
+
+		return nil, err
+	}
+
+	if !isAvailableSize(detail.AvailableSizes, targetItem.SelectedSize) || !isAvailableColor(detail.AvailableColors, targetItem.SelectedColorName, targetItem.SelectedColorHex) {
+		return nil, ErrInvalidCartItem
+	}
+
+	totalQuantityForProduct := 0
+	for index, existingItem := range cart.Items {
+		if existingItem.ProductID != targetItem.ProductID {
+			continue
+		}
+
+		if index == itemIndex {
+			totalQuantityForProduct += quantity
+			continue
+		}
+
+		totalQuantityForProduct += existingItem.Quantity
+	}
+
+	if totalQuantityForProduct > detail.Stock {
+		return nil, &InsufficientStockError{Available: detail.Stock, Requested: totalQuantityForProduct}
+	}
+
+	cart.Items[itemIndex].ProductName = detail.Name
+	cart.Items[itemIndex].Gender = detail.Gender
+	cart.Items[itemIndex].ImageURL = detail.CoverImageURL
+	cart.Items[itemIndex].BasePrice = detail.BasePrice
+	cart.Items[itemIndex].AvailableStock = detail.Stock
+	cart.Items[itemIndex].StockSufficient = true
+	cart.Items[itemIndex].StockMessage = ""
+	cart.Items[itemIndex].Quantity = quantity
+	cart.Items[itemIndex].Subtotal = calculateSubtotal(detail.BasePrice, quantity)
+
+	if err := service.cartRepository.SaveCart(context, cart); err != nil {
+		return nil, err
+	}
+
+	return cart, nil
+}
+
+func findCartItemIndexByID(items []domain.CartItem, cartItemID uint) int {
+	for index, item := range items {
+		if item.ID == cartItemID {
+			return index
+		}
+	}
+
+	return -1
 }
 
 func isSameCartVariant(existing domain.CartItem, candidate domain.CartItem) bool {

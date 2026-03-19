@@ -40,12 +40,16 @@ Root `.env` is used by Next.js / Payload.
 - `ACCESS_TOKEN_SECRET`: access token signing secret
 - `BACKEND_GIN_MODE`: backend runtime mode
 - `BACKEND_TRUSTED_PROXIES`: trusted proxy allowlist for Gin
+- `BITESHIP_BASE_URL`: Biteship API base URL (default `https://api.biteship.com`)
+- `BITESHIP_API_KEY`: Biteship API key (`biteship_test...` or `biteship_live...`)
+- `BITESHIP_ORIGIN_AREA_ID`: fixed origin area id from Biteship Maps API
 
 Important:
 
 - For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable because Payload uses its own dedicated database.
 - For production, set `PAYLOAD_ENABLE_PUSH=false`.
 - The Go backend reads `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` from `backend/.env`.
+- Biteship Maps, Rates, and Tracking APIs are paid in both sandbox and production. Use caching and debounce in clients to reduce request volume.
 
 ## Local setup from zero
 
@@ -98,13 +102,7 @@ cd backend
 go run .
 ```
 
-7. Seed the Payload catalog database.
-
-```bash
-pnpm seed
-```
-
-8. Verify the backend product API.
+7. Verify the backend product API.
 
 ```powershell
 Invoke-RestMethod http://localhost:8080/api/v1/products
@@ -122,8 +120,8 @@ After the first bootstrap, normal local development is:
 
 Catalog behavior:
 
-- `pnpm seed` is only needed when you want to recreate starter catalog data.
 - create/update/delete in Payload is reflected immediately because the backend reads the Payload database directly.
+- shipping accuracy depends on product dimensions and weight in Payload (`length`, `width`, `height`, `weight`).
 
 ## Useful commands
 
@@ -163,12 +161,6 @@ Run backend migrations:
 ```bash
 cd backend
 go run ./cmd/migration
-```
-
-Seed catalog:
-
-```bash
-pnpm seed
 ```
 
 Lint frontend / Next code:
@@ -219,6 +211,5 @@ If ports are already occupied, stop the stale process or container first.
 If backend products return `null` or an empty list:
 
 1. make sure backend migrations were run
-2. make sure `pnpm seed` finished successfully
-3. make sure Payload schema has been pushed to `payload`
-4. make sure `backend/.env` points `PAYLOAD_DATABASE_URL` to `localhost:5432` and `BACKEND_DATABASE_URL` to `localhost:5433`
+2. make sure Payload schema has been pushed to `payload`
+3. make sure `backend/.env` points `PAYLOAD_DATABASE_URL` to `localhost:5432` and `BACKEND_DATABASE_URL` to `localhost:5433`
