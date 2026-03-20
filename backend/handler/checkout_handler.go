@@ -84,7 +84,7 @@ func NewCheckoutHandler(checkoutService service.CheckoutService) *CheckoutHandle
 
 // GetShippingRates godoc
 // @Summary Get available checkout couriers
-// @Description Calculate available courier and service options for the authenticated customer's selected cart items and shipping address
+// @Description Calculate Biteship courier and service options for the authenticated customer's selected cart items and shipping address
 // @Tags Checkout
 // @Security BearerAuth
 // @Accept json

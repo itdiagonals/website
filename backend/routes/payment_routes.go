@@ -12,8 +12,13 @@ func registerPaymentRoutes(api *gin.RouterGroup, backendDB *gorm.DB, payloadDB *
 	transactionRepository := repository.NewTransactionRepository(backendDB)
 	stockReservationRepository := repository.NewStockReservationRepository(backendDB)
 	productRepository := repository.NewProductRepository(payloadDB)
-	notificationService := service.NewMidtransNotificationService(transactionRepository, stockReservationRepository, productRepository)
+	shippingJobRepository := repository.NewShippingJobRepository(backendDB)
+	webhookEventRepository := repository.NewBiteshipWebhookEventRepository(backendDB)
+	notificationService := service.NewMidtransNotificationService(transactionRepository, stockReservationRepository, productRepository, shippingJobRepository)
 	notificationHandler := handler.NewMidtransNotificationHandler(notificationService)
+	biteshipWebhookService := service.NewBiteshipWebhookService(transactionRepository, webhookEventRepository)
+	biteshipWebhookHandler := handler.NewBiteshipWebhookHandler(biteshipWebhookService)
 
 	api.POST("/payments/midtrans/notification", notificationHandler.ReceiveNotification)
+	api.POST("/payments/biteship/notification", biteshipWebhookHandler.ReceiveNotification)
 }

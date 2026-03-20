@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -8,11 +9,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/config"
+	"github.com/itdiagonals/website/backend/repository"
 	"github.com/itdiagonals/website/backend/routes"
+	"github.com/itdiagonals/website/backend/service"
 
 	_ "github.com/itdiagonals/website/backend/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 )
 
 // @title Diagonals API
@@ -39,6 +43,8 @@ func main() {
 		log.Fatalf("failed to connect redis: %v", err)
 	}
 
+	startShippingJobWorker(config.DBBackend, config.DBPayload)
+
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
@@ -60,6 +66,28 @@ func main() {
 	if err := router.Run(":8080"); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
+}
+
+func startShippingJobWorker(backendDB *gorm.DB, payloadDB *gorm.DB) {
+	if backendDB == nil {
+		log.Printf("shipping worker disabled: invalid backend db")
+		return
+	}
+
+	if payloadDB == nil {
+		log.Printf("shipping worker disabled: invalid payload db")
+		return
+	}
+
+	transactionRepository := repository.NewTransactionRepository(backendDB)
+	productRepository := repository.NewProductRepository(payloadDB)
+	shippingJobRepository := repository.NewShippingJobRepository(backendDB)
+	shippingService := service.NewBiteshipService()
+	bookingService := service.NewShippingBookingService(transactionRepository, productRepository, shippingService)
+	worker := service.NewShippingJobWorker(shippingJobRepository, bookingService)
+
+	go worker.Start(context.Background())
+	log.Printf("shipping job worker started")
 }
 
 func getTrustedProxies() []string {

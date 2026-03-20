@@ -14,6 +14,7 @@
     "@payloadcms/plugin-cloud-storage": "^3.79.0",
     "@payloadcms/richtext-lexical": "^3.79.0",
     "@payloadcms/storage-s3": "^3.79.0",
+    "@payloadcms/ui": "3.79.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "graphql": "^16.13.1",

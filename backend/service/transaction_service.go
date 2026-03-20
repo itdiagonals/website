@@ -14,6 +14,7 @@ import (
 var (
 	ErrTransactionHistoryInvalidQuery = errors.New("invalid transaction history query")
 	ErrTransactionNotFound            = errors.New("transaction not found")
+	ErrTransactionTrackingUnavailable = errors.New("transaction tracking is not available")
 )
 
 type TransactionHistoryQuery struct {
@@ -61,11 +62,14 @@ type TransactionHistoryAddressSummary struct {
 }
 
 type TransactionHistoryDetailItem struct {
-	ID        uint    `json:"id"`
-	ProductID int     `json:"product_id"`
-	Quantity  int     `json:"quantity"`
-	Price     float64 `json:"price"`
-	Subtotal  float64 `json:"subtotal"`
+	ID                uint    `json:"id"`
+	ProductID         int     `json:"product_id"`
+	SelectedSize      string  `json:"selected_size"`
+	SelectedColorName string  `json:"selected_color_name"`
+	SelectedColorHex  string  `json:"selected_color_hex,omitempty"`
+	Quantity          int     `json:"quantity"`
+	Price             float64 `json:"price"`
+	Subtotal          float64 `json:"subtotal"`
 }
 
 type TransactionHistoryDetail struct {
@@ -90,14 +94,27 @@ type TransactionHistoryDetail struct {
 type TransactionHistoryService interface {
 	ListMyTransactions(ctx context.Context, customerID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error)
 	GetMyTransactionByOrderID(ctx context.Context, customerID uint, orderID string) (*TransactionHistoryDetail, error)
+	GetMyTransactionTracking(ctx context.Context, customerID uint, orderID string, refresh bool) (*ShippingTrackingResult, error)
 }
 
 type transactionHistoryService struct {
 	transactionRepository repository.TransactionRepository
+	shippingService       ShippingService
 }
 
-func NewTransactionHistoryService(transactionRepository repository.TransactionRepository) TransactionHistoryService {
-	return &transactionHistoryService{transactionRepository: transactionRepository}
+type ShippingTrackingResult struct {
+	OrderID         string                  `json:"order_id"`
+	BiteshipOrderID string                  `json:"biteship_order_id,omitempty"`
+	TrackingNumber  string                  `json:"tracking_number,omitempty"`
+	ShippingStatus  string                  `json:"shipping_status"`
+	RawStatus       string                  `json:"raw_status,omitempty"`
+	CourierName     string                  `json:"courier_name"`
+	CourierService  string                  `json:"courier_service"`
+	Events          []ShippingTrackingEvent `json:"events,omitempty"`
+}
+
+func NewTransactionHistoryService(transactionRepository repository.TransactionRepository, shippingService ShippingService) TransactionHistoryService {
+	return &transactionHistoryService{transactionRepository: transactionRepository, shippingService: shippingService}
 }
 
 func (service *transactionHistoryService) ListMyTransactions(ctx context.Context, customerID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error) {
@@ -170,11 +187,14 @@ func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.
 	mappedItems := make([]TransactionHistoryDetailItem, 0, len(transaction.Items))
 	for _, item := range transaction.Items {
 		mappedItems = append(mappedItems, TransactionHistoryDetailItem{
-			ID:        item.ID,
-			ProductID: item.ProductID,
-			Quantity:  item.Quantity,
-			Price:     item.Price,
-			Subtotal:  item.Price * float64(item.Quantity),
+			ID:                item.ID,
+			ProductID:         item.ProductID,
+			SelectedSize:      item.SelectedSize,
+			SelectedColorName: item.SelectedColor,
+			SelectedColorHex:  item.SelectedColorHex,
+			Quantity:          item.Quantity,
+			Price:             item.Price,
+			Subtotal:          item.Price * float64(item.Quantity),
 		})
 	}
 
@@ -239,4 +259,107 @@ func normalizeTransactionQuery(query TransactionHistoryQuery) (int, int, string,
 	default:
 		return 0, 0, "", ErrTransactionHistoryInvalidQuery
 	}
+}
+
+func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.Context, customerID uint, orderID string, refresh bool) (*ShippingTrackingResult, error) {
+	if customerID == 0 || strings.TrimSpace(orderID) == "" {
+		return nil, ErrTransactionHistoryInvalidQuery
+	}
+
+	transaction, err := service.transactionRepository.FindByCustomerAndOrderID(ctx, customerID, strings.TrimSpace(orderID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTransactionNotFound
+		}
+
+		return nil, err
+	}
+
+	if transaction == nil {
+		return nil, ErrTransactionNotFound
+	}
+
+	trackingNumber := strings.TrimSpace(transaction.TrackingNumber)
+	if trackingNumber == "" {
+		return nil, ErrTransactionTrackingUnavailable
+	}
+
+	result := &ShippingTrackingResult{
+		OrderID:         transaction.OrderID,
+		BiteshipOrderID: strings.TrimSpace(transaction.BiteshipOrderID),
+		TrackingNumber:  trackingNumber,
+		ShippingStatus:  strings.TrimSpace(transaction.ShippingStatus),
+		CourierName:     strings.TrimSpace(transaction.CourierName),
+		CourierService:  strings.TrimSpace(transaction.CourierService),
+	}
+
+	if !refresh || service.shippingService == nil {
+		if result.ShippingStatus == "" {
+			result.ShippingStatus = "pending"
+		}
+		return result, nil
+	}
+
+	tracking, err := service.shippingService.GetTrackingByWaybill(ctx, trackingNumber, transaction.CourierName)
+	if err != nil && isBiteshipWaybillNotFoundError(err) {
+		biteshipOrderID := strings.TrimSpace(transaction.BiteshipOrderID)
+		if biteshipOrderID != "" {
+			orderDetail, orderErr := service.shippingService.GetOrderByID(ctx, biteshipOrderID)
+			if orderErr == nil && orderDetail != nil {
+				latestTrackingNumber := strings.TrimSpace(orderDetail.TrackingNumber)
+				if latestTrackingNumber != "" && latestTrackingNumber != trackingNumber {
+					latestShippingStatus := chooseLatestShippingStatus(strings.TrimSpace(transaction.ShippingStatus), strings.TrimSpace(orderDetail.ShippingStatus))
+					if latestShippingStatus == "" {
+						latestShippingStatus = strings.TrimSpace(transaction.ShippingStatus)
+					}
+
+					if updateErr := service.transactionRepository.UpdateShippingByOrderID(ctx, transaction.OrderID, latestTrackingNumber, latestShippingStatus); updateErr != nil {
+						return nil, updateErr
+					}
+
+					trackingNumber = latestTrackingNumber
+					result.TrackingNumber = latestTrackingNumber
+					result.ShippingStatus = latestShippingStatus
+				}
+			}
+
+			tracking, err = service.shippingService.GetTrackingByWaybill(ctx, trackingNumber, transaction.CourierName)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if tracking == nil {
+		return result, nil
+	}
+
+	normalizedTrackingNumber := strings.TrimSpace(tracking.TrackingNumber)
+	if normalizedTrackingNumber == "" {
+		normalizedTrackingNumber = trackingNumber
+	}
+
+	normalizedShippingStatus := strings.TrimSpace(tracking.ShippingStatus)
+	if normalizedShippingStatus == "" {
+		normalizedShippingStatus = strings.TrimSpace(transaction.ShippingStatus)
+	}
+	normalizedShippingStatus = chooseLatestShippingStatus(strings.TrimSpace(transaction.ShippingStatus), normalizedShippingStatus)
+
+	if err := service.transactionRepository.UpdateShippingByOrderID(ctx, transaction.OrderID, normalizedTrackingNumber, normalizedShippingStatus); err != nil {
+		return nil, err
+	}
+
+	result.TrackingNumber = normalizedTrackingNumber
+	result.ShippingStatus = normalizedShippingStatus
+	result.RawStatus = strings.TrimSpace(tracking.RawStatus)
+	result.Events = tracking.Events
+
+	return result, nil
+}
+
+func isBiteshipWaybillNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return IsBiteshipErrorCode(err, "40003003")
 }

@@ -33,3 +33,59 @@ type ShippingRateItem struct {
 	Weight      int    `json:"weight"`
 	Quantity    int    `json:"quantity"`
 }
+
+type ShippingOrderItem struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Value       int64  `json:"value"`
+	Length      int    `json:"length"`
+	Width       int    `json:"width"`
+	Height      int    `json:"height"`
+	Weight      int    `json:"weight"`
+	Quantity    int    `json:"quantity"`
+}
+
+type CreateShippingOrderRequest struct {
+	ReferenceID             string              `json:"reference_id"`
+	CourierCompany          string              `json:"courier_company"`
+	CourierType             string              `json:"courier_type"`
+	DestinationContactName  string              `json:"destination_contact_name"`
+	DestinationContactPhone string              `json:"destination_contact_phone"`
+	DestinationAddress      string              `json:"destination_address"`
+	DestinationPostalCode   string              `json:"destination_postal_code"`
+	DestinationAreaID       string              `json:"destination_area_id,omitempty"`
+	OrderNote               string              `json:"order_note,omitempty"`
+	Items                   []ShippingOrderItem `json:"items"`
+}
+
+type CreateShippingOrderResponse struct {
+	OrderID        string `json:"order_id"`
+	ReferenceID    string `json:"reference_id,omitempty"`
+	TrackingNumber string `json:"tracking_number,omitempty"`
+	ShippingStatus string `json:"shipping_status,omitempty"`
+	CourierCompany string `json:"courier_company,omitempty"`
+	CourierType    string `json:"courier_type,omitempty"`
+}
+
+type ShippingTrackingEvent struct {
+	Status      string `json:"status"`
+	Description string `json:"description,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
+}
+
+type ShippingTrackingResponse struct {
+	TrackingNumber string                  `json:"tracking_number,omitempty"`
+	ShippingStatus string                  `json:"shipping_status,omitempty"`
+	RawStatus      string                  `json:"raw_status,omitempty"`
+	Events         []ShippingTrackingEvent `json:"events,omitempty"`
+}
+
+type ShippingOrderResponse struct {
+	OrderID        string `json:"order_id,omitempty"`
+	ReferenceID    string `json:"reference_id,omitempty"`
+	TrackingNumber string `json:"tracking_number,omitempty"`
+	ShippingStatus string `json:"shipping_status,omitempty"`
+	RawStatus      string `json:"raw_status,omitempty"`
+	CourierCompany string `json:"courier_company,omitempty"`
+	CourierType    string `json:"courier_type,omitempty"`
+}

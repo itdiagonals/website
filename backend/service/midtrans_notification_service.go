@@ -44,6 +44,7 @@ type midtransNotificationService struct {
 	transactionRepository      repository.TransactionRepository
 	stockReservationRepository repository.StockReservationRepository
 	productRepository          repository.ProductRepository
+	shippingJobRepository      repository.ShippingJobRepository
 	serverKey                  string
 }
 
@@ -51,6 +52,7 @@ func NewMidtransNotificationService(
 	transactionRepository repository.TransactionRepository,
 	stockReservationRepository repository.StockReservationRepository,
 	productRepository repository.ProductRepository,
+	shippingJobRepository repository.ShippingJobRepository,
 ) MidtransNotificationService {
 	config.LoadEnv()
 
@@ -58,6 +60,7 @@ func NewMidtransNotificationService(
 		transactionRepository:      transactionRepository,
 		stockReservationRepository: stockReservationRepository,
 		productRepository:          productRepository,
+		shippingJobRepository:      shippingJobRepository,
 		serverKey:                  strings.TrimSpace(os.Getenv("MIDTRANS_SERVER_KEY")),
 	}
 }
@@ -115,7 +118,15 @@ func (service *midtransNotificationService) HandleNotification(ctx context.Conte
 	}
 
 	if nextStatus == "paid" {
-		return service.stockReservationRepository.UpdateStatusByOrderID(ctx, payload.OrderID, stockReservationStatusReserved, stockReservationStatusConsumed)
+		if err := service.stockReservationRepository.UpdateStatusByOrderID(ctx, payload.OrderID, stockReservationStatusReserved, stockReservationStatusConsumed); err != nil {
+			return err
+		}
+
+		if service.shippingJobRepository == nil {
+			return nil
+		}
+
+		return service.shippingJobRepository.EnqueueBookShipment(ctx, payload.OrderID)
 	}
 
 	if nextStatus == "failed" {
@@ -189,7 +200,7 @@ func (service *midtransNotificationService) releaseStockForOrder(ctx context.Con
 	}
 
 	for _, reservation := range reservations {
-		if err := service.productRepository.IncreaseStock(ctx, reservation.ProductID, reservation.Quantity); err != nil {
+		if err := service.productRepository.IncreaseVariantStock(ctx, reservation.ProductID, reservation.SelectedSize, reservation.SelectedColorName, reservation.Quantity); err != nil {
 			return err
 		}
 	}

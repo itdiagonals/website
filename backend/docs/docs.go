@@ -738,7 +738,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Calculate available courier and service options for the authenticated customer's selected cart items and shipping address",
+                "description": "Calculate Biteship courier and service options for the authenticated customer's selected cart items and shipping address",
                 "consumes": [
                     "application/json"
                 ],
@@ -781,6 +781,76 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/biteship/notification": {
+            "post": {
+                "description": "Receive Biteship shipping webhook events and sync shipping status/tracking by Biteship order id. Empty body probe requests are acknowledged with 200 for webhook installation checks.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Receive Biteship shipping webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook secret (preferred header for real events)",
+                        "name": "X-Biteship-Webhook-Secret",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Webhook secret (fallback header for compatibility)",
+                        "name": "X-Webhook-Secret",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Webhook token passed in callback URL when custom headers are unavailable",
+                        "name": "token",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Biteship webhook payload; may be empty for installation probe",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "notification processed | notification ignored | notification probe acknowledged",
+                        "schema": {
+                            "$ref": "#/definitions/handler.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -1021,6 +1091,70 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.TransactionHistoryDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/transactions/{order_id}/tracking": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get current shipping tracking data for a paid transaction. By default data is served from local transaction state; use refresh=true to fetch latest status and events from Biteship API.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get my transaction tracking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Refresh tracking from Biteship",
+                        "name": "refresh",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TransactionTrackingResponse"
                         }
                     },
                     "400": {
@@ -1412,6 +1546,12 @@ const docTemplate = `{
                 "stock": {
                     "type": "integer"
                 },
+                "variants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ProductVariantStock"
+                    }
+                },
                 "weight": {
                     "type": "integer"
                 },
@@ -1453,6 +1593,20 @@ const docTemplate = `{
             "properties": {
                 "size": {
                     "type": "string"
+                }
+            }
+        },
+        "domain.ProductVariantStock": {
+            "type": "object",
+            "properties": {
+                "color_name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "stock": {
+                    "type": "integer"
                 }
             }
         },
@@ -2030,6 +2184,15 @@ const docTemplate = `{
                 "quantity": {
                     "type": "integer"
                 },
+                "selected_color_hex": {
+                    "type": "string"
+                },
+                "selected_color_name": {
+                    "type": "string"
+                },
+                "selected_size": {
+                    "type": "string"
+                },
                 "subtotal": {
                     "type": "number"
                 }
@@ -2103,6 +2266,46 @@ const docTemplate = `{
                 },
                 "total_pages": {
                     "type": "integer"
+                }
+            }
+        },
+        "handler.TransactionTrackingData": {
+            "type": "object",
+            "properties": {
+                "biteship_order_id": {
+                    "type": "string"
+                },
+                "courier_name": {
+                    "type": "string"
+                },
+                "courier_service": {
+                    "type": "string"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/service.ShippingTrackingEvent"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "raw_status": {
+                    "type": "string"
+                },
+                "shipping_status": {
+                    "type": "string"
+                },
+                "tracking_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TransactionTrackingResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/handler.TransactionTrackingData"
                 }
             }
         },
@@ -2237,6 +2440,20 @@ const docTemplate = `{
                 },
                 "shipping_fee": {
                     "type": "number"
+                }
+            }
+        },
+        "service.ShippingTrackingEvent": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         }

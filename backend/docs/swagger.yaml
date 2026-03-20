@@ -196,6 +196,10 @@ definitions:
         type: string
       stock:
         type: integer
+      variants:
+        items:
+          $ref: '#/definitions/domain.ProductVariantStock'
+        type: array
       weight:
         type: integer
       width:
@@ -223,6 +227,15 @@ definitions:
     properties:
       size:
         type: string
+    type: object
+  domain.ProductVariantStock:
+    properties:
+      color_name:
+        type: string
+      size:
+        type: string
+      stock:
+        type: integer
     type: object
   domain.Wilayah:
     properties:
@@ -607,6 +620,12 @@ definitions:
         type: integer
       quantity:
         type: integer
+      selected_color_hex:
+        type: string
+      selected_color_name:
+        type: string
+      selected_size:
+        type: string
       subtotal:
         type: number
     type: object
@@ -655,6 +674,32 @@ definitions:
         type: integer
       total_pages:
         type: integer
+    type: object
+  handler.TransactionTrackingData:
+    properties:
+      biteship_order_id:
+        type: string
+      courier_name:
+        type: string
+      courier_service:
+        type: string
+      events:
+        items:
+          $ref: '#/definitions/service.ShippingTrackingEvent'
+        type: array
+      order_id:
+        type: string
+      raw_status:
+        type: string
+      shipping_status:
+        type: string
+      tracking_number:
+        type: string
+    type: object
+  handler.TransactionTrackingResponse:
+    properties:
+      data:
+        $ref: '#/definitions/handler.TransactionTrackingData'
     type: object
   handler.UpdateAddressRequest:
     properties:
@@ -746,6 +791,15 @@ definitions:
         type: string
       shipping_fee:
         type: number
+    type: object
+  service.ShippingTrackingEvent:
+    properties:
+      description:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
     type: object
 info:
   contact: {}
@@ -1229,7 +1283,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Calculate available courier and service options for the authenticated
+      description: Calculate Biteship courier and service options for the authenticated
         customer's selected cart items and shipping address
       parameters:
       - description: Shipping rates payload
@@ -1266,6 +1320,56 @@ paths:
       summary: Get available checkout couriers
       tags:
       - Checkout
+  /api/v1/payments/biteship/notification:
+    post:
+      consumes:
+      - application/json
+      description: Receive Biteship shipping webhook events and sync shipping status/tracking
+        by Biteship order id. Empty body probe requests are acknowledged with 200
+        for webhook installation checks.
+      parameters:
+      - description: Webhook secret (preferred header for real events)
+        in: header
+        name: X-Biteship-Webhook-Secret
+        type: string
+      - description: Webhook secret (fallback header for compatibility)
+        in: header
+        name: X-Webhook-Secret
+        type: string
+      - description: Webhook token passed in callback URL when custom headers are
+          unavailable
+        in: query
+        name: token
+        type: string
+      - description: Biteship webhook payload; may be empty for installation probe
+        in: body
+        name: payload
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: notification processed | notification ignored | notification
+            probe acknowledged
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Receive Biteship shipping webhook
+      tags:
+      - Payments
   /api/v1/payments/midtrans/notification:
     post:
       consumes:
@@ -1434,6 +1538,49 @@ paths:
       security:
       - BearerAuth: []
       summary: Get my transaction detail
+      tags:
+      - Transactions
+  /api/v1/transactions/{order_id}/tracking:
+    get:
+      description: Get current shipping tracking data for a paid transaction. By default
+        data is served from local transaction state; use refresh=true to fetch latest
+        status and events from Biteship API.
+      parameters:
+      - description: Order ID
+        in: path
+        name: order_id
+        required: true
+        type: string
+      - description: Refresh tracking from Biteship
+        in: query
+        name: refresh
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.TransactionTrackingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my transaction tracking
       tags:
       - Transactions
   /api/v1/wilayah/search:

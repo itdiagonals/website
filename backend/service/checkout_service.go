@@ -224,24 +224,42 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID uint, r
 }
 
 func aggregateReservationItems(transactionItems []checkoutLineItem) []stockReservationItem {
-	byProduct := make(map[int]int, len(transactionItems))
+	byVariant := make(map[string]stockReservationItem, len(transactionItems))
 	for _, item := range transactionItems {
 		if item.TransactionItem.ProductID <= 0 || item.TransactionItem.Quantity <= 0 {
 			continue
 		}
 
-		byProduct[item.TransactionItem.ProductID] += item.TransactionItem.Quantity
+		selectedSize := strings.TrimSpace(item.TransactionItem.SelectedSize)
+		selectedColor := strings.TrimSpace(item.TransactionItem.SelectedColor)
+		if selectedSize == "" || selectedColor == "" {
+			continue
+		}
+
+		key := fmt.Sprintf("%d|%s|%s", item.TransactionItem.ProductID, strings.ToLower(selectedSize), strings.ToLower(selectedColor))
+		current, exists := byVariant[key]
+		if !exists {
+			current = stockReservationItem{
+				ProductID:         item.TransactionItem.ProductID,
+				SelectedSize:      selectedSize,
+				SelectedColorName: selectedColor,
+				SelectedColorHex:  strings.TrimSpace(item.TransactionItem.SelectedColorHex),
+			}
+		}
+
+		current.Quantity += item.TransactionItem.Quantity
+		byVariant[key] = current
 	}
 
-	productIDs := make([]int, 0, len(byProduct))
-	for productID := range byProduct {
-		productIDs = append(productIDs, productID)
+	keys := make([]string, 0, len(byVariant))
+	for key := range byVariant {
+		keys = append(keys, key)
 	}
-	sort.Ints(productIDs)
+	sort.Strings(keys)
 
-	items := make([]stockReservationItem, 0, len(productIDs))
-	for _, productID := range productIDs {
-		items = append(items, stockReservationItem{ProductID: productID, Quantity: byProduct[productID]})
+	items := make([]stockReservationItem, 0, len(keys))
+	for _, key := range keys {
+		items = append(items, byVariant[key])
 	}
 
 	return items
@@ -254,15 +272,17 @@ func (service *checkoutService) reserveStockForOrder(ctx context.Context, orderI
 
 	reservations := make([]domain.StockReservation, 0, len(items))
 	for _, item := range items {
-		if item.ProductID <= 0 || item.Quantity <= 0 {
+		if item.ProductID <= 0 || item.Quantity <= 0 || strings.TrimSpace(item.SelectedSize) == "" || strings.TrimSpace(item.SelectedColorName) == "" {
 			return ErrCheckoutInsufficientStock
 		}
 
 		reservations = append(reservations, domain.StockReservation{
-			OrderID:   orderID,
-			ProductID: item.ProductID,
-			Quantity:  item.Quantity,
-			Status:    stockReservationStatusReserved,
+			OrderID:           orderID,
+			ProductID:         item.ProductID,
+			SelectedSize:      item.SelectedSize,
+			SelectedColorName: item.SelectedColorName,
+			Quantity:          item.Quantity,
+			Status:            stockReservationStatusReserved,
 		})
 	}
 
@@ -272,7 +292,7 @@ func (service *checkoutService) reserveStockForOrder(ctx context.Context, orderI
 
 	reservedItems := make([]stockReservationItem, 0, len(items))
 	for _, item := range items {
-		ok, err := service.productRepository.DecreaseStockIfAvailable(ctx, item.ProductID, item.Quantity)
+		ok, err := service.productRepository.DecreaseVariantStockIfAvailable(ctx, item.ProductID, item.SelectedSize, item.SelectedColorName, item.Quantity)
 		if err != nil {
 			_ = service.rollbackReservedStock(ctx, reservedItems)
 			_ = service.stockReservationRepository.UpdateStatusByOrderID(ctx, orderID, stockReservationStatusReserved, stockReservationStatusReleased)
@@ -293,7 +313,7 @@ func (service *checkoutService) reserveStockForOrder(ctx context.Context, orderI
 
 func (service *checkoutService) rollbackReservedStock(ctx context.Context, items []stockReservationItem) error {
 	for _, item := range items {
-		if err := service.productRepository.IncreaseStock(ctx, item.ProductID, item.Quantity); err != nil {
+		if err := service.productRepository.IncreaseVariantStock(ctx, item.ProductID, item.SelectedSize, item.SelectedColorName, item.Quantity); err != nil {
 			return err
 		}
 	}
@@ -312,7 +332,7 @@ func (service *checkoutService) releaseStockForOrder(ctx context.Context, orderI
 	}
 
 	for _, reservation := range reservations {
-		if err := service.productRepository.IncreaseStock(ctx, reservation.ProductID, reservation.Quantity); err != nil {
+		if err := service.productRepository.IncreaseVariantStock(ctx, reservation.ProductID, reservation.SelectedSize, reservation.SelectedColorName, reservation.Quantity); err != nil {
 			return err
 		}
 	}
@@ -390,9 +410,12 @@ func (service *checkoutService) prepareCheckout(ctx context.Context, customerID 
 
 		transactionItems = append(transactionItems, checkoutLineItem{
 			TransactionItem: domain.TransactionItem{
-				ProductID: product.ID,
-				Quantity:  cartItem.Quantity,
-				Price:     product.BasePrice,
+				ProductID:        product.ID,
+				SelectedSize:     cartItem.SelectedSize,
+				SelectedColor:    cartItem.SelectedColorName,
+				SelectedColorHex: cartItem.SelectedColorHex,
+				Quantity:         cartItem.Quantity,
+				Price:            product.BasePrice,
 			},
 			ProductName: product.Name,
 		})

@@ -43,6 +43,21 @@ type TransactionHistoryDetailResponse struct {
 	Data TransactionHistoryDetail `json:"data"`
 }
 
+type TransactionTrackingResponse struct {
+	Data TransactionTrackingData `json:"data"`
+}
+
+type TransactionTrackingData struct {
+	OrderID         string                          `json:"order_id"`
+	BiteshipOrderID string                          `json:"biteship_order_id,omitempty"`
+	TrackingNumber  string                          `json:"tracking_number,omitempty"`
+	ShippingStatus  string                          `json:"shipping_status"`
+	RawStatus       string                          `json:"raw_status,omitempty"`
+	CourierName     string                          `json:"courier_name"`
+	CourierService  string                          `json:"courier_service"`
+	Events          []service.ShippingTrackingEvent `json:"events,omitempty"`
+}
+
 type TransactionHistoryDetail struct {
 	ID                uint                             `json:"id"`
 	OrderID           string                           `json:"order_id"`
@@ -81,11 +96,14 @@ type TransactionHistoryAddressSummary struct {
 }
 
 type TransactionHistoryDetailItem struct {
-	ID        uint    `json:"id"`
-	ProductID int     `json:"product_id"`
-	Quantity  int     `json:"quantity"`
-	Price     float64 `json:"price"`
-	Subtotal  float64 `json:"subtotal"`
+	ID                uint    `json:"id"`
+	ProductID         int     `json:"product_id"`
+	SelectedSize      string  `json:"selected_size"`
+	SelectedColorName string  `json:"selected_color_name"`
+	SelectedColorHex  string  `json:"selected_color_hex,omitempty"`
+	Quantity          int     `json:"quantity"`
+	Price             float64 `json:"price"`
+	Subtotal          float64 `json:"subtotal"`
 }
 
 func NewTransactionHandler(transactionService service.TransactionHistoryService) *TransactionHandler {
@@ -216,11 +234,14 @@ func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) 
 	responseItems := make([]TransactionHistoryDetailItem, 0, len(result.Items))
 	for _, item := range result.Items {
 		responseItems = append(responseItems, TransactionHistoryDetailItem{
-			ID:        item.ID,
-			ProductID: item.ProductID,
-			Quantity:  item.Quantity,
-			Price:     item.Price,
-			Subtotal:  item.Subtotal,
+			ID:                item.ID,
+			ProductID:         item.ProductID,
+			SelectedSize:      item.SelectedSize,
+			SelectedColorName: item.SelectedColorName,
+			SelectedColorHex:  item.SelectedColorHex,
+			Quantity:          item.Quantity,
+			Price:             item.Price,
+			Subtotal:          item.Subtotal,
 		})
 	}
 
@@ -257,5 +278,60 @@ func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) 
 			IsPrimary:            result.ShippingAddress.IsPrimary,
 		},
 		Items: responseItems,
+	}})
+}
+
+// GetMyTransactionTracking godoc
+// @Summary Get my transaction tracking
+// @Description Get current shipping tracking data for a paid transaction. By default data is served from local transaction state; use refresh=true to fetch latest status and events from Biteship API.
+// @Tags Transactions
+// @Security BearerAuth
+// @Produce json
+// @Param order_id path string true "Order ID"
+// @Param refresh query bool false "Refresh tracking from Biteship"
+// @Success 200 {object} handler.TransactionTrackingResponse
+// @Failure 400 {object} handler.ErrorResponse
+// @Failure 401 {object} handler.ErrorResponse
+// @Failure 404 {object} handler.ErrorResponse
+// @Failure 500 {object} handler.ErrorResponse
+// @Router /api/v1/transactions/{order_id}/tracking [get]
+func (handler *TransactionHandler) GetMyTransactionTracking(context *gin.Context) {
+	customerID, ok := getCurrentCustomerID(context)
+	if !ok {
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
+		return
+	}
+
+	orderID := strings.TrimSpace(context.Param("order_id"))
+	if orderID == "" {
+		context.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid order id"})
+		return
+	}
+
+	refresh := strings.EqualFold(strings.TrimSpace(context.Query("refresh")), "true")
+
+	result, err := handler.transactionService.GetMyTransactionTracking(context.Request.Context(), customerID, orderID, refresh)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrTransactionHistoryInvalidQuery),
+			errors.Is(err, service.ErrTransactionTrackingUnavailable):
+			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
+		case errors.Is(err, service.ErrTransactionNotFound):
+			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
+		default:
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		}
+		return
+	}
+
+	context.JSON(http.StatusOK, TransactionTrackingResponse{Data: TransactionTrackingData{
+		OrderID:         result.OrderID,
+		BiteshipOrderID: result.BiteshipOrderID,
+		TrackingNumber:  result.TrackingNumber,
+		ShippingStatus:  result.ShippingStatus,
+		RawStatus:       result.RawStatus,
+		CourierName:     result.CourierName,
+		CourierService:  result.CourierService,
+		Events:          result.Events,
 	}})
 }

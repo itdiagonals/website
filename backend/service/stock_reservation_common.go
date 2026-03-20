@@ -7,6 +7,9 @@ const (
 )
 
 type stockReservationItem struct {
-	ProductID int
-	Quantity  int
+	ProductID         int
+	SelectedSize      string
+	SelectedColorName string
+	SelectedColorHex  string
+	Quantity          int
 }
