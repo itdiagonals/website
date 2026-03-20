@@ -57,29 +57,30 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   container_name: website-backend
-  #   env_file:
-  #     - ./backend/.env
-  #   environment:
-  #     BACKEND_DATABASE_URL: postgresql://backend:backend@backend-postgres:5432/backend
-  #     REDIS_URL: redis://redis:6379
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     backend-postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ping >/dev/null 2>&1 || exit 1"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #   restart: unless-stopped
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: website-backend
+    env_file:
+      - ./backend/.env.docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend-postgres:
+        condition: service_healthy
+      payload-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ping >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
