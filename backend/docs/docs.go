@@ -66,7 +66,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Add a detailed shipping address for the authenticated customer, including village, district, city, province, postal code, and street details",
+                "description": "Add a detailed shipping address for the authenticated customer, including administrative regions, street details, and optional map pin metadata (latitude/longitude)",
                 "consumes": [
                     "application/json"
                 ],
@@ -103,6 +103,76 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/addresses/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an existing shipping address for the authenticated customer, including administrative regions, street details, and optional map pin metadata (latitude/longitude)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Addresses"
+                ],
+                "summary": "Update customer address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Customer address payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.UpdateAddressRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.CustomerAddressResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -473,7 +543,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update the quantity of a specific product variant in the authenticated customer's cart",
+                "description": "Update the quantity of a specific cart item in the authenticated customer's cart by cart item id",
                 "consumes": [
                     "application/json"
                 ],
@@ -542,7 +612,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Remove a specific product variant from the authenticated customer's Redis-backed shopping cart",
+                "description": "Remove a specific cart item from the authenticated customer's Redis-backed shopping cart by cart item id",
                 "consumes": [
                     "application/json"
                 ],
@@ -605,7 +675,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Validate the authenticated customer's address, cart, shipping rate, and Midtrans payment request, then create a pending transaction and clear the cart",
+                "description": "Validate the authenticated customer's address, selected cart items, shipping rate, and Midtrans payment request, then create a pending transaction and remove only the selected items from cart",
                 "consumes": [
                     "application/json"
                 ],
@@ -668,7 +738,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Calculate available courier and service options for the authenticated customer's current cart and selected shipping address",
+                "description": "Calculate Biteship courier and service options for the authenticated customer's selected cart items and shipping address",
                 "consumes": [
                     "application/json"
                 ],
@@ -711,6 +781,128 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/biteship/notification": {
+            "post": {
+                "description": "Receive Biteship shipping webhook events and sync shipping status/tracking by Biteship order id. Empty body probe requests are acknowledged with 200 for webhook installation checks.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Receive Biteship shipping webhook",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Webhook secret (preferred header for real events)",
+                        "name": "X-Biteship-Webhook-Secret",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Webhook secret (fallback header for compatibility)",
+                        "name": "X-Webhook-Secret",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Webhook token passed in callback URL when custom headers are unavailable",
+                        "name": "token",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Biteship webhook payload; may be empty for installation probe",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "notification processed | notification ignored | notification probe acknowledged",
+                        "schema": {
+                            "$ref": "#/definitions/handler.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/midtrans/notification": {
+            "post": {
+                "description": "Verify Midtrans signature and update transaction payment status by order id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Receive Midtrans payment notification",
+                "parameters": [
+                    {
+                        "description": "Midtrans notification payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.MidtransNotificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -788,6 +980,193 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/handler.ProductDetailResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/transactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get paginated transaction history for the authenticated customer, optionally filtered by payment status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get my transaction history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by payment status (pending|paid|failed|refunded)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TransactionHistoryListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/transactions/{order_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get one transaction detail by order id for the authenticated customer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get my transaction detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TransactionHistoryDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/transactions/{order_id}/tracking": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get current shipping tracking data for a paid transaction. By default data is served from local transaction state; use refresh=true to fetch latest status and events from Biteship API.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get my transaction tracking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "order_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Refresh tracking from Biteship",
+                        "name": "refresh",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.TransactionTrackingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "404": {
@@ -923,6 +1302,9 @@ const docTemplate = `{
                 "gender": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "image_url": {
                     "type": "string"
                 },
@@ -955,35 +1337,6 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Customer": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password_hash": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "domain.CustomerAddress": {
             "type": "object",
             "properties": {
@@ -995,6 +1348,12 @@ const docTemplate = `{
                 },
                 "customer_id": {
                     "type": "integer"
+                },
+                "destination_area_id": {
+                    "type": "string"
+                },
+                "destination_area_label": {
+                    "type": "string"
                 },
                 "district": {
                     "type": "string"
@@ -1008,7 +1367,22 @@ const docTemplate = `{
                 "is_primary": {
                     "type": "boolean"
                 },
+                "latitude": {
+                    "type": "number"
+                },
+                "location_source": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "map_provider": {
+                    "type": "string"
+                },
                 "phone_number": {
+                    "type": "string"
+                },
+                "place_id": {
                     "type": "string"
                 },
                 "postal_code": {
@@ -1052,7 +1426,13 @@ const docTemplate = `{
                 "gender": {
                     "type": "string"
                 },
+                "height": {
+                    "type": "integer"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "length": {
                     "type": "integer"
                 },
                 "name": {
@@ -1068,6 +1448,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "weight": {
+                    "type": "integer"
+                },
+                "width": {
                     "type": "integer"
                 }
             }
@@ -1142,7 +1525,13 @@ const docTemplate = `{
                 "gender": {
                     "type": "string"
                 },
+                "height": {
+                    "type": "integer"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "length": {
                     "type": "integer"
                 },
                 "name": {
@@ -1157,7 +1546,16 @@ const docTemplate = `{
                 "stock": {
                     "type": "integer"
                 },
+                "variants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ProductVariantStock"
+                    }
+                },
                 "weight": {
+                    "type": "integer"
+                },
+                "width": {
                     "type": "integer"
                 }
             }
@@ -1198,57 +1596,17 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Transaction": {
+        "domain.ProductVariantStock": {
             "type": "object",
             "properties": {
-                "courier_name": {
+                "color_name": {
                     "type": "string"
                 },
-                "courier_service": {
+                "size": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "customer": {
-                    "$ref": "#/definitions/domain.Customer"
-                },
-                "customer_id": {
+                "stock": {
                     "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "order_id": {
-                    "type": "string"
-                },
-                "shipping_address": {
-                    "$ref": "#/definitions/domain.CustomerAddress"
-                },
-                "shipping_address_id": {
-                    "type": "integer"
-                },
-                "shipping_cost": {
-                    "type": "number"
-                },
-                "shipping_status": {
-                    "type": "string"
-                },
-                "snap_token": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "Status stores the payment status, for example: pending, paid, failed.",
-                    "type": "string"
-                },
-                "total_amount": {
-                    "type": "number"
-                },
-                "tracking_number": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -1286,6 +1644,12 @@ const docTemplate = `{
                 "city": {
                     "type": "string"
                 },
+                "destination_area_id": {
+                    "type": "string"
+                },
+                "destination_area_label": {
+                    "type": "string"
+                },
                 "district": {
                     "type": "string"
                 },
@@ -1295,7 +1659,22 @@ const docTemplate = `{
                 "is_primary": {
                     "type": "boolean"
                 },
+                "latitude": {
+                    "type": "number"
+                },
+                "location_source": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "map_provider": {
+                    "type": "string"
+                },
                 "phone_number": {
+                    "type": "string"
+                },
+                "place_id": {
                     "type": "string"
                 },
                 "postal_code": {
@@ -1360,12 +1739,113 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.CheckoutAddressSummary": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "destination_area_id": {
+                    "type": "string"
+                },
+                "destination_area_label": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "full_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "postal_code": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "recipient_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "village": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.CheckoutData": {
+            "type": "object",
+            "properties": {
+                "courier_name": {
+                    "type": "string"
+                },
+                "courier_service": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "shipping_address": {
+                    "$ref": "#/definitions/handler.CheckoutAddressSummary"
+                },
+                "shipping_address_id": {
+                    "type": "integer"
+                },
+                "shipping_cost": {
+                    "type": "number"
+                },
+                "shipping_status": {
+                    "type": "string"
+                },
+                "snap_token": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "type": "number"
+                },
+                "tracking_number": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.CheckoutRequest": {
             "type": "object",
             "required": [
                 "address_id",
                 "courier_name",
-                "courier_service"
+                "courier_service",
+                "selected_cart_item_ids"
             ],
             "properties": {
                 "address_id": {
@@ -1376,6 +1856,13 @@ const docTemplate = `{
                 },
                 "courier_service": {
                     "type": "string"
+                },
+                "selected_cart_item_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -1383,7 +1870,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/domain.Transaction"
+                    "$ref": "#/definitions/handler.CheckoutData"
                 }
             }
         },
@@ -1425,6 +1912,42 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.MidtransNotificationRequest": {
+            "type": "object",
+            "required": [
+                "gross_amount",
+                "order_id",
+                "signature_key",
+                "status_code",
+                "transaction_status"
+            ],
+            "properties": {
+                "fraud_status": {
+                    "type": "string"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "payment_type": {
+                    "type": "string"
+                },
+                "signature_key": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "transaction_status": {
                     "type": "string"
                 }
             }
@@ -1471,22 +1994,11 @@ const docTemplate = `{
         "handler.RemoveFromCartRequest": {
             "type": "object",
             "required": [
-                "product_id",
-                "selected_color_name",
-                "selected_size"
+                "cart_item_id"
             ],
             "properties": {
-                "product_id": {
+                "cart_item_id": {
                     "type": "integer"
-                },
-                "selected_color_hex": {
-                    "type": "string"
-                },
-                "selected_color_name": {
-                    "type": "string"
-                },
-                "selected_size": {
-                    "type": "string"
                 }
             }
         },
@@ -1499,7 +2011,7 @@ const docTemplate = `{
                 "rates": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/service.RajaOngkirRate"
+                        "$ref": "#/definitions/service.ShippingRate"
                     }
                 },
                 "subtotal": {
@@ -1513,7 +2025,8 @@ const docTemplate = `{
         "handler.ShippingRatesRequest": {
             "type": "object",
             "required": [
-                "address_id"
+                "address_id",
+                "selected_cart_item_ids"
             ],
             "properties": {
                 "address_id": {
@@ -1521,6 +2034,13 @@ const docTemplate = `{
                 },
                 "couriers": {
                     "type": "string"
+                },
+                "selected_cart_item_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -1543,15 +2063,121 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.UpdateCartQuantityRequest": {
+        "handler.TransactionHistoryAddressSummary": {
             "type": "object",
-            "required": [
-                "product_id",
-                "quantity",
-                "selected_color_name",
-                "selected_size"
-            ],
             "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "destination_area_id": {
+                    "type": "string"
+                },
+                "destination_area_label": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "full_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "postal_code": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "recipient_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "village": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TransactionHistoryDetail": {
+            "type": "object",
+            "properties": {
+                "courier_name": {
+                    "type": "string"
+                },
+                "courier_service": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.TransactionHistoryDetailItem"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "shipping_address": {
+                    "$ref": "#/definitions/handler.TransactionHistoryAddressSummary"
+                },
+                "shipping_address_id": {
+                    "type": "integer"
+                },
+                "shipping_cost": {
+                    "type": "number"
+                },
+                "shipping_status": {
+                    "type": "string"
+                },
+                "snap_token": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "type": "number"
+                },
+                "tracking_number": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TransactionHistoryDetailItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
                 "product_id": {
                     "type": "integer"
                 },
@@ -1566,6 +2192,202 @@ const docTemplate = `{
                 },
                 "selected_size": {
                     "type": "string"
+                },
+                "subtotal": {
+                    "type": "number"
+                }
+            }
+        },
+        "handler.TransactionHistoryDetailResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/handler.TransactionHistoryDetail"
+                }
+            }
+        },
+        "handler.TransactionHistoryListItem": {
+            "type": "object",
+            "properties": {
+                "courier_name": {
+                    "type": "string"
+                },
+                "courier_service": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "shipping_cost": {
+                    "type": "number"
+                },
+                "shipping_status": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "handler.TransactionHistoryListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.TransactionHistoryListItem"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/handler.TransactionHistoryPagination"
+                }
+            }
+        },
+        "handler.TransactionHistoryPagination": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.TransactionTrackingData": {
+            "type": "object",
+            "properties": {
+                "biteship_order_id": {
+                    "type": "string"
+                },
+                "courier_name": {
+                    "type": "string"
+                },
+                "courier_service": {
+                    "type": "string"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/service.ShippingTrackingEvent"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "raw_status": {
+                    "type": "string"
+                },
+                "shipping_status": {
+                    "type": "string"
+                },
+                "tracking_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.TransactionTrackingResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/handler.TransactionTrackingData"
+                }
+            }
+        },
+        "handler.UpdateAddressRequest": {
+            "type": "object",
+            "required": [
+                "city",
+                "district",
+                "full_address",
+                "phone_number",
+                "postal_code",
+                "province",
+                "recipient_name",
+                "title",
+                "village"
+            ],
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "destination_area_id": {
+                    "type": "string"
+                },
+                "destination_area_label": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "full_address": {
+                    "type": "string"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "location_source": {
+                    "type": "string"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "map_provider": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "place_id": {
+                    "type": "string"
+                },
+                "postal_code": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "recipient_name": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "village": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.UpdateCartQuantityRequest": {
+            "type": "object",
+            "required": [
+                "cart_item_id",
+                "quantity"
+            ],
+            "properties": {
+                "cart_item_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
                 }
             }
         },
@@ -1580,9 +2402,18 @@ const docTemplate = `{
                 }
             }
         },
-        "service.RajaOngkirRate": {
+        "service.ShippingRate": {
             "type": "object",
             "properties": {
+                "available_collection_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "cash_on_delivery_fee": {
+                    "type": "number"
+                },
                 "courier_code": {
                     "type": "string"
                 },
@@ -1595,6 +2426,9 @@ const docTemplate = `{
                 "estimated_range": {
                     "type": "string"
                 },
+                "insurance_fee": {
+                    "type": "number"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -1602,6 +2436,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "service_name": {
+                    "type": "string"
+                },
+                "shipping_fee": {
+                    "type": "number"
+                }
+            }
+        },
+        "service.ShippingTrackingEvent": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

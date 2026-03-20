@@ -1,6 +1,7 @@
 package domain
 
 type CartItem struct {
+	ID                uint    `json:"id"`
 	ProductID         int     `json:"product_id"`
 	ProductName       string  `json:"product_name"`
 	Gender            string  `json:"gender"`

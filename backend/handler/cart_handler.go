@@ -22,18 +22,12 @@ type AddToCartRequest struct {
 }
 
 type RemoveFromCartRequest struct {
-	ProductID         int    `json:"product_id" binding:"required"`
-	SelectedSize      string `json:"selected_size" binding:"required"`
-	SelectedColorName string `json:"selected_color_name" binding:"required"`
-	SelectedColorHex  string `json:"selected_color_hex"`
+	CartItemID uint `json:"cart_item_id" binding:"required,gt=0"`
 }
 
 type UpdateCartQuantityRequest struct {
-	ProductID         int    `json:"product_id" binding:"required"`
-	Quantity          int    `json:"quantity" binding:"required"`
-	SelectedSize      string `json:"selected_size" binding:"required"`
-	SelectedColorName string `json:"selected_color_name" binding:"required"`
-	SelectedColorHex  string `json:"selected_color_hex"`
+	CartItemID uint `json:"cart_item_id" binding:"required,gt=0"`
+	Quantity   int  `json:"quantity" binding:"required,gt=0"`
 }
 
 type CartResponse struct {
@@ -105,7 +99,7 @@ func (handler *CartHandler) AddToCart(context *gin.Context) {
 
 // RemoveFromCart godoc
 // @Summary Remove item from cart
-// @Description Remove a specific product variant from the authenticated customer's Redis-backed shopping cart
+// @Description Remove a specific cart item from the authenticated customer's Redis-backed shopping cart by cart item id
 // @Tags Cart
 // @Security BearerAuth
 // @Accept json
@@ -136,12 +130,8 @@ func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
 		return
 	}
 
-	cart, err := handler.cartService.RemoveFromCart(context.Request.Context(), typedCustomerID, domain.CartItem{
-		ProductID:         request.ProductID,
-		SelectedSize:      request.SelectedSize,
-		SelectedColorName: request.SelectedColorName,
-		SelectedColorHex:  request.SelectedColorHex,
-	})
+	cart, err := handler.cartService.RemoveFromCartByID(context.Request.Context(), typedCustomerID, request.CartItemID)
+
 	if err != nil {
 		switch err {
 		case service.ErrInvalidCartItem:
@@ -159,7 +149,7 @@ func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
 
 // UpdateQuantity godoc
 // @Summary Update cart item quantity
-// @Description Update the quantity of a specific product variant in the authenticated customer's cart
+// @Description Update the quantity of a specific cart item in the authenticated customer's cart by cart item id
 // @Tags Cart
 // @Security BearerAuth
 // @Accept json
@@ -191,13 +181,8 @@ func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
 		return
 	}
 
-	cart, err := handler.cartService.UpdateQuantity(context.Request.Context(), typedCustomerID, domain.CartItem{
-		ProductID:         request.ProductID,
-		Quantity:          request.Quantity,
-		SelectedSize:      request.SelectedSize,
-		SelectedColorName: request.SelectedColorName,
-		SelectedColorHex:  request.SelectedColorHex,
-	})
+	cart, err := handler.cartService.UpdateQuantityByID(context.Request.Context(), typedCustomerID, request.CartItemID, request.Quantity)
+
 	if err != nil {
 		var insufficientStockError *service.InsufficientStockError
 		if errors.As(err, &insufficientStockError) {
@@ -206,7 +191,7 @@ func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
 		}
 
 		switch err {
-		case service.ErrInvalidCartItem, service.ErrCartProductNotFound:
+		case service.ErrInvalidCartItem:
 			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
 		case service.ErrCartItemNotFound:
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})

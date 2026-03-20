@@ -12,6 +12,8 @@ type Transaction struct {
 	CourierName       string  `json:"courier_name" gorm:"column:courier_name;type:varchar(100);not null"`
 	CourierService    string  `json:"courier_service" gorm:"column:courier_service;type:varchar(100);not null"`
 	TrackingNumber    string  `json:"tracking_number" gorm:"column:tracking_number;type:varchar(100)"`
+	BiteshipOrderID   string  `json:"biteship_order_id" gorm:"column:biteship_order_id;type:varchar(100);index"`
+	BiteshipReference string  `json:"biteship_reference_id" gorm:"column:biteship_reference_id;type:varchar(120);index"`
 	// Status stores the payment status, for example: pending, paid, failed.
 	Status         string    `json:"status" gorm:"column:status;type:varchar(50);not null"`
 	ShippingStatus string    `json:"shipping_status" gorm:"column:shipping_status;type:varchar(50);not null;default:'pending'"`
@@ -19,8 +21,9 @@ type Transaction struct {
 	CreatedAt      time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt      time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 
-	Customer        Customer        `json:"customer,omitempty" gorm:"foreignKey:CustomerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
-	ShippingAddress CustomerAddress `json:"shipping_address,omitempty" gorm:"foreignKey:ShippingAddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Customer        Customer          `json:"customer,omitempty" gorm:"foreignKey:CustomerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	ShippingAddress CustomerAddress   `json:"shipping_address,omitempty" gorm:"foreignKey:ShippingAddressID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Items           []TransactionItem `json:"items,omitempty" gorm:"foreignKey:TransactionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (Transaction) TableName() string {

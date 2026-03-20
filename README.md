@@ -20,12 +20,13 @@ Make sure the following are installed locally:
 - Node.js 20+
 - pnpm
 - Docker Desktop
+- make (GNU Make)
 
 Go 1.25+ is only needed if you want to run the backend outside Docker.
 
 ## Environment files
 
-There are two env files used in local development.
+There are three env files in this repository, but Docker-first local development mainly uses two of them.
 
 Root `.env` is used by Next.js / Payload.
 
@@ -34,154 +35,163 @@ Root `.env` is used by Next.js / Payload.
 - `REDIS_URL`: Redis connection for local stack
 - `S3_*`: MinIO / object storage settings
 
-`backend/.env` is used by the Go backend.
+`backend/.env` is only used when running backend directly on host (`go run .`).
+
+`backend/.env.docker` is used when running backend in Docker (`make up`, `make updb`, `make upb`).
+
+Before running Docker stack, create `backend/.env.docker` from the template:
+
+```bash
+cp backend/.env.example backend/.env.docker
+```
+
+PowerShell alternative:
+
+```powershell
+Copy-Item backend/.env.example backend/.env.docker
+```
+
+Then adjust values as needed.
+
+`backend/.env.docker` should include at least:
 
 - `REFRESH_TOKEN_SECRET`: refresh token signing secret
 - `ACCESS_TOKEN_SECRET`: access token signing secret
 - `BACKEND_GIN_MODE`: backend runtime mode
 - `BACKEND_TRUSTED_PROXIES`: trusted proxy allowlist for Gin
+- `BITESHIP_BASE_URL`: Biteship API base URL (default `https://api.biteship.com`)
+- `BITESHIP_API_KEY`: Biteship API key (`biteship_test...` or `biteship_live...`)
+- `BITESHIP_ORIGIN_AREA_ID`: fixed origin area id from Biteship Maps API
 
 Important:
 
 - For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable because Payload uses its own dedicated database.
 - For production, set `PAYLOAD_ENABLE_PUSH=false`.
-- The Go backend reads `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` from `backend/.env`.
+- In Docker mode, the Go backend reads `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` from `backend/.env.docker`.
+- Biteship Maps, Rates, and Tracking APIs are paid in both sandbox and production. Use caching and debounce in clients to reduce request volume.
 
 ## Local setup from zero
 
-Follow these steps in order.
+Follow these steps in order (Docker Compose only).
 
-1. Install JavaScript dependencies.
+1. Create Docker backend env file.
 
 ```bash
-pnpm install
+cp backend/.env.example backend/.env.docker
 ```
 
 2. Clean old Docker state if you are coming from the previous shared-database setup.
 
 ```bash
-docker compose down -v
+make downv
 ```
 
-3. Start the local infrastructure.
+3. Start all services with Docker Compose.
 
 ```bash
-docker compose up -d payload-postgres backend-postgres redis minio minio-init
+make updb
 ```
 
-This starts:
+This command builds and runs the stack in detached mode:
 
 - Payload Postgres on `localhost:5432`
 - Backend Postgres on `localhost:5433`
+- Backend API on `localhost:8080`
 - Redis on `localhost:6379`
 - MinIO on `localhost:9000`
 
-4. In a separate terminal, start Next.js / Payload.
+Backend migrations run automatically when the backend container starts.
 
-```bash
-pnpm dev
-```
-
-The app runs on `http://localhost:3000`.
-
-5. In another terminal, run backend migrations.
-
-```bash
-cd backend
-go run ./cmd/migration
-```
-
-6. Start the backend locally.
-
-```bash
-cd backend
-go run .
-```
-
-7. Seed the Payload catalog database.
-
-```bash
-pnpm seed
-```
-
-8. Verify the backend product API.
+4. Verify backend API is reachable.
 
 ```powershell
-Invoke-RestMethod http://localhost:8080/api/v1/products
+Invoke-RestMethod http://localhost:8080/ping
 ```
 
-If setup is healthy, you should receive product data read directly from the Payload database.
+5. Stop all services.
+
+```bash
+make down
+```
+
+Optional (full reset including volumes/data):
+
+```bash
+make downv
+```
 
 ## Daily development flow
 
-After the first bootstrap, normal local development is:
+After initial setup, normal daily flow is:
 
-1. `docker compose up -d`
-2. start Next.js / Payload: `pnpm dev`
-3. start backend locally from `backend/`: `go run .`
+1. `make updb`
+2. `make down`
 
 Catalog behavior:
 
-- `pnpm seed` is only needed when you want to recreate starter catalog data.
 - create/update/delete in Payload is reflected immediately because the backend reads the Payload database directly.
+- shipping accuracy depends on product dimensions and weight in Payload (`length`, `width`, `height`, `weight`).
 
 ## Useful commands
 
-Start infrastructure:
+See all available targets:
 
 ```bash
-docker compose up -d --remove-orphans
+make help
 ```
 
-Stop infrastructure:
+Start all services with build (detached):
 
 ```bash
-docker compose down
+make updb
+```
+
+Start all services (foreground):
+
+```bash
+make up
+```
+
+Follow logs:
+
+```bash
+make logs
+```
+
+Stop all services:
+
+```bash
+make down
 ```
 
 Hard reset local data:
 
 ```bash
-docker compose down -v
+make downv
 ```
 
-Start Next.js / Payload:
+Open backend container shell:
 
 ```bash
-pnpm dev
+make shell
 ```
 
-Start backend locally:
+Open backend database psql:
 
 ```bash
-cd backend
-go run .
+make db
 ```
 
-Run backend migrations:
+Build containers:
 
 ```bash
-cd backend
-go run ./cmd/migration
-```
-
-Seed catalog:
-
-```bash
-pnpm seed
-```
-
-Lint frontend / Next code:
-
-```bash
-pnpm lint
+make build
 ```
 
 Compile-test backend packages:
 
 ```bash
-cd backend
-go test ./...
+make backend-test
 ```
 
 ## Customer auth model
@@ -208,17 +218,10 @@ Before production deployment, make sure all of the following are done:
 
 ## Troubleshooting
 
-If `pnpm dev` fails with a lock error:
-
-```powershell
-if (Test-Path .next\dev\lock) { Remove-Item .next\dev\lock -Force }
-```
-
 If ports are already occupied, stop the stale process or container first.
 
 If backend products return `null` or an empty list:
 
-1. make sure backend migrations were run
-2. make sure `pnpm seed` finished successfully
-3. make sure Payload schema has been pushed to `payload`
-4. make sure `backend/.env` points `PAYLOAD_DATABASE_URL` to `localhost:5432` and `BACKEND_DATABASE_URL` to `localhost:5433`
+1. make sure containers are healthy (`make ps` and `make logs`)
+2. make sure Payload schema has been pushed to `payload`
+3. make sure `backend/.env.docker` points `PAYLOAD_DATABASE_URL` to `payload-postgres:5432` and `BACKEND_DATABASE_URL` to `backend-postgres:5432`

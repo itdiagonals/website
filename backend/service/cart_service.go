@@ -34,7 +34,9 @@ func (error *InsufficientStockError) Error() string {
 type CartService interface {
 	AddToCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
 	GetMyCart(context context.Context, customerID uint) (*domain.Cart, error)
+	RemoveFromCartByID(context context.Context, customerID uint, cartItemID uint) (*domain.Cart, error)
 	RemoveFromCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
+	UpdateQuantityByID(context context.Context, customerID uint, cartItemID uint, quantity int) (*domain.Cart, error)
 	UpdateQuantity(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
 }
 
@@ -77,22 +79,27 @@ func (service *cartService) AddToCart(context context.Context, customerID uint, 
 		return nil, err
 	}
 
-	totalQuantityForProduct := item.Quantity
+	variantAvailableStock, variantFound := getVariantAvailableStock(detail, item.SelectedSize, item.SelectedColorName)
+	if !variantFound {
+		return nil, ErrInvalidCartItem
+	}
+
+	totalQuantityForVariant := item.Quantity
 	for _, existingItem := range cart.Items {
-		if existingItem.ProductID == item.ProductID {
-			totalQuantityForProduct += existingItem.Quantity
+		if isSameCartVariant(existingItem, item) {
+			totalQuantityForVariant += existingItem.Quantity
 		}
 	}
 
-	if totalQuantityForProduct > detail.Stock {
-		return nil, &InsufficientStockError{Available: detail.Stock, Requested: totalQuantityForProduct}
+	if totalQuantityForVariant > variantAvailableStock {
+		return nil, &InsufficientStockError{Available: variantAvailableStock, Requested: totalQuantityForVariant}
 	}
 
 	item.ProductName = detail.Name
 	item.Gender = detail.Gender
 	item.ImageURL = detail.CoverImageURL
 	item.BasePrice = detail.BasePrice
-	item.AvailableStock = detail.Stock
+	item.AvailableStock = variantAvailableStock
 	item.StockSufficient = true
 	item.Subtotal = calculateSubtotal(detail.BasePrice, item.Quantity)
 
@@ -140,10 +147,15 @@ func (service *cartService) GetMyCart(context context.Context, customerID uint) 
 			continue
 		}
 
-		totalQuantityForProduct := 0
-		for _, item := range cart.Items {
-			if item.ProductID == cart.Items[index].ProductID {
-				totalQuantityForProduct += item.Quantity
+		variantAvailableStock, variantFound := getVariantAvailableStock(detail, cart.Items[index].SelectedSize, cart.Items[index].SelectedColorName)
+		totalQuantityForVariant := cart.Items[index].Quantity
+		for itemIndex, item := range cart.Items {
+			if itemIndex == index {
+				continue
+			}
+
+			if isSameCartVariant(item, cart.Items[index]) {
+				totalQuantityForVariant += item.Quantity
 			}
 		}
 
@@ -151,13 +163,15 @@ func (service *cartService) GetMyCart(context context.Context, customerID uint) 
 		cart.Items[index].Gender = detail.Gender
 		cart.Items[index].ImageURL = detail.CoverImageURL
 		cart.Items[index].BasePrice = detail.BasePrice
-		cart.Items[index].AvailableStock = detail.Stock
-		cart.Items[index].StockSufficient = totalQuantityForProduct <= detail.Stock
+		cart.Items[index].AvailableStock = variantAvailableStock
+		cart.Items[index].StockSufficient = variantFound && totalQuantityForVariant <= variantAvailableStock
 		if !cart.Items[index].StockSufficient {
-			if detail.Stock <= 0 {
+			if !variantFound {
+				cart.Items[index].StockMessage = "selected variant is unavailable"
+			} else if variantAvailableStock <= 0 {
 				cart.Items[index].StockMessage = "stock is out"
 			} else {
-				cart.Items[index].StockMessage = fmt.Sprintf("stock is not enough, available %d item(s)", detail.Stock)
+				cart.Items[index].StockMessage = fmt.Sprintf("stock is not enough, available %d item(s)", variantAvailableStock)
 			}
 		} else {
 			cart.Items[index].StockMessage = ""
@@ -205,6 +219,39 @@ func (service *cartService) RemoveFromCart(context context.Context, customerID u
 	return cart, nil
 }
 
+func (service *cartService) RemoveFromCartByID(context context.Context, customerID uint, cartItemID uint) (*domain.Cart, error) {
+	if customerID == 0 || cartItemID == 0 {
+		return nil, ErrInvalidCartItem
+	}
+
+	cart, err := service.cartRepository.GetCart(context, customerID)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredItems := make([]domain.CartItem, 0, len(cart.Items))
+	removed := false
+	for _, existingItem := range cart.Items {
+		if existingItem.ID == cartItemID {
+			removed = true
+			continue
+		}
+
+		filteredItems = append(filteredItems, existingItem)
+	}
+
+	if !removed {
+		return nil, ErrCartItemNotFound
+	}
+
+	cart.Items = filteredItems
+	if err := service.cartRepository.SaveCart(context, cart); err != nil {
+		return nil, err
+	}
+
+	return cart, nil
+}
+
 func (service *cartService) UpdateQuantity(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error) {
 	item.SelectedSize = strings.TrimSpace(item.SelectedSize)
 	item.SelectedColorName = strings.TrimSpace(item.SelectedColorName)
@@ -227,22 +274,27 @@ func (service *cartService) UpdateQuantity(context context.Context, customerID u
 		return nil, ErrInvalidCartItem
 	}
 
+	variantAvailableStock, variantFound := getVariantAvailableStock(detail, item.SelectedSize, item.SelectedColorName)
+	if !variantFound {
+		return nil, ErrInvalidCartItem
+	}
+
 	cart, err := service.cartRepository.GetCart(context, customerID)
 	if err != nil {
 		return nil, err
 	}
 
 	itemIndex := -1
-	totalQuantityForProduct := 0
+	totalQuantityForVariant := 0
 	for index, existingItem := range cart.Items {
-		if existingItem.ProductID == item.ProductID {
-			if isSameCartVariant(existingItem, item) {
+		if isSameCartVariant(existingItem, item) {
+			if itemIndex == -1 {
 				itemIndex = index
-				totalQuantityForProduct += item.Quantity
+				totalQuantityForVariant += item.Quantity
 				continue
 			}
 
-			totalQuantityForProduct += existingItem.Quantity
+			totalQuantityForVariant += existingItem.Quantity
 		}
 	}
 
@@ -250,15 +302,15 @@ func (service *cartService) UpdateQuantity(context context.Context, customerID u
 		return nil, ErrCartItemNotFound
 	}
 
-	if totalQuantityForProduct > detail.Stock {
-		return nil, &InsufficientStockError{Available: detail.Stock, Requested: totalQuantityForProduct}
+	if totalQuantityForVariant > variantAvailableStock {
+		return nil, &InsufficientStockError{Available: variantAvailableStock, Requested: totalQuantityForVariant}
 	}
 
 	cart.Items[itemIndex].ProductName = detail.Name
 	cart.Items[itemIndex].Gender = detail.Gender
 	cart.Items[itemIndex].ImageURL = detail.CoverImageURL
 	cart.Items[itemIndex].BasePrice = detail.BasePrice
-	cart.Items[itemIndex].AvailableStock = detail.Stock
+	cart.Items[itemIndex].AvailableStock = variantAvailableStock
 	cart.Items[itemIndex].StockSufficient = true
 	cart.Items[itemIndex].StockMessage = ""
 	cart.Items[itemIndex].Quantity = item.Quantity
@@ -269,6 +321,85 @@ func (service *cartService) UpdateQuantity(context context.Context, customerID u
 	}
 
 	return cart, nil
+}
+
+func (service *cartService) UpdateQuantityByID(context context.Context, customerID uint, cartItemID uint, quantity int) (*domain.Cart, error) {
+	if customerID == 0 || cartItemID == 0 || quantity <= 0 {
+		return nil, ErrInvalidCartItem
+	}
+
+	cart, err := service.cartRepository.GetCart(context, customerID)
+	if err != nil {
+		return nil, err
+	}
+
+	itemIndex := findCartItemIndexByID(cart.Items, cartItemID)
+	if itemIndex == -1 {
+		return nil, ErrCartItemNotFound
+	}
+
+	targetItem := cart.Items[itemIndex]
+	detail, err := service.productRepository.FindDetailByID(context, targetItem.ProductID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrCartProductNotFound
+		}
+
+		return nil, err
+	}
+
+	if !isAvailableSize(detail.AvailableSizes, targetItem.SelectedSize) || !isAvailableColor(detail.AvailableColors, targetItem.SelectedColorName, targetItem.SelectedColorHex) {
+		return nil, ErrInvalidCartItem
+	}
+
+	variantAvailableStock, variantFound := getVariantAvailableStock(detail, targetItem.SelectedSize, targetItem.SelectedColorName)
+	if !variantFound {
+		return nil, ErrInvalidCartItem
+	}
+
+	totalQuantityForVariant := 0
+	for index, existingItem := range cart.Items {
+		if !isSameCartVariant(existingItem, targetItem) {
+			continue
+		}
+
+		if index == itemIndex {
+			totalQuantityForVariant += quantity
+			continue
+		}
+
+		totalQuantityForVariant += existingItem.Quantity
+	}
+
+	if totalQuantityForVariant > variantAvailableStock {
+		return nil, &InsufficientStockError{Available: variantAvailableStock, Requested: totalQuantityForVariant}
+	}
+
+	cart.Items[itemIndex].ProductName = detail.Name
+	cart.Items[itemIndex].Gender = detail.Gender
+	cart.Items[itemIndex].ImageURL = detail.CoverImageURL
+	cart.Items[itemIndex].BasePrice = detail.BasePrice
+	cart.Items[itemIndex].AvailableStock = variantAvailableStock
+	cart.Items[itemIndex].StockSufficient = true
+	cart.Items[itemIndex].StockMessage = ""
+	cart.Items[itemIndex].Quantity = quantity
+	cart.Items[itemIndex].Subtotal = calculateSubtotal(detail.BasePrice, quantity)
+
+	if err := service.cartRepository.SaveCart(context, cart); err != nil {
+		return nil, err
+	}
+
+	return cart, nil
+}
+
+func findCartItemIndexByID(items []domain.CartItem, cartItemID uint) int {
+	for index, item := range items {
+		if item.ID == cartItemID {
+			return index
+		}
+	}
+
+	return -1
 }
 
 func isSameCartVariant(existing domain.CartItem, candidate domain.CartItem) bool {
@@ -305,6 +436,30 @@ func isAvailableColor(colors []domain.ProductColorOption, colorName string, colo
 	}
 
 	return false
+}
+
+func getVariantAvailableStock(detail *domain.ProductDetail, selectedSize string, selectedColorName string) (int, bool) {
+	if detail == nil {
+		return 0, false
+	}
+
+	normalizedSize := strings.ToLower(strings.TrimSpace(selectedSize))
+	normalizedColor := strings.ToLower(strings.TrimSpace(selectedColorName))
+	if normalizedSize == "" || normalizedColor == "" {
+		return 0, false
+	}
+
+	if len(detail.Variants) == 0 {
+		return detail.Stock, true
+	}
+
+	for _, variant := range detail.Variants {
+		if strings.ToLower(strings.TrimSpace(variant.Size)) == normalizedSize && strings.ToLower(strings.TrimSpace(variant.ColorName)) == normalizedColor {
+			return variant.Stock, true
+		}
+	}
+
+	return 0, false
 }
 
 func calculateSubtotal(basePrice float64, quantity int) float64 {

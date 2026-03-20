@@ -9,6 +9,7 @@ import (
 
 type CustomerAddressRepository interface {
 	Create(context context.Context, address *domain.CustomerAddress) error
+	Update(context context.Context, address *domain.CustomerAddress) error
 	FindByCustomerID(context context.Context, customerID uint) ([]domain.CustomerAddress, error)
 	FindByID(context context.Context, customerID uint, addressID uint) (*domain.CustomerAddress, error)
 	SetAllToNonPrimary(context context.Context, customerID uint) error
@@ -25,6 +26,10 @@ func NewCustomerAddressRepository(db *gorm.DB) CustomerAddressRepository {
 
 func (repository *customerAddressRepository) Create(context context.Context, address *domain.CustomerAddress) error {
 	return repository.db.WithContext(context).Create(address).Error
+}
+
+func (repository *customerAddressRepository) Update(context context.Context, address *domain.CustomerAddress) error {
+	return repository.db.WithContext(context).Save(address).Error
 }
 
 func (repository *customerAddressRepository) FindByCustomerID(context context.Context, customerID uint) ([]domain.CustomerAddress, error) {

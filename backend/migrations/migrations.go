@@ -32,6 +32,12 @@ var allMigrations = []Migration{
 	migration0004InitCustomerAddressesTable,
 	migration0005InitWilayahTable,
 	migration0006AlterTransactionsForLogisticsAndPayment,
+	migration0007AlterCustomerAddressesForGeolocation,
+	migration0008InitStockReservationsTable,
+	migration0009AlterItemsAndReservationsForVariants,
+	migration0010AlterTransactionsForBiteshipOrderFields,
+	migration0011InitBiteshipWebhookEventsTable,
+	migration0012InitShippingJobsTable,
 }
 
 func Apply(db *gorm.DB) error {
