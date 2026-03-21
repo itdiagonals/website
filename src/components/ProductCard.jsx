@@ -9,18 +9,17 @@ export default function ProductCard({ product }) {
     >
       <div
         className={
-          "aspect-square flex items-center justify-center group-hover:scale-110 transition duration-600"
+          "relative aspect-[3/4] w-full overflow-hidden flex items-center justify-center"
         }
       >
         <Image
           src={product.image}
           alt={product.name}
-          width={200}
-          height={200}
-          className="object-contain"
+          fill
+          className="object-contain p-4 group-hover:scale-110 transition duration-500"
         />
       </div>
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div className="flex flex-col gap-2">
           <span className="text-primary-1000 text-lg font-bold leading-tight font-sans group-hover:opacity-60 transition duration-600">
             {product.name}
