@@ -34,7 +34,7 @@ services:
       - website_payload_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U payload -d payload"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
     restart: unless-stopped
@@ -52,35 +52,10 @@ services:
       - website_backend_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U backend -d backend"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
     restart: unless-stopped
-
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   container_name: website-backend
-  #   env_file:
-  #     - ./backend/.env.docker
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     backend-postgres:
-  #       condition: service_healthy
-  #     payload-postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #     minio:
-  #       condition: service_started
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ping >/dev/null 2>&1 || exit 1"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #   restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -105,7 +80,7 @@ services:
       - website_minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 12
     restart: unless-stopped
