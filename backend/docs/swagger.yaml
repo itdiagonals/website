@@ -18,6 +18,19 @@ definitions:
       user_agent:
         type: string
     type: object
+  domain.CareGuide:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      instructions:
+        type: object
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
   domain.Cart:
     properties:
       customer_id:
@@ -57,6 +70,23 @@ definitions:
         type: boolean
       subtotal:
         type: number
+    type: object
+  domain.Category:
+    properties:
+      cover_image:
+        $ref: '#/definitions/domain.Media'
+      cover_image_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
     type: object
   domain.CustomerAddress:
     properties:
@@ -103,74 +133,54 @@ definitions:
       village:
         type: string
     type: object
-  domain.Product:
+  domain.Media:
     properties:
-      base_price:
-        type: number
-      care_guide_id:
-        type: integer
-      category_id:
-        type: integer
-      cover_image_id:
-        type: integer
-      description:
+      alt:
         type: string
-      gender:
+      created_at:
         type: string
+      filename:
+        type: string
+      filesize:
+        type: integer
       height:
         type: integer
       id:
         type: integer
-      length:
-        type: integer
-      name:
+      mime_type:
         type: string
-      season_id:
-        type: integer
-      slug:
+      updated_at:
         type: string
-      stock:
-        type: integer
-      weight:
-        type: integer
+      url:
+        type: string
       width:
         type: integer
     type: object
-  domain.ProductCareGuide:
-    properties:
-      id:
-        type: integer
-      instructions:
-        type: object
-      title:
-        type: string
-    type: object
-  domain.ProductColorOption:
-    properties:
-      color_name:
-        type: string
-      hex_code:
-        type: string
-    type: object
-  domain.ProductDetail:
+  domain.Product:
     properties:
       available_colors:
         items:
-          $ref: '#/definitions/domain.ProductColorOption'
+          $ref: '#/definitions/domain.ProductColor'
         type: array
       available_sizes:
         items:
-          $ref: '#/definitions/domain.ProductSizeOption'
+          $ref: '#/definitions/domain.ProductSize'
         type: array
       base_price:
         type: number
       care_guide:
-        $ref: '#/definitions/domain.ProductCareGuide'
+        $ref: '#/definitions/domain.CareGuide'
+      care_guide_id:
+        type: integer
       category:
-        $ref: '#/definitions/domain.ProductReference'
-      cover_image_alt:
-        type: string
-      cover_image_url:
+        $ref: '#/definitions/domain.Category'
+      category_id:
+        type: integer
+      cover_image:
+        $ref: '#/definitions/domain.Media'
+      cover_image_id:
+        type: integer
+      created_at:
         type: string
       description:
         type: string
@@ -178,7 +188,7 @@ definitions:
         type: object
       gallery:
         items:
-          $ref: '#/definitions/domain.ProductMediaItem'
+          $ref: '#/definitions/domain.ProductGalleryItem'
         type: array
       gender:
         type: string
@@ -191,51 +201,133 @@ definitions:
       name:
         type: string
       season:
-        $ref: '#/definitions/domain.ProductReference'
+        $ref: '#/definitions/domain.Season'
+      season_id:
+        type: integer
       slug:
         type: string
       stock:
         type: integer
+      updated_at:
+        type: string
       variants:
         items:
-          $ref: '#/definitions/domain.ProductVariantStock'
+          $ref: '#/definitions/domain.ProductVariant'
         type: array
       weight:
         type: integer
       width:
         type: integer
     type: object
-  domain.ProductMediaItem:
+  domain.ProductColor:
     properties:
-      alt:
-        type: string
-      id:
+      _order:
         type: integer
-      url:
-        type: string
-    type: object
-  domain.ProductReference:
-    properties:
-      id:
+      _parent_id:
         type: integer
-      name:
-        type: string
-      slug:
-        type: string
-    type: object
-  domain.ProductSizeOption:
-    properties:
-      size:
-        type: string
-    type: object
-  domain.ProductVariantStock:
-    properties:
       color_name:
         type: string
+      created_at:
+        type: string
+      hex_code:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  domain.ProductGalleryItem:
+    properties:
+      _order:
+        type: integer
+      _parent_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      image:
+        $ref: '#/definitions/domain.Media'
+      image_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  domain.ProductSize:
+    properties:
+      _order:
+        type: integer
+      _parent_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      size:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.ProductVariant:
+    properties:
+      _order:
+        type: integer
+      _parent_id:
+        type: integer
+      color_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
       size:
         type: string
       stock:
         type: integer
+      updated_at:
+        type: string
+    type: object
+  domain.Season:
+    properties:
+      cover_image:
+        $ref: '#/definitions/domain.Media'
+      cover_image_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      lookbook_images:
+        items:
+          $ref: '#/definitions/domain.Media'
+        type: array
+      name:
+        type: string
+      slug:
+        type: string
+      subtitle:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
     type: object
   domain.Wilayah:
     properties:
@@ -466,18 +558,6 @@ definitions:
     - signature_key
     - status_code
     - transaction_status
-    type: object
-  handler.ProductDetailResponse:
-    properties:
-      data:
-        $ref: '#/definitions/domain.ProductDetail'
-    type: object
-  handler.ProductListResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/domain.Product'
-        type: array
     type: object
   handler.RegisterRequest:
     properties:
@@ -765,6 +845,183 @@ definitions:
           $ref: '#/definitions/domain.Wilayah'
         type: array
     type: object
+  response.ListMeta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.ListResponse-domain_CareGuide:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.CareGuide'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.ListMeta'
+      success:
+        type: boolean
+    type: object
+  response.ListResponse-domain_Category:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.Category'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.ListMeta'
+      success:
+        type: boolean
+    type: object
+  response.ListResponse-domain_Media:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.Media'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.ListMeta'
+      success:
+        type: boolean
+    type: object
+  response.ListResponse-domain_Product:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.Product'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.ListMeta'
+      success:
+        type: boolean
+    type: object
+  response.ListResponse-domain_Season:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.Season'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.ListMeta'
+      success:
+        type: boolean
+    type: object
+  response.ListResponse-domain_User:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.ListMeta'
+      success:
+        type: boolean
+    type: object
+  response.Response-any:
+    properties:
+      code:
+        type: string
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_CareGuide:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/domain.CareGuide'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_Category:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/domain.Category'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_Media:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/domain.Media'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_Product:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/domain.Product'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_Season:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/domain.Season'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-domain_User:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/domain.User'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   service.ShippingRate:
     properties:
       available_collection_types:
@@ -803,7 +1060,8 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Customer auth and product catalog API for the Diagonals website backend.
+  description: Customer auth, product catalog, and admin CMS API for the Diagonals
+    website backend.
   title: Diagonals API
   version: "1.0"
 paths:
@@ -1085,6 +1343,151 @@ paths:
       summary: List active sessions
       tags:
       - Auth
+  /api/v1/care-guides:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all care guides
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ListResponse-domain_CareGuide'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get all care guides
+      tags:
+      - CareGuides
+    post:
+      consumes:
+      - application/json
+      description: Create a new care guide
+      parameters:
+      - description: Care Guide payload
+        in: body
+        name: care_guide
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CareGuide'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_CareGuide'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Create care guide
+      tags:
+      - CareGuides
+  /api/v1/care-guides/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a care guide by ID
+      parameters:
+      - description: Care Guide ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Delete care guide
+      tags:
+      - CareGuides
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single care guide by ID
+      parameters:
+      - description: Care Guide ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_CareGuide'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get care guide by ID
+      tags:
+      - CareGuides
+    put:
+      consumes:
+      - application/json
+      description: Update an existing care guide
+      parameters:
+      - description: Care Guide ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Care Guide payload
+        in: body
+        name: care_guide
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CareGuide'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_CareGuide'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Update care guide
+      tags:
+      - CareGuides
   /api/v1/cart:
     get:
       consumes:
@@ -1237,6 +1640,184 @@ paths:
       summary: Remove item from cart
       tags:
       - Cart
+  /api/v1/categories:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all product categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ListResponse-domain_Category'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get all categories
+      tags:
+      - Categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new product category
+      parameters:
+      - description: Category payload
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Category'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_Category'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Create category
+      tags:
+      - Categories
+  /api/v1/categories/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a product category by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Delete category
+      tags:
+      - Categories
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single category by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Category'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get category by ID
+      tags:
+      - Categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Category payload
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Category'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Category'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Update category
+      tags:
+      - Categories
+  /api/v1/categories/slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single category by slug
+      parameters:
+      - description: Category slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Category'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get category by slug
+      tags:
+      - Categories
   /api/v1/checkout:
     post:
       consumes:
@@ -1320,6 +1901,151 @@ paths:
       summary: Get available checkout couriers
       tags:
       - Checkout
+  /api/v1/media:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all media files
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ListResponse-domain_Media'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get all media
+      tags:
+      - Media
+    post:
+      consumes:
+      - application/json
+      description: Create a new media file record
+      parameters:
+      - description: Media payload
+        in: body
+        name: media
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Media'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_Media'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Create media
+      tags:
+      - Media
+  /api/v1/media/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a media file record by ID
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Delete media
+      tags:
+      - Media
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single media file by ID
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Media'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get media by ID
+      tags:
+      - Media
+    put:
+      consumes:
+      - application/json
+      description: Update an existing media file record
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Media payload
+        in: body
+        name: media
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Media'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Media'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Update media
+      tags:
+      - Media
   /api/v1/payments/biteship/notification:
     post:
       consumes:
@@ -1409,8 +2135,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all products from the backend-owned catalog read model, optionally
-        filtered by category slug
+      description: Retrieve a list of all products, optionally filtered by category
+        slug
       parameters:
       - description: Category slug
         in: query
@@ -1422,20 +2148,149 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.ProductListResponse'
+            $ref: '#/definitions/response.ListResponse-domain_Product'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/response.Response-any'
       summary: Get all products
       tags:
       - Products
-  /api/v1/products/{slug}:
+    post:
+      consumes:
+      - application/json
+      description: Create a new product with variants, colors, sizes, and gallery
+      parameters:
+      - description: Product payload
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Product'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Create product
+      tags:
+      - Products
+  /api/v1/products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Delete product
+      tags:
+      - Products
     get:
       consumes:
       - application/json
-      description: Get a single product with available size and color options from
-        the backend-owned catalog read model by slug
+      description: Retrieve a single product by ID with all relations
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get product by ID
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product with variants, colors, sizes, and gallery
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product payload
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Update product
+      tags:
+      - Products
+  /api/v1/products/slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single product by slug with all relations
       parameters:
       - description: Product slug
         in: path
@@ -1448,18 +2303,196 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.ProductDetailResponse'
+            $ref: '#/definitions/response.Response-domain_Product'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/response.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.ErrorResponse'
+            $ref: '#/definitions/response.Response-any'
       summary: Get product by slug
       tags:
       - Products
+  /api/v1/seasons:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all product seasons
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ListResponse-domain_Season'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get all seasons
+      tags:
+      - Seasons
+    post:
+      consumes:
+      - application/json
+      description: Create a new product season
+      parameters:
+      - description: Season payload
+        in: body
+        name: season
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Season'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_Season'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Create season
+      tags:
+      - Seasons
+  /api/v1/seasons/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a product season by ID
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Delete season
+      tags:
+      - Seasons
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single season by ID
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Season'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get season by ID
+      tags:
+      - Seasons
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product season
+      parameters:
+      - description: Season ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Season payload
+        in: body
+        name: season
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Season'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Season'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Update season
+      tags:
+      - Seasons
+  /api/v1/seasons/slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single season by slug
+      parameters:
+      - description: Season slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_Season'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get season by slug
+      tags:
+      - Seasons
   /api/v1/transactions:
     get:
       description: Get paginated transaction history for the authenticated customer,
@@ -1583,6 +2616,155 @@ paths:
       summary: Get my transaction tracking
       tags:
       - Transactions
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all admin users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.ListResponse-domain_User'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new admin user
+      parameters:
+      - description: User payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Create user
+      tags:
+      - Users
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an admin user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update an existing admin user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Update user
+      tags:
+      - Users
   /api/v1/wilayah/search:
     get:
       consumes:

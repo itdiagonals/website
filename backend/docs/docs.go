@@ -433,6 +433,225 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/care-guides": {
+            "get": {
+                "description": "Retrieve a list of all care guides",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CareGuides"
+                ],
+                "summary": "Get all care guides",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ListResponse-domain_CareGuide"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new care guide",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CareGuides"
+                ],
+                "summary": "Create care guide",
+                "parameters": [
+                    {
+                        "description": "Care Guide payload",
+                        "name": "care_guide",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CareGuide"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_CareGuide"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/care-guides/{id}": {
+            "get": {
+                "description": "Retrieve a single care guide by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CareGuides"
+                ],
+                "summary": "Get care guide by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Care Guide ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_CareGuide"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing care guide",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CareGuides"
+                ],
+                "summary": "Update care guide",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Care Guide ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Care Guide payload",
+                        "name": "care_guide",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CareGuide"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_CareGuide"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a care guide by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CareGuides"
+                ],
+                "summary": "Delete care guide",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Care Guide ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/cart": {
             "get": {
                 "security": [
@@ -668,6 +887,275 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/categories": {
+            "get": {
+                "description": "Retrieve a list of all product categories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Get all categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ListResponse-domain_Category"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new product category",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Create category",
+                "parameters": [
+                    {
+                        "description": "Category payload",
+                        "name": "category",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Category"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Category"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/categories/slug/{slug}": {
+            "get": {
+                "description": "Retrieve a single category by slug",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Get category by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Category"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/categories/{id}": {
+            "get": {
+                "description": "Retrieve a single category by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Get category by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Category"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing product category",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Update category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Category payload",
+                        "name": "category",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Category"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Category"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a product category by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Delete category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/checkout": {
             "post": {
                 "security": [
@@ -789,6 +1277,225 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media": {
+            "get": {
+                "description": "Retrieve a list of all media files",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get all media",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ListResponse-domain_Media"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new media file record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Create media",
+                "parameters": [
+                    {
+                        "description": "Media payload",
+                        "name": "media",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Media"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/{id}": {
+            "get": {
+                "description": "Retrieve a single media file by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get media by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing media file record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Update media",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Media payload",
+                        "name": "media",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Media"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a media file record by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Delete media",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Media ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
                         }
                     }
                 }
@@ -918,7 +1625,7 @@ const docTemplate = `{
         },
         "/api/v1/products": {
             "get": {
-                "description": "Get all products from the backend-owned catalog read model, optionally filtered by category slug",
+                "description": "Retrieve a list of all products, optionally filtered by category slug",
                 "consumes": [
                     "application/json"
                 ],
@@ -941,21 +1648,71 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.ProductListResponse"
+                            "$ref": "#/definitions/response.ListResponse-domain_Product"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.ErrorResponse"
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new product with variants, colors, sizes, and gallery",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Create product",
+                "parameters": [
+                    {
+                        "description": "Product payload",
+                        "name": "product",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Product"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Product"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
                         }
                     }
                 }
             }
         },
-        "/api/v1/products/{slug}": {
+        "/api/v1/products/slug/{slug}": {
             "get": {
-                "description": "Get a single product with available size and color options from the backend-owned catalog read model by slug",
+                "description": "Retrieve a single product by slug with all relations",
                 "consumes": [
                     "application/json"
                 ],
@@ -979,19 +1736,434 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.ProductDetailResponse"
+                            "$ref": "#/definitions/response.Response-domain_Product"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handler.ErrorResponse"
+                            "$ref": "#/definitions/response.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.ErrorResponse"
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/products/{id}": {
+            "get": {
+                "description": "Retrieve a single product by ID with all relations",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get product by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Product"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing product with variants, colors, sizes, and gallery",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Update product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Product payload",
+                        "name": "product",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Product"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Product"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a product by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Delete product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/seasons": {
+            "get": {
+                "description": "Retrieve a list of all product seasons",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Get all seasons",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ListResponse-domain_Season"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new product season",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Create season",
+                "parameters": [
+                    {
+                        "description": "Season payload",
+                        "name": "season",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Season"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Season"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/seasons/slug/{slug}": {
+            "get": {
+                "description": "Retrieve a single season by slug",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Get season by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Season slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Season"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/seasons/{id}": {
+            "get": {
+                "description": "Retrieve a single season by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Get season by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Season ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Season"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing product season",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Update season",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Season ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Season payload",
+                        "name": "season",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Season"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Season"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a product season by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Delete season",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Season ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
                         }
                     }
                 }
@@ -1184,6 +2356,231 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users": {
+            "get": {
+                "description": "Retrieve a list of all admin users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.ListResponse-domain_User"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new admin user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create user",
+                "parameters": [
+                    {
+                        "description": "User payload",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{id}": {
+            "get": {
+                "description": "Retrieve a single user by their ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get user by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update an existing admin user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User payload",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete an admin user by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/wilayah/search": {
             "get": {
                 "description": "Search wilayah master data for province, city, district, or village with optional parent filtering for cascading address forms",
@@ -1276,6 +2673,26 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.CareGuide": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instructions": {
+                    "type": "object"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Cart": {
             "type": "object",
             "properties": {
@@ -1334,6 +2751,32 @@ const docTemplate = `{
                 },
                 "subtotal": {
                     "type": "number"
+                }
+            }
+        },
+        "domain.Category": {
+            "type": "object",
+            "properties": {
+                "cover_image": {
+                    "$ref": "#/definitions/domain.Media"
+                },
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1405,26 +2848,20 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Product": {
+        "domain.Media": {
             "type": "object",
             "properties": {
-                "base_price": {
-                    "type": "number"
-                },
-                "care_guide_id": {
-                    "type": "integer"
-                },
-                "category_id": {
-                    "type": "integer"
-                },
-                "cover_image_id": {
-                    "type": "integer"
-                },
-                "description": {
+                "alt": {
                     "type": "string"
                 },
-                "gender": {
+                "created_at": {
                     "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "filesize": {
+                    "type": "integer"
                 },
                 "height": {
                     "type": "integer"
@@ -1432,82 +2869,57 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "length": {
-                    "type": "integer"
-                },
-                "name": {
+                "mime_type": {
                     "type": "string"
                 },
-                "season_id": {
-                    "type": "integer"
-                },
-                "slug": {
+                "updated_at": {
                     "type": "string"
                 },
-                "stock": {
-                    "type": "integer"
-                },
-                "weight": {
-                    "type": "integer"
+                "url": {
+                    "type": "string"
                 },
                 "width": {
                     "type": "integer"
                 }
             }
         },
-        "domain.ProductCareGuide": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "instructions": {
-                    "type": "object"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.ProductColorOption": {
-            "type": "object",
-            "properties": {
-                "color_name": {
-                    "type": "string"
-                },
-                "hex_code": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.ProductDetail": {
+        "domain.Product": {
             "type": "object",
             "properties": {
                 "available_colors": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.ProductColorOption"
+                        "$ref": "#/definitions/domain.ProductColor"
                     }
                 },
                 "available_sizes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.ProductSizeOption"
+                        "$ref": "#/definitions/domain.ProductSize"
                     }
                 },
                 "base_price": {
                     "type": "number"
                 },
                 "care_guide": {
-                    "$ref": "#/definitions/domain.ProductCareGuide"
+                    "$ref": "#/definitions/domain.CareGuide"
+                },
+                "care_guide_id": {
+                    "type": "integer"
                 },
                 "category": {
-                    "$ref": "#/definitions/domain.ProductReference"
+                    "$ref": "#/definitions/domain.Category"
                 },
-                "cover_image_alt": {
-                    "type": "string"
+                "category_id": {
+                    "type": "integer"
                 },
-                "cover_image_url": {
+                "cover_image": {
+                    "$ref": "#/definitions/domain.Media"
+                },
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "created_at": {
                     "type": "string"
                 },
                 "description": {
@@ -1519,7 +2931,7 @@ const docTemplate = `{
                 "gallery": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.ProductMediaItem"
+                        "$ref": "#/definitions/domain.ProductGalleryItem"
                     }
                 },
                 "gender": {
@@ -1538,7 +2950,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "season": {
-                    "$ref": "#/definitions/domain.ProductReference"
+                    "$ref": "#/definitions/domain.Season"
+                },
+                "season_id": {
+                    "type": "integer"
                 },
                 "slug": {
                     "type": "string"
@@ -1546,10 +2961,13 @@ const docTemplate = `{
                 "stock": {
                     "type": "integer"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "variants": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.ProductVariantStock"
+                        "$ref": "#/definitions/domain.ProductVariant"
                     }
                 },
                 "weight": {
@@ -1560,53 +2978,171 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ProductMediaItem": {
+        "domain.ProductColor": {
             "type": "object",
             "properties": {
-                "alt": {
-                    "type": "string"
-                },
-                "id": {
+                "_order": {
                     "type": "integer"
                 },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.ProductReference": {
-            "type": "object",
-            "properties": {
-                "id": {
+                "_parent_id": {
                     "type": "integer"
                 },
-                "name": {
-                    "type": "string"
-                },
-                "slug": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.ProductSizeOption": {
-            "type": "object",
-            "properties": {
-                "size": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.ProductVariantStock": {
-            "type": "object",
-            "properties": {
                 "color_name": {
                     "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "hex_code": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ProductGalleryItem": {
+            "type": "object",
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "_parent_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "$ref": "#/definitions/domain.Media"
+                },
+                "image_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ProductSize": {
+            "type": "object",
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "_parent_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ProductVariant": {
+            "type": "object",
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "_parent_id": {
+                    "type": "integer"
+                },
+                "color_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "size": {
                     "type": "string"
                 },
                 "stock": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Season": {
+            "type": "object",
+            "properties": {
+                "cover_image": {
+                    "$ref": "#/definitions/domain.Media"
+                },
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "lookbook_images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Media"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "subtitle": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1949,25 +3485,6 @@ const docTemplate = `{
                 },
                 "transaction_status": {
                     "type": "string"
-                }
-            }
-        },
-        "handler.ProductDetailResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/domain.ProductDetail"
-                }
-            }
-        },
-        "handler.ProductListResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/domain.Product"
-                    }
                 }
             }
         },
@@ -2402,6 +3919,278 @@ const docTemplate = `{
                 }
             }
         },
+        "response.ListMeta": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.ListResponse-domain_CareGuide": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CareGuide"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.ListMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.ListResponse-domain_Category": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Category"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.ListMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.ListResponse-domain_Media": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Media"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.ListMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.ListResponse-domain_Product": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Product"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.ListMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.ListResponse-domain_Season": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Season"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.ListMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.ListResponse-domain_User": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.User"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "$ref": "#/definitions/response.ListMeta"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-any": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {},
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_CareGuide": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.CareGuide"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_Category": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.Category"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_Media": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.Media"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_Product": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.Product"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_Season": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.Season"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-domain_User": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.User"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "service.ShippingRate": {
             "type": "object",
             "properties": {
@@ -2474,7 +4263,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Diagonals API",
-	Description:      "Customer auth and product catalog API for the Diagonals website backend.",
+	Description:      "Customer auth, product catalog, and admin CMS API for the Diagonals website backend.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

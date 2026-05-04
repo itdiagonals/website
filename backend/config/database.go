@@ -22,9 +22,6 @@ func ConnectDB() {
 	if backendDSN == "" {
 		log.Fatal("BACKEND_DATABASE_URL is not set")
 	}
-	if payloadDSN == "" {
-		log.Fatal("PAYLOAD_DATABASE_URL is not set")
-	}
 
 	var err error
 
@@ -33,8 +30,10 @@ func ConnectDB() {
 		log.Fatal("failed to connect DBBackend: ", err)
 	}
 
-	DBPayload, err = gorm.Open(postgres.Open(payloadDSN), &gorm.Config{})
-	if err != nil {
-		log.Fatal("failed to connect DBPayload: ", err)
+	if payloadDSN != "" {
+		DBPayload, err = gorm.Open(postgres.Open(payloadDSN), &gorm.Config{})
+		if err != nil {
+			log.Fatal("failed to connect DBPayload: ", err)
+		}
 	}
 }

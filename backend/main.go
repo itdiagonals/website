@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/config"
+	"github.com/itdiagonals/website/backend/migrations"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"github.com/itdiagonals/website/backend/routes"
 	"github.com/itdiagonals/website/backend/service"
@@ -21,13 +23,15 @@ import (
 
 // @title Diagonals API
 // @version 1.0
-// @description Customer auth and product catalog API for the Diagonals website backend.
+// @description Customer auth, product catalog, and admin CMS API for the Diagonals website backend.
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
 // @BasePath /
 func main() {
 	config.LoadEnv()
+
+	initLogger()
 
 	ginMode := strings.TrimSpace(os.Getenv("BACKEND_GIN_MODE"))
 	if ginMode == "" {
@@ -36,11 +40,16 @@ func main() {
 	gin.SetMode(ginMode)
 
 	config.ConnectDB()
+
+	if err := migrations.Apply(config.DBBackend); err != nil {
+		logger.Fatal("database migration failed", "error", err.Error())
+	}
+
 	config.InitMidtrans()
 
 	redisClient, err := config.ConnectRedis()
 	if err != nil {
-		log.Fatalf("failed to connect redis: %v", err)
+		logger.Fatal("failed to connect redis", "error", err.Error())
 	}
 
 	startShippingJobWorker(config.DBBackend, config.DBPayload)
@@ -50,32 +59,43 @@ func main() {
 
 	trustedProxies := getTrustedProxies()
 	if err := router.SetTrustedProxies(trustedProxies); err != nil {
-		log.Fatalf("failed to configure trusted proxies: %v", err)
+		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
 	routes.SetupRoutes(router, config.DBBackend, config.DBPayload, redisClient)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	router.GET("/ping", func(context *gin.Context) {
-		context.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
+	router.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
+	logger.Info("server.starting", "address", ":8080")
 	if err := router.Run(":8080"); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+		logger.Fatal("failed to start server", "error", err.Error())
 	}
+}
+
+func initLogger() {
+	logLevel := slog.LevelInfo
+	if strings.TrimSpace(os.Getenv("BACKEND_GIN_MODE")) == "debug" {
+		logLevel = slog.LevelDebug
+	}
+	logger.Init(logger.Config{
+		Level:  logLevel,
+		JSON:   true,
+		Output: os.Stdout,
+	})
 }
 
 func startShippingJobWorker(backendDB *gorm.DB, payloadDB *gorm.DB) {
 	if backendDB == nil {
-		log.Printf("shipping worker disabled: invalid backend db")
+		logger.Warn("shipping worker disabled: invalid backend db")
 		return
 	}
 
 	if payloadDB == nil {
-		log.Printf("shipping worker disabled: invalid payload db")
+		logger.Warn("shipping worker disabled: invalid payload db")
 		return
 	}
 
@@ -87,7 +107,7 @@ func startShippingJobWorker(backendDB *gorm.DB, payloadDB *gorm.DB) {
 	worker := service.NewShippingJobWorker(shippingJobRepository, bookingService)
 
 	go worker.Start(context.Background())
-	log.Printf("shipping job worker started")
+	logger.Info("shipping job worker started")
 }
 
 func getTrustedProxies() []string {

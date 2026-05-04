@@ -9,10 +9,14 @@ import (
 )
 
 func registerProductRoutes(api *gin.RouterGroup, db *gorm.DB) {
-	productRepository := repository.NewProductRepository(db)
-	productService := service.NewProductService(productRepository)
-	productHandler := handler.NewProductHandler(productService)
+	repo := repository.NewProductFullRepository(db)
+	svc := service.NewProductFullService(repo)
+	h := handler.NewProductFullHandler(svc)
 
-	api.GET("/products", productHandler.GetAll)
-	api.GET("/products/:slug", productHandler.GetBySlug)
+	api.GET("/products", h.GetAllProducts)
+	api.GET("/products/:id", h.GetProductByID)
+	api.GET("/products/slug/:slug", h.GetProductBySlug)
+	api.POST("/products", h.CreateProduct)
+	api.PUT("/products/:id", h.UpdateProduct)
+	api.DELETE("/products/:id", h.DeleteProduct)
 }
