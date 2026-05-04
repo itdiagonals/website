@@ -5,13 +5,14 @@ This repository contains two main application surfaces:
 - a Next.js + Payload CMS application in the repository root
 - a Go backend API in `backend/`
 
-The local stack uses separate Postgres databases for Payload and the Go backend so schema ownership stays explicit and safer to operate.
+The local stack now uses a single Postgres database shared between Payload CMS and the Go backend.
 
 ## Architecture summary
 
-- Payload CMS owns the CMS database and admin panel.
-- Go backend owns its own database and serves customer auth, cart, and product API endpoints.
-- Backend public product endpoints read catalog data directly from Payload-owned tables.
+- Payload CMS provides the admin panel and manages catalog schema.
+- Go backend serves customer auth, cart, checkout, and product API endpoints.
+- Both applications read from and write to the same shared database.
+- Backend provides full REST CRUD APIs for all Payload collections.
 
 ## Prerequisites
 
@@ -30,8 +31,8 @@ There are three env files in this repository, but Docker-first local development
 
 Root `.env` is used by Next.js / Payload.
 
-- `PAYLOAD_DATABASE_URL`: Payload database connection
-- `PAYLOAD_ENABLE_PUSH`: local-only schema push flag for Payload dedicated database
+- `PAYLOAD_DATABASE_URL`: database connection (shared with backend)
+- `PAYLOAD_ENABLE_PUSH`: local-only schema push flag
 - `REDIS_URL`: Redis connection for local stack
 - `S3_*`: MinIO / object storage settings
 
@@ -65,9 +66,10 @@ Then adjust values as needed.
 
 Important:
 
-- For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable because Payload uses its own dedicated database.
+- For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable.
 - For production, set `PAYLOAD_ENABLE_PUSH=false`.
 - In Docker mode, the Go backend reads `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` from `backend/.env.docker`.
+- Both `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` should point to the same shared database.
 - Biteship Maps, Rates, and Tracking APIs are paid in both sandbox and production. Use caching and debounce in clients to reduce request volume.
 
 ## Local setup from zero
@@ -80,7 +82,7 @@ Follow these steps in order (Docker Compose only).
 cp backend/.env.example backend/.env.docker
 ```
 
-2. Clean old Docker state if you are coming from the previous shared-database setup.
+2. Clean old Docker state if you are coming from the previous separate-database setup.
 
 ```bash
 make downv
@@ -94,8 +96,7 @@ make updb
 
 This command builds and runs the stack in detached mode:
 
-- Payload Postgres on `localhost:5432`
-- Backend Postgres on `localhost:5433`
+- Shared Postgres on `localhost:5432`
 - Backend API on `localhost:8080`
 - Redis on `localhost:6379`
 - MinIO on `localhost:9000`
@@ -129,8 +130,26 @@ After initial setup, normal daily flow is:
 
 Catalog behavior:
 
-- create/update/delete in Payload is reflected immediately because the backend reads the Payload database directly.
+- create/update/delete in Payload is reflected immediately because both Payload and backend share the same database.
 - shipping accuracy depends on product dimensions and weight in Payload (`length`, `width`, `height`, `weight`).
+
+## Backend CRUD APIs
+
+The Go backend now provides full REST CRUD endpoints for all Payload collections:
+
+- `GET/POST /api/v1/categories`
+- `GET/PUT/DELETE /api/v1/categories/:id`
+- `GET /api/v1/categories/slug/:slug`
+- `GET/POST /api/v1/seasons`
+- `GET/PUT/DELETE /api/v1/seasons/:id`
+- `GET /api/v1/seasons/slug/:slug`
+- `GET/POST /api/v1/care-guides`
+- `GET/PUT/DELETE /api/v1/care-guides/:id`
+- `GET/POST /api/v1/products`
+- `GET/PUT/DELETE /api/v1/products/:id`
+- `GET /api/v1/products/slug/:slug`
+- `GET/POST /api/v1/media`
+- `GET/PUT/DELETE /api/v1/media/:id`
 
 ## Useful commands
 
@@ -176,7 +195,7 @@ Open backend container shell:
 make shell
 ```
 
-Open backend database psql:
+Open database psql:
 
 ```bash
 make db
@@ -210,11 +229,10 @@ Before production deployment, make sure all of the following are done:
 
 1. Set `PAYLOAD_ENABLE_PUSH=false`.
 2. Replace all local secrets with strong production secrets.
-3. Keep Payload and backend databases separated.
-4. Inject deployment-safe values for `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL`.
-5. Set `BACKEND_GIN_MODE=release`.
-6. Set `BACKEND_TRUSTED_PROXIES` to the actual proxy or ingress IP ranges.
-7. Add regular backup and restore procedures for both databases.
+3. Inject deployment-safe values for `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL`.
+4. Set `BACKEND_GIN_MODE=release`.
+5. Set `BACKEND_TRUSTED_PROXIES` to the actual proxy or ingress IP ranges.
+6. Add regular backup and restore procedures for the shared database.
 
 ## Troubleshooting
 
@@ -223,5 +241,5 @@ If ports are already occupied, stop the stale process or container first.
 If backend products return `null` or an empty list:
 
 1. make sure containers are healthy (`make ps` and `make logs`)
-2. make sure Payload schema has been pushed to `payload`
-3. make sure `backend/.env.docker` points `PAYLOAD_DATABASE_URL` to `payload-postgres:5432` and `BACKEND_DATABASE_URL` to `backend-postgres:5432`
+2. make sure Payload schema has been pushed to the shared database
+3. make sure `backend/.env.docker` points both `PAYLOAD_DATABASE_URL` and `BACKEND_DATABASE_URL` to the shared postgres container
