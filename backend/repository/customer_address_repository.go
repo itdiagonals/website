@@ -10,10 +10,10 @@ import (
 type CustomerAddressRepository interface {
 	Create(context context.Context, address *domain.CustomerAddress) error
 	Update(context context.Context, address *domain.CustomerAddress) error
-	FindByCustomerID(context context.Context, customerID uint) ([]domain.CustomerAddress, error)
-	FindByID(context context.Context, customerID uint, addressID uint) (*domain.CustomerAddress, error)
-	SetAllToNonPrimary(context context.Context, customerID uint) error
-	Delete(context context.Context, customerID uint, addressID uint) error
+	FindByUserID(context context.Context, userID uint) ([]domain.CustomerAddress, error)
+	FindByID(context context.Context, userID uint, addressID uint) (*domain.CustomerAddress, error)
+	SetAllToNonPrimary(context context.Context, userID uint) error
+	Delete(context context.Context, userID uint, addressID uint) error
 }
 
 type customerAddressRepository struct {
@@ -32,11 +32,11 @@ func (repository *customerAddressRepository) Update(context context.Context, add
 	return repository.db.WithContext(context).Save(address).Error
 }
 
-func (repository *customerAddressRepository) FindByCustomerID(context context.Context, customerID uint) ([]domain.CustomerAddress, error) {
+func (repository *customerAddressRepository) FindByUserID(context context.Context, userID uint) ([]domain.CustomerAddress, error) {
 	var addresses []domain.CustomerAddress
 
 	err := repository.db.WithContext(context).
-		Where("customer_id = ?", customerID).
+		Where("user_id = ?", userID).
 		Order("is_primary DESC, updated_at DESC, created_at DESC").
 		Find(&addresses).Error
 	if err != nil {
@@ -46,11 +46,11 @@ func (repository *customerAddressRepository) FindByCustomerID(context context.Co
 	return addresses, nil
 }
 
-func (repository *customerAddressRepository) FindByID(context context.Context, customerID uint, addressID uint) (*domain.CustomerAddress, error) {
+func (repository *customerAddressRepository) FindByID(context context.Context, userID uint, addressID uint) (*domain.CustomerAddress, error) {
 	var address domain.CustomerAddress
 
 	err := repository.db.WithContext(context).
-		Where("customer_id = ? AND id = ?", customerID, addressID).
+		Where("user_id = ? AND id = ?", userID, addressID).
 		First(&address).Error
 	if err != nil {
 		return nil, err
@@ -59,17 +59,17 @@ func (repository *customerAddressRepository) FindByID(context context.Context, c
 	return &address, nil
 }
 
-func (repository *customerAddressRepository) SetAllToNonPrimary(context context.Context, customerID uint) error {
+func (repository *customerAddressRepository) SetAllToNonPrimary(context context.Context, userID uint) error {
 	return repository.db.WithContext(context).
 		Model(&domain.CustomerAddress{}).
-		Where("customer_id = ? AND is_primary = ?", customerID, true).
+		Where("user_id = ? AND is_primary = ?", userID, true).
 		Updates(map[string]any{
 			"is_primary": false,
 		}).Error
 }
 
-func (repository *customerAddressRepository) Delete(context context.Context, customerID uint, addressID uint) error {
+func (repository *customerAddressRepository) Delete(context context.Context, userID uint, addressID uint) error {
 	return repository.db.WithContext(context).
-		Where("customer_id = ? AND id = ?", customerID, addressID).
+		Where("user_id = ? AND id = ?", userID, addressID).
 		Delete(&domain.CustomerAddress{}).Error
 }

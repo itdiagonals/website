@@ -33,12 +33,12 @@ definitions:
     type: object
   domain.Cart:
     properties:
-      customer_id:
-        type: integer
       items:
         items:
           $ref: '#/definitions/domain.CartItem'
         type: array
+      user_id:
+        type: integer
     type: object
   domain.CartItem:
     properties:
@@ -88,14 +88,191 @@ definitions:
       updated_at:
         type: string
     type: object
+  domain.CreateCareGuideRequest:
+    properties:
+      instructions:
+        type: object
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  domain.CreateCategoryRequest:
+    properties:
+      cover_image_id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  domain.CreateMediaRequest:
+    properties:
+      alt:
+        type: string
+      filename:
+        type: string
+      filesize:
+        type: integer
+      height:
+        type: integer
+      mime_type:
+        type: string
+      url:
+        type: string
+      width:
+        type: integer
+    required:
+    - alt
+    - filename
+    - url
+    type: object
+  domain.CreateProductColorRequest:
+    properties:
+      _order:
+        type: integer
+      color_name:
+        type: string
+      hex_code:
+        type: string
+    required:
+    - color_name
+    - hex_code
+    type: object
+  domain.CreateProductGalleryItemRequest:
+    properties:
+      _order:
+        type: integer
+      image_id:
+        type: integer
+    required:
+    - image_id
+    type: object
+  domain.CreateProductRequest:
+    properties:
+      available_colors:
+        items:
+          $ref: '#/definitions/domain.CreateProductColorRequest'
+        type: array
+      available_sizes:
+        items:
+          $ref: '#/definitions/domain.CreateProductSizeRequest'
+        type: array
+      base_price:
+        type: number
+      care_guide_id:
+        type: integer
+      category_id:
+        type: integer
+      cover_image_id:
+        type: integer
+      description:
+        type: string
+      detail_info:
+        type: object
+      gallery:
+        items:
+          $ref: '#/definitions/domain.CreateProductGalleryItemRequest'
+        type: array
+      gender:
+        type: string
+      height:
+        type: integer
+      length:
+        type: integer
+      name:
+        type: string
+      season_id:
+        type: integer
+      slug:
+        type: string
+      stock:
+        type: integer
+      variants:
+        items:
+          $ref: '#/definitions/domain.CreateProductVariantRequest'
+        type: array
+      weight:
+        type: integer
+      width:
+        type: integer
+    required:
+    - base_price
+    - name
+    - slug
+    type: object
+  domain.CreateProductSizeRequest:
+    properties:
+      _order:
+        type: integer
+      size:
+        type: string
+    required:
+    - size
+    type: object
+  domain.CreateProductVariantRequest:
+    properties:
+      _order:
+        type: integer
+      color_name:
+        type: string
+      size:
+        type: string
+      stock:
+        type: integer
+    required:
+    - color_name
+    - size
+    type: object
+  domain.CreateSeasonRequest:
+    properties:
+      cover_image_id:
+        type: integer
+      description:
+        type: string
+      is_active:
+        type: boolean
+      lookbook_image_ids:
+        items:
+          type: integer
+        type: array
+      name:
+        type: string
+      slug:
+        type: string
+      subtitle:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  domain.CreateUserRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - password
+    type: object
   domain.CustomerAddress:
     properties:
       city:
         type: string
       created_at:
         type: string
-      customer_id:
-        type: integer
       destination_area_id:
         type: string
       destination_area_label:
@@ -130,6 +307,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      user_id:
+        type: integer
       village:
         type: string
     type: object
@@ -314,8 +493,142 @@ definitions:
       updated_at:
         type: string
     type: object
+  domain.UpdateCareGuideRequest:
+    properties:
+      instructions:
+        type: object
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  domain.UpdateCategoryRequest:
+    properties:
+      cover_image_id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  domain.UpdateMediaRequest:
+    properties:
+      alt:
+        type: string
+      filename:
+        type: string
+      filesize:
+        type: integer
+      height:
+        type: integer
+      mime_type:
+        type: string
+      url:
+        type: string
+      width:
+        type: integer
+    required:
+    - alt
+    - filename
+    - url
+    type: object
+  domain.UpdateProductRequest:
+    properties:
+      available_colors:
+        items:
+          $ref: '#/definitions/domain.CreateProductColorRequest'
+        type: array
+      available_sizes:
+        items:
+          $ref: '#/definitions/domain.CreateProductSizeRequest'
+        type: array
+      base_price:
+        type: number
+      care_guide_id:
+        type: integer
+      category_id:
+        type: integer
+      cover_image_id:
+        type: integer
+      description:
+        type: string
+      detail_info:
+        type: object
+      gallery:
+        items:
+          $ref: '#/definitions/domain.CreateProductGalleryItemRequest'
+        type: array
+      gender:
+        type: string
+      height:
+        type: integer
+      length:
+        type: integer
+      name:
+        type: string
+      season_id:
+        type: integer
+      slug:
+        type: string
+      stock:
+        type: integer
+      variants:
+        items:
+          $ref: '#/definitions/domain.CreateProductVariantRequest'
+        type: array
+      weight:
+        type: integer
+      width:
+        type: integer
+    required:
+    - base_price
+    - name
+    - slug
+    type: object
+  domain.UpdateSeasonRequest:
+    properties:
+      cover_image_id:
+        type: integer
+      description:
+        type: string
+      is_active:
+        type: boolean
+      lookbook_image_ids:
+        items:
+          type: integer
+        type: array
+      name:
+        type: string
+      slug:
+        type: string
+      subtitle:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  domain.UpdateUserRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    type: object
   domain.User:
     properties:
+      address:
+        type: string
       created_at:
         type: string
       email:
@@ -323,6 +636,8 @@ definitions:
       id:
         type: integer
       name:
+        type: string
+      phone:
         type: string
       role:
         type: string
@@ -1240,7 +1555,7 @@ paths:
       - Auth
   /api/v1/auth/logout-all:
     post:
-      description: Revoke all active sessions for the authenticated customer and clear
+      description: Revoke all active sessions for the authenticated user and clear
         auth cookies on the current device
       produces:
       - application/json
@@ -1321,8 +1636,8 @@ paths:
       - Auth
   /api/v1/auth/sessions:
     get:
-      description: List all active sessions for the authenticated customer across
-        devices and browsers
+      description: List all active sessions for the authenticated user across devices
+        and browsers
       produces:
       - application/json
       responses:
@@ -1372,7 +1687,7 @@ paths:
         name: care_guide
         required: true
         schema:
-          $ref: '#/definitions/domain.CareGuide'
+          $ref: '#/definitions/domain.CreateCareGuideRequest'
       produces:
       - application/json
       responses:
@@ -1465,7 +1780,7 @@ paths:
         name: care_guide
         required: true
         schema:
-          $ref: '#/definitions/domain.CareGuide'
+          $ref: '#/definitions/domain.UpdateCareGuideRequest'
       produces:
       - application/json
       responses:
@@ -1669,7 +1984,7 @@ paths:
         name: category
         required: true
         schema:
-          $ref: '#/definitions/domain.Category'
+          $ref: '#/definitions/domain.CreateCategoryRequest'
       produces:
       - application/json
       responses:
@@ -1766,7 +2081,7 @@ paths:
         name: category
         required: true
         schema:
-          $ref: '#/definitions/domain.Category'
+          $ref: '#/definitions/domain.UpdateCategoryRequest'
       produces:
       - application/json
       responses:
@@ -1930,7 +2245,7 @@ paths:
         name: media
         required: true
         schema:
-          $ref: '#/definitions/domain.Media'
+          $ref: '#/definitions/domain.CreateMediaRequest'
       produces:
       - application/json
       responses:
@@ -2023,7 +2338,7 @@ paths:
         name: media
         required: true
         schema:
-          $ref: '#/definitions/domain.Media'
+          $ref: '#/definitions/domain.UpdateMediaRequest'
       produces:
       - application/json
       responses:
@@ -2044,6 +2359,41 @@ paths:
           schema:
             $ref: '#/definitions/response.Response-any'
       summary: Update media
+      tags:
+      - Media
+  /api/v1/media/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a media file via multipart/form-data, save it on the backend
+        file store, and create a media record
+      parameters:
+      - description: Media file
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Alt text
+        in: formData
+        name: alt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_Media'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Upload media file
       tags:
       - Media
   /api/v1/payments/biteship/notification:
@@ -2166,7 +2516,7 @@ paths:
         name: product
         required: true
         schema:
-          $ref: '#/definitions/domain.Product'
+          $ref: '#/definitions/domain.CreateProductRequest'
       produces:
       - application/json
       responses:
@@ -2263,7 +2613,7 @@ paths:
         name: product
         required: true
         schema:
-          $ref: '#/definitions/domain.Product'
+          $ref: '#/definitions/domain.UpdateProductRequest'
       produces:
       - application/json
       responses:
@@ -2344,7 +2694,7 @@ paths:
         name: season
         required: true
         schema:
-          $ref: '#/definitions/domain.Season'
+          $ref: '#/definitions/domain.CreateSeasonRequest'
       produces:
       - application/json
       responses:
@@ -2441,7 +2791,7 @@ paths:
         name: season
         required: true
         schema:
-          $ref: '#/definitions/domain.Season'
+          $ref: '#/definitions/domain.UpdateSeasonRequest'
       produces:
       - application/json
       responses:
@@ -2645,7 +2995,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/domain.User'
+          $ref: '#/definitions/domain.CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -2742,7 +3092,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/domain.User'
+          $ref: '#/definitions/domain.UpdateUserRequest'
       produces:
       - application/json
       responses:

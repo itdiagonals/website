@@ -32,12 +32,12 @@ func (error *InsufficientStockError) Error() string {
 }
 
 type CartService interface {
-	AddToCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
-	GetMyCart(context context.Context, customerID uint) (*domain.Cart, error)
-	RemoveFromCartByID(context context.Context, customerID uint, cartItemID uint) (*domain.Cart, error)
-	RemoveFromCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
-	UpdateQuantityByID(context context.Context, customerID uint, cartItemID uint, quantity int) (*domain.Cart, error)
-	UpdateQuantity(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error)
+	AddToCart(context context.Context, userID uint, item domain.CartItem) (*domain.Cart, error)
+	GetMyCart(context context.Context, userID uint) (*domain.Cart, error)
+	RemoveFromCartByID(context context.Context, userID uint, cartItemID uint) (*domain.Cart, error)
+	RemoveFromCart(context context.Context, userID uint, item domain.CartItem) (*domain.Cart, error)
+	UpdateQuantityByID(context context.Context, userID uint, cartItemID uint, quantity int) (*domain.Cart, error)
+	UpdateQuantity(context context.Context, userID uint, item domain.CartItem) (*domain.Cart, error)
 }
 
 type cartService struct {
@@ -52,7 +52,7 @@ func NewCartService(cartRepository repository.CartRepository, productRepository 
 	}
 }
 
-func (service *cartService) AddToCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error) {
+func (service *cartService) AddToCart(context context.Context, userID uint, item domain.CartItem) (*domain.Cart, error) {
 	item.SelectedSize = strings.TrimSpace(item.SelectedSize)
 	item.SelectedColorName = strings.TrimSpace(item.SelectedColorName)
 	item.SelectedColorHex = strings.TrimSpace(item.SelectedColorHex)
@@ -74,7 +74,7 @@ func (service *cartService) AddToCart(context context.Context, customerID uint, 
 		return nil, ErrInvalidCartItem
 	}
 
-	cart, err := service.cartRepository.GetCart(context, customerID)
+	cart, err := service.cartRepository.GetCart(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +103,8 @@ func (service *cartService) AddToCart(context context.Context, customerID uint, 
 	item.StockSufficient = true
 	item.Subtotal = calculateSubtotal(detail.BasePrice, item.Quantity)
 
-	if cart.CustomerID == 0 {
-		cart.CustomerID = customerID
+	if cart.UserID == 0 {
+		cart.UserID = userID
 	}
 
 	for index := range cart.Items {
@@ -131,8 +131,8 @@ func (service *cartService) AddToCart(context context.Context, customerID uint, 
 	return cart, nil
 }
 
-func (service *cartService) GetMyCart(context context.Context, customerID uint) (*domain.Cart, error) {
-	cart, err := service.cartRepository.GetCart(context, customerID)
+func (service *cartService) GetMyCart(context context.Context, userID uint) (*domain.Cart, error) {
+	cart, err := service.cartRepository.GetCart(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (service *cartService) GetMyCart(context context.Context, customerID uint) 
 	return cart, nil
 }
 
-func (service *cartService) RemoveFromCart(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error) {
+func (service *cartService) RemoveFromCart(context context.Context, userID uint, item domain.CartItem) (*domain.Cart, error) {
 	item.SelectedSize = strings.TrimSpace(item.SelectedSize)
 	item.SelectedColorName = strings.TrimSpace(item.SelectedColorName)
 	item.SelectedColorHex = strings.TrimSpace(item.SelectedColorHex)
@@ -191,7 +191,7 @@ func (service *cartService) RemoveFromCart(context context.Context, customerID u
 		return nil, ErrInvalidCartItem
 	}
 
-	cart, err := service.cartRepository.GetCart(context, customerID)
+	cart, err := service.cartRepository.GetCart(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -219,12 +219,12 @@ func (service *cartService) RemoveFromCart(context context.Context, customerID u
 	return cart, nil
 }
 
-func (service *cartService) RemoveFromCartByID(context context.Context, customerID uint, cartItemID uint) (*domain.Cart, error) {
-	if customerID == 0 || cartItemID == 0 {
+func (service *cartService) RemoveFromCartByID(context context.Context, userID uint, cartItemID uint) (*domain.Cart, error) {
+	if userID == 0 || cartItemID == 0 {
 		return nil, ErrInvalidCartItem
 	}
 
-	cart, err := service.cartRepository.GetCart(context, customerID)
+	cart, err := service.cartRepository.GetCart(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (service *cartService) RemoveFromCartByID(context context.Context, customer
 	return cart, nil
 }
 
-func (service *cartService) UpdateQuantity(context context.Context, customerID uint, item domain.CartItem) (*domain.Cart, error) {
+func (service *cartService) UpdateQuantity(context context.Context, userID uint, item domain.CartItem) (*domain.Cart, error) {
 	item.SelectedSize = strings.TrimSpace(item.SelectedSize)
 	item.SelectedColorName = strings.TrimSpace(item.SelectedColorName)
 	item.SelectedColorHex = strings.TrimSpace(item.SelectedColorHex)
@@ -279,7 +279,7 @@ func (service *cartService) UpdateQuantity(context context.Context, customerID u
 		return nil, ErrInvalidCartItem
 	}
 
-	cart, err := service.cartRepository.GetCart(context, customerID)
+	cart, err := service.cartRepository.GetCart(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -323,12 +323,12 @@ func (service *cartService) UpdateQuantity(context context.Context, customerID u
 	return cart, nil
 }
 
-func (service *cartService) UpdateQuantityByID(context context.Context, customerID uint, cartItemID uint, quantity int) (*domain.Cart, error) {
-	if customerID == 0 || cartItemID == 0 || quantity <= 0 {
+func (service *cartService) UpdateQuantityByID(context context.Context, userID uint, cartItemID uint, quantity int) (*domain.Cart, error) {
+	if userID == 0 || cartItemID == 0 || quantity <= 0 {
 		return nil, ErrInvalidCartItem
 	}
 
-	cart, err := service.cartRepository.GetCart(context, customerID)
+	cart, err := service.cartRepository.GetCart(context, userID)
 	if err != nil {
 		return nil, err
 	}

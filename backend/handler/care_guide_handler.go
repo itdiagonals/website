@@ -76,18 +76,20 @@ func (h *CareGuideHandler) GetCareGuideByID(c *gin.Context) {
 // @Tags         CareGuides
 // @Accept       json
 // @Produce      json
-// @Param        care_guide  body      domain.CareGuide  true  "Care Guide payload"
+// @Param        care_guide  body      domain.CreateCareGuideRequest  true  "Care Guide payload"
 // @Success      201         {object}  response.Response[domain.CareGuide]
 // @Failure      400         {object}  response.Response[any]
 // @Failure      500         {object}  response.Response[any]
 // @Router       /api/v1/care-guides [post]
 func (h *CareGuideHandler) CreateCareGuide(c *gin.Context) {
-	var careGuide domain.CareGuide
-	if err := c.ShouldBindJSON(&careGuide); err != nil {
+	var req domain.CreateCareGuideRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.care_guides.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
+
+	careGuide := req.ToCareGuide()
 
 	logger.Info("handler.care_guides.create", "title", careGuide.Title)
 	if err := h.service.CreateCareGuide(c.Request.Context(), &careGuide); err != nil {
@@ -104,8 +106,8 @@ func (h *CareGuideHandler) CreateCareGuide(c *gin.Context) {
 // @Tags         CareGuides
 // @Accept       json
 // @Produce      json
-// @Param        id          path      int               true  "Care Guide ID"
-// @Param        care_guide  body      domain.CareGuide  true  "Care Guide payload"
+// @Param        id          path      int                             true  "Care Guide ID"
+// @Param        care_guide  body      domain.UpdateCareGuideRequest   true  "Care Guide payload"
 // @Success      200         {object}  response.Response[domain.CareGuide]
 // @Failure      400         {object}  response.Response[any]
 // @Failure      404         {object}  response.Response[any]
@@ -119,13 +121,13 @@ func (h *CareGuideHandler) UpdateCareGuide(c *gin.Context) {
 		return
 	}
 
-	var careGuide domain.CareGuide
-	if err := c.ShouldBindJSON(&careGuide); err != nil {
+	var req domain.UpdateCareGuideRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.care_guides.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
-	careGuide.ID = id
+	careGuide := req.ToCareGuide(id)
 
 	logger.Info("handler.care_guides.update", "id", id)
 	if err := h.service.UpdateCareGuide(c.Request.Context(), &careGuide); err != nil {

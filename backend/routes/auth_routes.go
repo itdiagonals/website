@@ -11,9 +11,9 @@ import (
 )
 
 func registerAuthRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
-	customerRepository := repository.NewCustomerRepository(db)
-	authSessionRepository := repository.NewAuthSessionRepository(db)
-	authService := service.NewAuthService(customerRepository, authSessionRepository)
+	userRepository := repository.NewUserRepository(db)
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	authService := service.NewAuthService(userRepository, authSessionRepository)
 	authHandler := handler.NewAuthHandler(authService)
 
 	api.POST("/auth/register", authHandler.Register)
@@ -21,7 +21,7 @@ func registerAuthRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Cl
 	api.POST("/auth/refresh", authHandler.Refresh)
 
 	protectedAuth := api.Group("/auth")
-	protectedAuth.Use(middleware.RequireAuth(authSessionRepository))
+	protectedAuth.Use(middleware.RequireAuth(authSessionRepository, userRepository))
 	protectedAuth.GET("/sessions", authHandler.ListSessions)
 	protectedAuth.POST("/logout", authHandler.Logout)
 	protectedAuth.POST("/logout-all", authHandler.LogoutAll)

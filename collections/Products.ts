@@ -81,14 +81,14 @@ export const Products: CollectionConfig = {
     {
       name: 'season',
       type: 'relationship',
-      relationTo: 'seasons',
+      relationTo: 'seasons' as any,
       required: true,
       hasMany: false,
     },
     {
       name: 'category',
       type: 'relationship',
-      relationTo: 'categories',
+      relationTo: 'categories' as any,
       required: true,
       hasMany: false,
     },
@@ -295,7 +295,7 @@ export const Products: CollectionConfig = {
     {
       name: 'care_guide',
       type: 'relationship',
-      relationTo: 'care-guides',
+      relationTo: 'care-guides' as any,
       hasMany: false,
     },
   ],

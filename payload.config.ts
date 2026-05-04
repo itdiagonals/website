@@ -15,7 +15,7 @@ import { s3Storage } from '@payloadcms/storage-s3'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const payloadDatabaseURL = process.env.PAYLOAD_DATABASE_URL || process.env.DATABASE_URL || ''
+const databaseURL = process.env.DATABASE_URL || ''
 const payloadEnablePush = process.env.PAYLOAD_ENABLE_PUSH === 'true'
 
 export default buildConfig({
@@ -34,7 +34,7 @@ export default buildConfig({
     db: postgresAdapter({
         push: payloadEnablePush,
         pool: {
-            connectionString: payloadDatabaseURL,
+            connectionString: databaseURL,
         },
     }),
     sharp,

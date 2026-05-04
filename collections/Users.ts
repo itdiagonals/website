@@ -11,5 +11,23 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
     },
+    {
+      name: 'role',
+      type: 'select',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Customer', value: 'customer' },
+      ],
+      defaultValue: 'customer',
+      required: true,
+    },
+    {
+      name: 'phone',
+      type: 'text',
+    },
+    {
+      name: 'address',
+      type: 'text',
+    },
   ],
 }

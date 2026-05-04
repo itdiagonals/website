@@ -99,19 +99,21 @@ func (h *SeasonHandler) GetSeasonBySlug(c *gin.Context) {
 // @Tags         Seasons
 // @Accept       json
 // @Produce      json
-// @Param        season  body      domain.Season  true  "Season payload"
+// @Param        season  body      domain.CreateSeasonRequest  true  "Season payload"
 // @Success      201     {object}  response.Response[domain.Season]
 // @Failure      400     {object}  response.Response[any]
 // @Failure      409     {object}  response.Response[any]
 // @Failure      500     {object}  response.Response[any]
 // @Router       /api/v1/seasons [post]
 func (h *SeasonHandler) CreateSeason(c *gin.Context) {
-	var season domain.Season
-	if err := c.ShouldBindJSON(&season); err != nil {
+	var req domain.CreateSeasonRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.seasons.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
+
+	season := req.ToSeason()
 
 	logger.Info("handler.seasons.create", "name", season.Name)
 	if err := h.service.CreateSeason(c.Request.Context(), &season); err != nil {
@@ -128,8 +130,8 @@ func (h *SeasonHandler) CreateSeason(c *gin.Context) {
 // @Tags         Seasons
 // @Accept       json
 // @Produce      json
-// @Param        id     path      int            true  "Season ID"
-// @Param        season body      domain.Season  true  "Season payload"
+// @Param        id     path      int                          true  "Season ID"
+// @Param        season body      domain.UpdateSeasonRequest   true  "Season payload"
 // @Success      200    {object}  response.Response[domain.Season]
 // @Failure      400    {object}  response.Response[any]
 // @Failure      404    {object}  response.Response[any]
@@ -143,13 +145,13 @@ func (h *SeasonHandler) UpdateSeason(c *gin.Context) {
 		return
 	}
 
-	var season domain.Season
-	if err := c.ShouldBindJSON(&season); err != nil {
+	var req domain.UpdateSeasonRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.seasons.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
-	season.ID = id
+	season := req.ToSeason(id)
 
 	logger.Info("handler.seasons.update", "id", id)
 	if err := h.service.UpdateSeason(c.Request.Context(), &season); err != nil {

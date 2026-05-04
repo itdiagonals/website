@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/itdiagonals/website/backend/domain"
 	"gorm.io/gorm"
 )
@@ -48,11 +49,39 @@ func (r *seasonRepository) FindBySlug(ctx context.Context, slug string) (*domain
 }
 
 func (r *seasonRepository) Create(ctx context.Context, season *domain.Season) error {
-	return r.db.WithContext(ctx).Create(season).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		lookbookImages := append([]domain.Media(nil), season.LookbookImages...)
+		season.LookbookImages = nil
+
+		if err := tx.Omit("LookbookImages.*").Create(season).Error; err != nil {
+			return err
+		}
+
+		if len(lookbookImages) > 0 {
+			if err := tx.Model(season).Association("LookbookImages").Replace(lookbookImages); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (r *seasonRepository) Update(ctx context.Context, season *domain.Season) error {
-	return r.db.WithContext(ctx).Save(season).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		lookbookImages := append([]domain.Media(nil), season.LookbookImages...)
+		season.LookbookImages = nil
+
+		if err := tx.Omit("LookbookImages.*").Save(season).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(season).Association("LookbookImages").Replace(lookbookImages); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *seasonRepository) Delete(ctx context.Context, id int) error {

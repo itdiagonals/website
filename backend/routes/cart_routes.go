@@ -10,15 +10,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerCartRoutes(router *gin.Engine, redisClient *redis.Client, backendDB *gorm.DB, payloadDB *gorm.DB) {
-	cartRepository := repository.NewCartRepository(backendDB, redisClient)
-	productRepository := repository.NewProductRepository(payloadDB)
-	authSessionRepository := repository.NewAuthSessionRepository(backendDB)
+func registerCartRoutes(router *gin.Engine, redisClient *redis.Client, db *gorm.DB) {
+	cartRepository := repository.NewCartRepository(db, redisClient)
+	productRepository := repository.NewProductRepository(db)
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
 	cartService := service.NewCartService(cartRepository, productRepository)
 	cartHandler := handler.NewCartHandler(cartService)
 
 	protected := router.Group("/api/v1")
-	protected.Use(middleware.RequireAuth(authSessionRepository))
+	protected.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("customer"))
 	protected.POST("/cart/add", cartHandler.AddToCart)
 	protected.GET("/cart", cartHandler.GetCart)
 	protected.PATCH("/cart/quantity", cartHandler.UpdateQuantity)

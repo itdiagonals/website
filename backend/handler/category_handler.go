@@ -99,19 +99,21 @@ func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 // @Tags         Categories
 // @Accept       json
 // @Produce      json
-// @Param        category  body      domain.Category  true  "Category payload"
+// @Param        category  body      domain.CreateCategoryRequest  true  "Category payload"
 // @Success      201       {object}  response.Response[domain.Category]
 // @Failure      400       {object}  response.Response[any]
 // @Failure      409       {object}  response.Response[any]
 // @Failure      500       {object}  response.Response[any]
 // @Router       /api/v1/categories [post]
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var category domain.Category
-	if err := c.ShouldBindJSON(&category); err != nil {
+	var req domain.CreateCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.categories.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
+
+	category := req.ToCategory()
 
 	logger.Info("handler.categories.create", "name", category.Name)
 	if err := h.service.CreateCategory(c.Request.Context(), &category); err != nil {
@@ -128,8 +130,8 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 // @Tags         Categories
 // @Accept       json
 // @Produce      json
-// @Param        id        path      int              true  "Category ID"
-// @Param        category  body      domain.Category  true  "Category payload"
+// @Param        id        path      int                            true  "Category ID"
+// @Param        category  body      domain.UpdateCategoryRequest   true  "Category payload"
 // @Success      200       {object}  response.Response[domain.Category]
 // @Failure      400       {object}  response.Response[any]
 // @Failure      404       {object}  response.Response[any]
@@ -143,13 +145,13 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	var category domain.Category
-	if err := c.ShouldBindJSON(&category); err != nil {
+	var req domain.UpdateCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.categories.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
-	category.ID = id
+	category := req.ToCategory(id)
 
 	logger.Info("handler.categories.update", "id", id)
 	if err := h.service.UpdateCategory(c.Request.Context(), &category); err != nil {

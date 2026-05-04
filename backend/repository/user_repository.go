@@ -8,11 +8,11 @@ import (
 
 type UserRepository interface {
 	FindAll(ctx context.Context) ([]domain.User, error)
-	FindByID(ctx context.Context, id int) (*domain.User, error)
+	FindByID(ctx context.Context, id uint) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	Create(ctx context.Context, user *domain.User) error
 	Update(ctx context.Context, user *domain.User) error
-	Delete(ctx context.Context, id int) error
+	Delete(ctx context.Context, id uint) error
 }
 
 type userRepository struct {
@@ -31,7 +31,7 @@ func (r *userRepository) FindAll(ctx context.Context) ([]domain.User, error) {
 	return users, nil
 }
 
-func (r *userRepository) FindByID(ctx context.Context, id int) (*domain.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, id uint) (*domain.User, error) {
 	var user domain.User
 	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return nil, err
@@ -55,6 +55,6 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
 	return r.db.WithContext(ctx).Save(user).Error
 }
 
-func (r *userRepository) Delete(ctx context.Context, id int) error {
+func (r *userRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&domain.User{}, id).Error
 }

@@ -167,13 +167,13 @@ func (handler *AuthHandler) Refresh(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/auth/logout [post]
 func (handler *AuthHandler) Logout(context *gin.Context) {
-	customerID, sessionID, ok := getCurrentAuthContext(context)
+	userID, sessionID, ok := getCurrentAuthContext(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	if err := handler.authService.LogoutCurrentSession(context.Request.Context(), customerID, sessionID); err != nil {
+	if err := handler.authService.LogoutCurrentSession(context.Request.Context(), userID, sessionID); err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -184,7 +184,7 @@ func (handler *AuthHandler) Logout(context *gin.Context) {
 
 // LogoutAll godoc
 // @Summary Logout all sessions
-// @Description Revoke all active sessions for the authenticated customer and clear auth cookies on the current device
+// @Description Revoke all active sessions for the authenticated user and clear auth cookies on the current device
 // @Tags Auth
 // @Security BearerAuth
 // @Produce json
@@ -193,13 +193,13 @@ func (handler *AuthHandler) Logout(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/auth/logout-all [post]
 func (handler *AuthHandler) LogoutAll(context *gin.Context) {
-	customerID, _, ok := getCurrentAuthContext(context)
+	userID, _, ok := getCurrentAuthContext(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	if err := handler.authService.LogoutAllSessions(context.Request.Context(), customerID); err != nil {
+	if err := handler.authService.LogoutAllSessions(context.Request.Context(), userID); err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -210,7 +210,7 @@ func (handler *AuthHandler) LogoutAll(context *gin.Context) {
 
 // ListSessions godoc
 // @Summary List active sessions
-// @Description List all active sessions for the authenticated customer across devices and browsers
+// @Description List all active sessions for the authenticated user across devices and browsers
 // @Tags Auth
 // @Security BearerAuth
 // @Produce json
@@ -219,13 +219,13 @@ func (handler *AuthHandler) LogoutAll(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/auth/sessions [get]
 func (handler *AuthHandler) ListSessions(context *gin.Context) {
-	customerID, sessionID, ok := getCurrentAuthContext(context)
+	userID, sessionID, ok := getCurrentAuthContext(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	sessions, err := handler.authService.ListSessions(context.Request.Context(), customerID, sessionID)
+	sessions, err := handler.authService.ListSessions(context.Request.Context(), userID, sessionID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return
@@ -304,12 +304,12 @@ func buildSessionMetadata(context *gin.Context) service.SessionMetadata {
 }
 
 func getCurrentAuthContext(context *gin.Context) (uint, string, bool) {
-	customerIDValue, ok := context.Get("customer_id")
+	userIDValue, ok := context.Get("user_id")
 	if !ok {
 		return 0, "", false
 	}
 
-	customerID, ok := customerIDValue.(uint)
+	userID, ok := userIDValue.(uint)
 	if !ok {
 		return 0, "", false
 	}
@@ -324,5 +324,5 @@ func getCurrentAuthContext(context *gin.Context) (uint, string, bool) {
 		return 0, "", false
 	}
 
-	return customerID, sessionID, true
+	return userID, sessionID, true
 }

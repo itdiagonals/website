@@ -6,21 +6,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupRoutes(router *gin.Engine, backendDB *gorm.DB, payloadDB *gorm.DB, redisClient *redis.Client) {
+func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
 	api := router.Group("/api/v1")
 
-	registerAuthRoutes(api, backendDB, redisClient)
-	registerCustomerAddressRoutes(api, backendDB)
-	registerWilayahRoutes(api, backendDB)
-	registerProductRoutes(api, payloadDB)
-	registerCheckoutRoutes(api, backendDB, payloadDB, redisClient)
-	registerPaymentRoutes(api, backendDB, payloadDB)
-	registerTransactionRoutes(api, backendDB)
-	registerCartRoutes(router, redisClient, backendDB, payloadDB)
+	registerAuthRoutes(api, db, redisClient)
+	registerCustomerAddressRoutes(api, db, redisClient)
+	registerWilayahRoutes(api, db)
+	registerProductRoutes(api, db, redisClient)
+	registerCheckoutRoutes(api, db, redisClient)
+	registerPaymentRoutes(api, db)
+	registerTransactionRoutes(api, db, redisClient)
+	registerCartRoutes(router, redisClient, db)
 
-	registerUserRoutes(api, backendDB)
-	registerMediaRoutes(api, backendDB)
-	registerCategoryRoutes(api, backendDB)
-	registerSeasonRoutes(api, backendDB)
-	registerCareGuideRoutes(api, backendDB)
+	registerUserRoutes(api, db, redisClient)
+	registerMediaRoutes(api, db, redisClient)
+	registerCategoryRoutes(api, db, redisClient)
+	registerSeasonRoutes(api, db, redisClient)
+	registerCareGuideRoutes(api, db, redisClient)
 }

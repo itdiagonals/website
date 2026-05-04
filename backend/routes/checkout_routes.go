@@ -10,20 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerCheckoutRoutes(api *gin.RouterGroup, backendDB *gorm.DB, payloadDB *gorm.DB, redisClient *redis.Client) {
-	customerRepository := repository.NewCustomerRepository(backendDB)
-	customerAddressRepository := repository.NewCustomerAddressRepository(backendDB)
-	authSessionRepository := repository.NewAuthSessionRepository(backendDB)
-	cartRepository := repository.NewCartRepository(backendDB, redisClient)
-	productRepository := repository.NewProductRepository(payloadDB)
-	transactionRepository := repository.NewTransactionRepository(backendDB)
-	stockReservationRepository := repository.NewStockReservationRepository(backendDB)
+func registerCheckoutRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+	userRepository := repository.NewUserRepository(db)
+	customerAddressRepository := repository.NewCustomerAddressRepository(db)
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	cartRepository := repository.NewCartRepository(db, redisClient)
+	productRepository := repository.NewProductRepository(db)
+	transactionRepository := repository.NewTransactionRepository(db)
+	stockReservationRepository := repository.NewStockReservationRepository(db)
 	shippingService := service.NewBiteshipService()
-	checkoutService := service.NewCheckoutService(customerRepository, customerAddressRepository, cartRepository, productRepository, transactionRepository, stockReservationRepository, shippingService)
+	checkoutService := service.NewCheckoutService(userRepository, customerAddressRepository, cartRepository, productRepository, transactionRepository, stockReservationRepository, shippingService)
 	checkoutHandler := handler.NewCheckoutHandler(checkoutService)
 
 	protected := api.Group("")
-	protected.Use(middleware.RequireAuth(authSessionRepository))
+	protected.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("customer"))
 	protected.POST("/checkout/rates", checkoutHandler.GetShippingRates)
 	protected.POST("/checkout", checkoutHandler.Checkout)
 }

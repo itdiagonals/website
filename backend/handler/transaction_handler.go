@@ -125,7 +125,7 @@ func NewTransactionHandler(transactionService service.TransactionHistoryService)
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/transactions [get]
 func (handler *TransactionHandler) GetMyTransactions(context *gin.Context) {
-	customerID, ok := getCurrentCustomerID(context)
+	userID, ok := getCurrentUserID(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
@@ -151,7 +151,7 @@ func (handler *TransactionHandler) GetMyTransactions(context *gin.Context) {
 		limit = parsedLimit
 	}
 
-	result, err := handler.transactionService.ListMyTransactions(context.Request.Context(), customerID, service.TransactionHistoryQuery{
+	result, err := handler.transactionService.ListMyTransactions(context.Request.Context(), userID, service.TransactionHistoryQuery{
 		Page:   page,
 		Limit:  limit,
 		Status: strings.TrimSpace(context.Query("status")),
@@ -206,7 +206,7 @@ func (handler *TransactionHandler) GetMyTransactions(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/transactions/{order_id} [get]
 func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) {
-	customerID, ok := getCurrentCustomerID(context)
+	userID, ok := getCurrentUserID(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
@@ -218,7 +218,7 @@ func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) 
 		return
 	}
 
-	result, err := handler.transactionService.GetMyTransactionByOrderID(context.Request.Context(), customerID, orderID)
+	result, err := handler.transactionService.GetMyTransactionByOrderID(context.Request.Context(), userID, orderID)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTransactionHistoryInvalidQuery):
@@ -296,7 +296,7 @@ func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) 
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/transactions/{order_id}/tracking [get]
 func (handler *TransactionHandler) GetMyTransactionTracking(context *gin.Context) {
-	customerID, ok := getCurrentCustomerID(context)
+	userID, ok := getCurrentUserID(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
@@ -310,7 +310,7 @@ func (handler *TransactionHandler) GetMyTransactionTracking(context *gin.Context
 
 	refresh := strings.EqualFold(strings.TrimSpace(context.Query("refresh")), "true")
 
-	result, err := handler.transactionService.GetMyTransactionTracking(context.Request.Context(), customerID, orderID, refresh)
+	result, err := handler.transactionService.GetMyTransactionTracking(context.Request.Context(), userID, orderID, refresh)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTransactionHistoryInvalidQuery),

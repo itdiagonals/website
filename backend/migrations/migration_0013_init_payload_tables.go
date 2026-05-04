@@ -7,13 +7,15 @@ var migration0013InitPayloadTables = Migration{
 	Description: "Create Payload CMS-owned tables (users, media, categories, seasons, care_guides, products, product sub-tables, season_lookbook_images)",
 	Up: func(tx *gorm.DB) error {
 		statements := []string{
-			// ── Users (Payload auth collection) ──
+			// ── Users (Payload auth collection + app users) ──
 			`CREATE TABLE IF NOT EXISTS users (
-				id SERIAL PRIMARY KEY,
+				id BIGSERIAL PRIMARY KEY,
 				email VARCHAR(255) NOT NULL UNIQUE,
 				password VARCHAR(255),
 				name VARCHAR(255),
-				role VARCHAR(50) NOT NULL DEFAULT 'admin',
+				role VARCHAR(50) NOT NULL DEFAULT 'user',
+				phone VARCHAR(50),
+				address TEXT,
 				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 				updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 			)`,
@@ -169,6 +171,28 @@ var migration0013InitPayloadTables = Migration{
 					REFERENCES products(id) ON UPDATE CASCADE ON DELETE CASCADE
 			)`,
 			`CREATE INDEX IF NOT EXISTS idx_pv_parent_id ON products_variants(_parent_id)`,
+
+			// ── Add FKs now that users table exists ──
+			`DO $$ BEGIN
+				IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_transactions_user') THEN
+					ALTER TABLE transactions ADD CONSTRAINT fk_transactions_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+				END IF;
+			END $$`,
+			`DO $$ BEGIN
+				IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_carts_user') THEN
+					ALTER TABLE carts ADD CONSTRAINT fk_carts_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+				END IF;
+			END $$`,
+			`DO $$ BEGIN
+				IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_auth_sessions_user') THEN
+					ALTER TABLE auth_sessions ADD CONSTRAINT fk_auth_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+				END IF;
+			END $$`,
+			`DO $$ BEGIN
+				IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'fk_user_addresses_user') THEN
+					ALTER TABLE user_addresses ADD CONSTRAINT fk_user_addresses_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+				END IF;
+			END $$`,
 		}
 
 		for _, statement := range statements {

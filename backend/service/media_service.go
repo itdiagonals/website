@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/repository"
@@ -25,8 +26,8 @@ func (s *MediaService) GetMediaByID(ctx context.Context, id int) (*domain.Media,
 }
 
 func (s *MediaService) CreateMedia(ctx context.Context, media *domain.Media) error {
-	if media.URL == "" || media.Filename == "" {
-		return fmt.Errorf("url and filename are required")
+	if err := validateMedia(media); err != nil {
+		return err
 	}
 	return s.repo.Create(ctx, media)
 }
@@ -35,9 +36,25 @@ func (s *MediaService) UpdateMedia(ctx context.Context, media *domain.Media) err
 	if media.ID == 0 {
 		return fmt.Errorf("media id is required")
 	}
+	if err := validateMedia(media); err != nil {
+		return err
+	}
 	return s.repo.Update(ctx, media)
 }
 
 func (s *MediaService) DeleteMedia(ctx context.Context, id int) error {
 	return s.repo.Delete(ctx, id)
+}
+
+func validateMedia(media *domain.Media) error {
+	if strings.TrimSpace(media.Alt) == "" {
+		return fmt.Errorf("alt is required")
+	}
+	if strings.TrimSpace(media.URL) == "" {
+		return fmt.Errorf("url is required")
+	}
+	if strings.TrimSpace(media.Filename) == "" {
+		return fmt.Errorf("filename is required")
+	}
+	return nil
 }

@@ -41,7 +41,7 @@ func main() {
 
 	config.ConnectDB()
 
-	if err := migrations.Apply(config.DBBackend); err != nil {
+	if err := migrations.Apply(config.DB); err != nil {
 		logger.Fatal("database migration failed", "error", err.Error())
 	}
 
@@ -52,7 +52,7 @@ func main() {
 		logger.Fatal("failed to connect redis", "error", err.Error())
 	}
 
-	startShippingJobWorker(config.DBBackend, config.DBPayload)
+	startShippingJobWorker(config.DB)
 
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
@@ -62,7 +62,8 @@ func main() {
 		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
-	routes.SetupRoutes(router, config.DBBackend, config.DBPayload, redisClient)
+	routes.SetupRoutes(router, config.DB, redisClient)
+	router.Static("/uploads", "./uploads")
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -88,20 +89,15 @@ func initLogger() {
 	})
 }
 
-func startShippingJobWorker(backendDB *gorm.DB, payloadDB *gorm.DB) {
-	if backendDB == nil {
-		logger.Warn("shipping worker disabled: invalid backend db")
+func startShippingJobWorker(db *gorm.DB) {
+	if db == nil {
+		logger.Warn("shipping worker disabled: invalid db")
 		return
 	}
 
-	if payloadDB == nil {
-		logger.Warn("shipping worker disabled: invalid payload db")
-		return
-	}
-
-	transactionRepository := repository.NewTransactionRepository(backendDB)
-	productRepository := repository.NewProductRepository(payloadDB)
-	shippingJobRepository := repository.NewShippingJobRepository(backendDB)
+	transactionRepository := repository.NewTransactionRepository(db)
+	productRepository := repository.NewProductRepository(db)
+	shippingJobRepository := repository.NewShippingJobRepository(db)
 	shippingService := service.NewBiteshipService()
 	bookingService := service.NewShippingBookingService(transactionRepository, productRepository, shippingService)
 	worker := service.NewShippingJobWorker(shippingJobRepository, bookingService)

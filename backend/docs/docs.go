@@ -282,7 +282,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Revoke all active sessions for the authenticated customer and clear auth cookies on the current device",
+                "description": "Revoke all active sessions for the authenticated user and clear auth cookies on the current device",
                 "produces": [
                     "application/json"
                 ],
@@ -403,7 +403,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List all active sessions for the authenticated customer across devices and browsers",
+                "description": "List all active sessions for the authenticated user across devices and browsers",
                 "produces": [
                     "application/json"
                 ],
@@ -480,7 +480,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.CareGuide"
+                            "$ref": "#/definitions/domain.CreateCareGuideRequest"
                         }
                     }
                 ],
@@ -581,7 +581,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.CareGuide"
+                            "$ref": "#/definitions/domain.UpdateCareGuideRequest"
                         }
                     }
                 ],
@@ -934,7 +934,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Category"
+                            "$ref": "#/definitions/domain.CreateCategoryRequest"
                         }
                     }
                 ],
@@ -1085,7 +1085,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Category"
+                            "$ref": "#/definitions/domain.UpdateCategoryRequest"
                         }
                     }
                 ],
@@ -1329,8 +1329,59 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Media"
+                            "$ref": "#/definitions/domain.CreateMediaRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/upload": {
+            "post": {
+                "description": "Upload a media file via multipart/form-data, save it on the backend file store, and create a media record",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload media file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Media file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Alt text",
+                        "name": "alt",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1430,7 +1481,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Media"
+                            "$ref": "#/definitions/domain.UpdateMediaRequest"
                         }
                     }
                 ],
@@ -1678,7 +1729,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Product"
+                            "$ref": "#/definitions/domain.CreateProductRequest"
                         }
                     }
                 ],
@@ -1829,7 +1880,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Product"
+                            "$ref": "#/definitions/domain.UpdateProductRequest"
                         }
                     }
                 ],
@@ -1947,7 +1998,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Season"
+                            "$ref": "#/definitions/domain.CreateSeasonRequest"
                         }
                     }
                 ],
@@ -2098,7 +2149,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.Season"
+                            "$ref": "#/definitions/domain.UpdateSeasonRequest"
                         }
                     }
                 ],
@@ -2403,7 +2454,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "$ref": "#/definitions/domain.CreateUserRequest"
                         }
                     }
                 ],
@@ -2510,7 +2561,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "$ref": "#/definitions/domain.UpdateUserRequest"
                         }
                     }
                 ],
@@ -2696,14 +2747,14 @@ const docTemplate = `{
         "domain.Cart": {
             "type": "object",
             "properties": {
-                "customer_id": {
-                    "type": "integer"
-                },
                 "items": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/domain.CartItem"
                     }
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -2780,6 +2831,275 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.CreateCareGuideRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "instructions": {
+                    "type": "object"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CreateCategoryRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CreateMediaRequest": {
+            "type": "object",
+            "required": [
+                "alt",
+                "filename",
+                "url"
+            ],
+            "properties": {
+                "alt": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "filesize": {
+                    "type": "integer"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.CreateProductColorRequest": {
+            "type": "object",
+            "required": [
+                "color_name",
+                "hex_code"
+            ],
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "color_name": {
+                    "type": "string"
+                },
+                "hex_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CreateProductGalleryItemRequest": {
+            "type": "object",
+            "required": [
+                "image_id"
+            ],
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "image_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.CreateProductRequest": {
+            "type": "object",
+            "required": [
+                "base_price",
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "available_colors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductColorRequest"
+                    }
+                },
+                "available_sizes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductSizeRequest"
+                    }
+                },
+                "base_price": {
+                    "type": "number"
+                },
+                "care_guide_id": {
+                    "type": "integer"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "detail_info": {
+                    "type": "object"
+                },
+                "gallery": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductGalleryItemRequest"
+                    }
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "length": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "season_id": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "stock": {
+                    "type": "integer"
+                },
+                "variants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductVariantRequest"
+                    }
+                },
+                "weight": {
+                    "type": "integer"
+                },
+                "width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.CreateProductSizeRequest": {
+            "type": "object",
+            "required": [
+                "size"
+            ],
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CreateProductVariantRequest": {
+            "type": "object",
+            "required": [
+                "color_name",
+                "size"
+            ],
+            "properties": {
+                "_order": {
+                    "type": "integer"
+                },
+                "color_name": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "stock": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.CreateSeasonRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "lookbook_image_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "subtitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CreateUserRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.CustomerAddress": {
             "type": "object",
             "properties": {
@@ -2788,9 +3108,6 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
-                },
-                "customer_id": {
-                    "type": "integer"
                 },
                 "destination_area_id": {
                     "type": "string"
@@ -2842,6 +3159,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 },
                 "village": {
                     "type": "string"
@@ -3123,9 +3443,210 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.UpdateCareGuideRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "instructions": {
+                    "type": "object"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UpdateCategoryRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UpdateMediaRequest": {
+            "type": "object",
+            "required": [
+                "alt",
+                "filename",
+                "url"
+            ],
+            "properties": {
+                "alt": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "filesize": {
+                    "type": "integer"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.UpdateProductRequest": {
+            "type": "object",
+            "required": [
+                "base_price",
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "available_colors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductColorRequest"
+                    }
+                },
+                "available_sizes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductSizeRequest"
+                    }
+                },
+                "base_price": {
+                    "type": "number"
+                },
+                "care_guide_id": {
+                    "type": "integer"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "detail_info": {
+                    "type": "object"
+                },
+                "gallery": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductGalleryItemRequest"
+                    }
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "length": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "season_id": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "stock": {
+                    "type": "integer"
+                },
+                "variants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.CreateProductVariantRequest"
+                    }
+                },
+                "weight": {
+                    "type": "integer"
+                },
+                "width": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.UpdateSeasonRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "cover_image_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "lookbook_image_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "subtitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UpdateUserRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.User": {
             "type": "object",
             "properties": {
+                "address": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3136,6 +3657,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 },
                 "role": {

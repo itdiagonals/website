@@ -47,19 +47,19 @@ type AuthService interface {
 	Register(context context.Context, input RegisterInput, metadata SessionMetadata) (*AuthTokens, error)
 	Login(context context.Context, input LoginInput, metadata SessionMetadata) (*AuthTokens, error)
 	Refresh(context context.Context, refreshToken string) (*AuthTokens, error)
-	LogoutCurrentSession(context context.Context, customerID uint, sessionID string) error
-	LogoutAllSessions(context context.Context, customerID uint) error
-	ListSessions(context context.Context, customerID uint, currentSessionID string) ([]domain.AuthSessionSummary, error)
+	LogoutCurrentSession(context context.Context, userID uint, sessionID string) error
+	LogoutAllSessions(context context.Context, userID uint) error
+	ListSessions(context context.Context, userID uint, currentSessionID string) ([]domain.AuthSessionSummary, error)
 }
 
 type authService struct {
-	customerRepository    repository.CustomerRepository
+	userRepository        repository.UserRepository
 	authSessionRepository repository.AuthSessionRepository
 }
 
-func NewAuthService(customerRepository repository.CustomerRepository, authSessionRepository repository.AuthSessionRepository) AuthService {
+func NewAuthService(userRepository repository.UserRepository, authSessionRepository repository.AuthSessionRepository) AuthService {
 	return &authService{
-		customerRepository:    customerRepository,
+		userRepository:        userRepository,
 		authSessionRepository: authSessionRepository,
 	}
 }
@@ -70,7 +70,7 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 		return nil, ErrWeakPassword
 	}
 
-	_, err := service.customerRepository.FindByEmail(context, input.Email)
+	_, err := service.userRepository.FindByEmail(context, input.Email)
 	if err == nil {
 		return nil, ErrEmailAlreadyRegistered
 	}
@@ -83,17 +83,18 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 		return nil, err
 	}
 
-	customer := &domain.Customer{
-		Name:         strings.TrimSpace(input.Name),
-		Email:        input.Email,
-		PasswordHash: hashedPassword,
+	user := &domain.User{
+		Name:     strings.TrimSpace(input.Name),
+		Email:    input.Email,
+		Password: hashedPassword,
+		Role:     "customer",
 	}
 
-	if err := service.customerRepository.Create(context, customer); err != nil {
+	if err := service.userRepository.Create(context, user); err != nil {
 		return nil, err
 	}
 
-	tokens, err := service.createSessionAndIssueTokens(context, customer.ID, metadata)
+	tokens, err := service.createSessionAndIssueTokens(context, user.ID, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +105,7 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 func (service *authService) Login(context context.Context, input LoginInput, metadata SessionMetadata) (*AuthTokens, error) {
 	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 
-	customer, err := service.customerRepository.FindByEmail(context, input.Email)
+	user, err := service.userRepository.FindByEmail(context, input.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrInvalidCredentials
@@ -113,11 +114,11 @@ func (service *authService) Login(context context.Context, input LoginInput, met
 		return nil, err
 	}
 
-	if !utils.CheckPasswordHash(input.Password, customer.PasswordHash) {
+	if !utils.CheckPasswordHash(input.Password, user.Password) {
 		return nil, ErrInvalidCredentials
 	}
 
-	tokens, err := service.createSessionAndIssueTokens(context, customer.ID, metadata)
+	tokens, err := service.createSessionAndIssueTokens(context, user.ID, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (service *authService) Refresh(context context.Context, refreshToken string
 		return nil, ErrInvalidRefreshToken
 	}
 
-	if session.CustomerID != claims.CustomerID || session.RevokedAt != nil || !session.ExpiresAt.After(time.Now()) {
+	if session.UserID != claims.UserID || session.RevokedAt != nil || !session.ExpiresAt.After(time.Now()) {
 		return nil, ErrInvalidRefreshToken
 	}
 
@@ -144,7 +145,7 @@ func (service *authService) Refresh(context context.Context, refreshToken string
 		return nil, ErrInvalidRefreshToken
 	}
 
-	tokens, refreshTokenHash, err := service.issueTokens(claims.CustomerID, session.ID)
+	tokens, refreshTokenHash, err := service.issueTokens(claims.UserID, session.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -156,20 +157,20 @@ func (service *authService) Refresh(context context.Context, refreshToken string
 	return &tokens, nil
 }
 
-func (service *authService) LogoutCurrentSession(context context.Context, customerID uint, sessionID string) error {
+func (service *authService) LogoutCurrentSession(context context.Context, userID uint, sessionID string) error {
 	if strings.TrimSpace(sessionID) == "" {
 		return ErrInvalidRefreshToken
 	}
 
-	return service.authSessionRepository.RevokeSession(context, customerID, sessionID, time.Now())
+	return service.authSessionRepository.RevokeSession(context, userID, sessionID, time.Now())
 }
 
-func (service *authService) LogoutAllSessions(context context.Context, customerID uint) error {
-	return service.authSessionRepository.RevokeAllSessions(context, customerID, time.Now())
+func (service *authService) LogoutAllSessions(context context.Context, userID uint) error {
+	return service.authSessionRepository.RevokeAllSessions(context, userID, time.Now())
 }
 
-func (service *authService) ListSessions(context context.Context, customerID uint, currentSessionID string) ([]domain.AuthSessionSummary, error) {
-	sessions, err := service.authSessionRepository.ListActiveByCustomerID(context, customerID)
+func (service *authService) ListSessions(context context.Context, userID uint, currentSessionID string) ([]domain.AuthSessionSummary, error) {
+	sessions, err := service.authSessionRepository.ListActiveByUserID(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,13 +192,13 @@ func (service *authService) ListSessions(context context.Context, customerID uin
 	return summaries, nil
 }
 
-func (service *authService) createSessionAndIssueTokens(context context.Context, customerID uint, metadata SessionMetadata) (*AuthTokens, error) {
+func (service *authService) createSessionAndIssueTokens(context context.Context, userID uint, metadata SessionMetadata) (*AuthTokens, error) {
 	sessionID, err := utils.GenerateSessionID()
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, refreshTokenHash, err := service.issueTokens(customerID, sessionID)
+	tokens, refreshTokenHash, err := service.issueTokens(userID, sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +206,7 @@ func (service *authService) createSessionAndIssueTokens(context context.Context,
 	now := time.Now()
 	session := &domain.AuthSession{
 		ID:               sessionID,
-		CustomerID:       customerID,
+		UserID:           userID,
 		RefreshTokenHash: refreshTokenHash,
 		UserAgent:        strings.TrimSpace(metadata.UserAgent),
 		IPAddress:        strings.TrimSpace(metadata.IPAddress),
@@ -221,13 +222,13 @@ func (service *authService) createSessionAndIssueTokens(context context.Context,
 	return &tokens, nil
 }
 
-func (service *authService) issueTokens(customerID uint, sessionID string) (AuthTokens, string, error) {
-	accessToken, err := utils.GenerateToken(customerID, sessionID)
+func (service *authService) issueTokens(userID uint, sessionID string) (AuthTokens, string, error) {
+	accessToken, err := utils.GenerateToken(userID, sessionID)
 	if err != nil {
 		return AuthTokens{}, "", err
 	}
 
-	refreshToken, _, refreshExpiresAt, err := utils.GenerateRefreshToken(customerID, sessionID)
+	refreshToken, _, refreshExpiresAt, err := utils.GenerateRefreshToken(userID, sessionID)
 	if err != nil {
 		return AuthTokens{}, "", err
 	}

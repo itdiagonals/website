@@ -3,17 +3,25 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/handler"
+	"github.com/itdiagonals/website/backend/middleware"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"github.com/itdiagonals/website/backend/service"
+	"github.com/itdiagonals/website/backend/storage"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB) {
+func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
 	repo := repository.NewUserRepository(db)
 	svc := service.NewUserService(repo)
 	h := handler.NewUserHandler(svc)
 
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
+
 	routes := api.Group("/users")
+	routes.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
 		routes.GET("", h.GetAllUsers)
 		routes.GET("/:id", h.GetUserByID)
@@ -23,66 +31,98 @@ func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB) {
 	}
 }
 
-func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB) {
+func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+	store, err := storage.NewMinioStorage()
+	if err != nil {
+		logger.Warn("minio storage unavailable — upload endpoint will fail", "error", err.Error())
+		store = nil // Ensure store remains nil interface (not typed nil *MinioStorage)
+	}
+
+	var mediaStore storage.Storage
+	if store != nil {
+		mediaStore = store
+	}
+
 	repo := repository.NewMediaRepository(db)
 	svc := service.NewMediaService(repo)
-	h := handler.NewMediaHandler(svc)
+	h := handler.NewMediaHandler(svc, mediaStore)
 
-	routes := api.Group("/media")
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
+
+	api.GET("/media", h.GetAllMedia)
+	api.GET("/media/:id", h.GetMediaByID)
+
+	admin := api.Group("/media")
+	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
-		routes.GET("", h.GetAllMedia)
-		routes.GET("/:id", h.GetMediaByID)
-		routes.POST("", h.CreateMedia)
-		routes.PUT("/:id", h.UpdateMedia)
-		routes.DELETE("/:id", h.DeleteMedia)
+		admin.POST("/upload", h.UploadMedia)
+		admin.POST("", h.CreateMedia)
+		admin.PUT("/:id", h.UpdateMedia)
+		admin.DELETE("/:id", h.DeleteMedia)
 	}
 }
 
-func registerCategoryRoutes(api *gin.RouterGroup, db *gorm.DB) {
+func registerCategoryRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+	mediaRepo := repository.NewMediaRepository(db)
 	repo := repository.NewCategoryRepository(db)
-	svc := service.NewCategoryService(repo)
+	svc := service.NewCategoryService(repo, mediaRepo)
 	h := handler.NewCategoryHandler(svc)
 
-	routes := api.Group("/categories")
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
+
+	api.GET("/categories", h.GetAllCategories)
+	api.GET("/categories/:id", h.GetCategoryByID)
+	api.GET("/categories/slug/:slug", h.GetCategoryBySlug)
+
+	admin := api.Group("/categories")
+	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
-		routes.GET("", h.GetAllCategories)
-		routes.GET("/:id", h.GetCategoryByID)
-		routes.GET("/slug/:slug", h.GetCategoryBySlug)
-		routes.POST("", h.CreateCategory)
-		routes.PUT("/:id", h.UpdateCategory)
-		routes.DELETE("/:id", h.DeleteCategory)
+		admin.POST("", h.CreateCategory)
+		admin.PUT("/:id", h.UpdateCategory)
+		admin.DELETE("/:id", h.DeleteCategory)
 	}
 }
 
-func registerSeasonRoutes(api *gin.RouterGroup, db *gorm.DB) {
+func registerSeasonRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+	mediaRepo := repository.NewMediaRepository(db)
 	repo := repository.NewSeasonRepository(db)
-	svc := service.NewSeasonService(repo)
+	svc := service.NewSeasonService(repo, mediaRepo)
 	h := handler.NewSeasonHandler(svc)
 
-	routes := api.Group("/seasons")
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
+
+	api.GET("/seasons", h.GetAllSeasons)
+	api.GET("/seasons/:id", h.GetSeasonByID)
+	api.GET("/seasons/slug/:slug", h.GetSeasonBySlug)
+
+	admin := api.Group("/seasons")
+	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
-		routes.GET("", h.GetAllSeasons)
-		routes.GET("/:id", h.GetSeasonByID)
-		routes.GET("/slug/:slug", h.GetSeasonBySlug)
-		routes.POST("", h.CreateSeason)
-		routes.PUT("/:id", h.UpdateSeason)
-		routes.DELETE("/:id", h.DeleteSeason)
+		admin.POST("", h.CreateSeason)
+		admin.PUT("/:id", h.UpdateSeason)
+		admin.DELETE("/:id", h.DeleteSeason)
 	}
 }
 
-func registerCareGuideRoutes(api *gin.RouterGroup, db *gorm.DB) {
+func registerCareGuideRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
 	repo := repository.NewCareGuideRepository(db)
 	svc := service.NewCareGuideService(repo)
 	h := handler.NewCareGuideHandler(svc)
 
-	routes := api.Group("/care-guides")
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
+
+	api.GET("/care-guides", h.GetAllCareGuides)
+	api.GET("/care-guides/:id", h.GetCareGuideByID)
+
+	admin := api.Group("/care-guides")
+	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
-		routes.GET("", h.GetAllCareGuides)
-		routes.GET("/:id", h.GetCareGuideByID)
-		routes.POST("", h.CreateCareGuide)
-		routes.PUT("/:id", h.UpdateCareGuide)
-		routes.DELETE("/:id", h.DeleteCareGuide)
+		admin.POST("", h.CreateCareGuide)
+		admin.PUT("/:id", h.UpdateCareGuide)
+		admin.DELETE("/:id", h.DeleteCareGuide)
 	}
 }
-
-

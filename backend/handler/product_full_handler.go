@@ -101,19 +101,21 @@ func (h *ProductFullHandler) GetProductBySlug(c *gin.Context) {
 // @Tags         Products
 // @Accept       json
 // @Produce      json
-// @Param        product  body      domain.Product  true  "Product payload"
+// @Param        product  body      domain.CreateProductRequest  true  "Product payload"
 // @Success      201      {object}  response.Response[domain.Product]
 // @Failure      400      {object}  response.Response[any]
 // @Failure      409      {object}  response.Response[any]
 // @Failure      500      {object}  response.Response[any]
 // @Router       /api/v1/products [post]
 func (h *ProductFullHandler) CreateProduct(c *gin.Context) {
-	var product domain.Product
-	if err := c.ShouldBindJSON(&product); err != nil {
+	var req domain.CreateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.products.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
+
+	product := req.ToProduct()
 
 	logger.Info("handler.products.create", "name", product.Name)
 	if err := h.service.CreateProduct(c.Request.Context(), &product); err != nil {
@@ -130,8 +132,8 @@ func (h *ProductFullHandler) CreateProduct(c *gin.Context) {
 // @Tags         Products
 // @Accept       json
 // @Produce      json
-// @Param        id       path      int             true  "Product ID"
-// @Param        product  body      domain.Product  true  "Product payload"
+// @Param        id       path      int                          true  "Product ID"
+// @Param        product  body      domain.UpdateProductRequest  true  "Product payload"
 // @Success      200      {object}  response.Response[domain.Product]
 // @Failure      400      {object}  response.Response[any]
 // @Failure      404      {object}  response.Response[any]
@@ -145,13 +147,13 @@ func (h *ProductFullHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	var product domain.Product
-	if err := c.ShouldBindJSON(&product); err != nil {
+	var req domain.UpdateProductRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warn("handler.products.bind_failed", "error", err.Error())
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
-	product.ID = id
+	product := req.ToProduct(id)
 
 	logger.Info("handler.products.update", "id", id)
 	if err := h.service.UpdateProduct(c.Request.Context(), &product); err != nil {
