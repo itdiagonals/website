@@ -40,7 +40,7 @@ services:
       - website_minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 12
     restart: unless-stopped

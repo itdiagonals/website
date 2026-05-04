@@ -1,0 +1,39 @@
+services:
+  backend-migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: website-backend-migrate
+    env_file:
+      - ./backend/.env.docker
+    command: ["/app/migrate"]
+    depends_on:
+      backend-postgres:
+        condition: service_healthy
+      payload-postgres:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: website-backend
+    env_file:
+      - ./backend/.env.docker
+    command: ["/app/server"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ping >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped

@@ -1,9 +1,9 @@
 # Diagonals Website
 
-This repository contains two main application surfaces:
+This repository contains two application surfaces:
 
-- a Next.js + Payload CMS application in the repository root
-- a Go backend API in `backend/`
+- Next.js + Payload app in repository root
+- Go backend API in `backend/`
 
 The local stack now uses a single Postgres database shared between Payload CMS and the Go backend.
 
@@ -16,14 +16,12 @@ The local stack now uses a single Postgres database shared between Payload CMS a
 
 ## Prerequisites
 
-Make sure the following are installed locally:
-
 - Node.js 20+
 - pnpm
 - Docker Desktop
-- make (GNU Make)
+- GNU Make
 
-Go 1.25+ is only needed if you want to run the backend outside Docker.
+Go 1.25+ is only required if running backend outside Docker.
 
 ## Environment files
 
@@ -46,15 +44,13 @@ Before running Docker stack, create `backend/.env.docker` from the template:
 cp backend/.env.example backend/.env.docker
 ```
 
-PowerShell alternative:
+PowerShell:
 
 ```powershell
 Copy-Item backend/.env.example backend/.env.docker
 ```
 
-Then adjust values as needed.
-
-`backend/.env.docker` should include at least:
+Important keys in `backend/.env.docker`:
 
 - `REFRESH_TOKEN_SECRET`: refresh token signing secret
 - `ACCESS_TOKEN_SECRET`: access token signing secret
@@ -88,7 +84,7 @@ cp backend/.env.example backend/.env.docker
 make downv
 ```
 
-3. Start all services with Docker Compose.
+3. Start infra only (detached).
 
 ```bash
 make updb
@@ -109,7 +105,7 @@ Backend migrations run automatically when the backend container starts.
 Invoke-RestMethod http://localhost:8080/ping
 ```
 
-5. Stop all services.
+6. Stop all containers.
 
 ```bash
 make down
@@ -165,67 +161,93 @@ Start all services with build (detached):
 make updb
 ```
 
-Start all services (foreground):
-
-```bash
-make up
-```
-
-Follow logs:
-
-```bash
-make logs
-```
-
-Stop all services:
+Stop when done:
 
 ```bash
 make down
 ```
 
-Hard reset local data:
+### 2) Backend integration workflow (on demand)
+
+Start backend on top of existing infra:
 
 ```bash
-make downv
+make backend-up
 ```
 
-Open backend container shell:
+Notes:
+
+- migration runs first through `backend-migrate`
+- backend container starts after migration succeeds
+
+Stop backend only (keep infra running):
 
 ```bash
-make shell
+make backend-down
+```
+
+### 3) Full stack workflow (one command)
+
+Run infra + backend integration stack directly:
+
+```bash
+make full-updb
 ```
 
 Open database psql:
 
 ```bash
-make db
+make migrate-up
 ```
 
-Build containers:
+Run migration locally from host:
 
 ```bash
-make build
+make migrate-up-local
 ```
 
-Compile-test backend packages:
+## Make targets quick reference
+
+Show all targets:
 
 ```bash
-make backend-test
+make help
 ```
+
+Common targets:
+
+- `make up`, `make upb`, `make updb`: infra stack only
+- `make full-up`, `make full-upb`, `make full-updb`: infra + backend stack
+- `make backend-up`, `make backend-down`: toggle backend integration mode
+- `make down`, `make downv`: stop/remove containers (and volumes for `downv`)
+- `make logs`: combined logs with full compose set
+- `make shell`: open backend shell (backend must be running)
+- `make db`: open psql to backend postgres
+- `make backend-run`: run backend on host (`go run .`)
+- `make backend-test`: run backend tests
+
+## Ports
+
+- Payload Postgres: `localhost:5432`
+- Backend Postgres: `localhost:5433`
+- Redis: `localhost:6379`
+- MinIO API: `localhost:9000`
+- MinIO Console: `localhost:9001`
+- Backend API: `localhost:8080` (only when backend is started)
 
 ## Customer auth model
 
-The Go backend uses customer sessions with:
+Go backend uses:
 
 - short-lived access token
 - longer-lived refresh token
-- server-side session records in backend-owned tables
+- server-side session records
 
-This means customer auth is handled by the Go backend, not by Payload auth.
+So customer auth is managed by Go backend, not Payload auth.
 
 ## Production notes
 
-Before production deployment, make sure all of the following are done:
+Before production:
 
 1. Set `PAYLOAD_ENABLE_PUSH=false`.
 2. Replace all local secrets with strong production secrets.
