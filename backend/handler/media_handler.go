@@ -24,20 +24,12 @@ import (
 	"github.com/itdiagonals/website/backend/pkg/response"
 	"github.com/itdiagonals/website/backend/service"
 	"github.com/itdiagonals/website/backend/storage"
-	"github.com/ryanbekhen/go-webp"
 )
 
 const (
 	maxUploadSize = 10 << 20
 	storagePrefix = "media"
 )
-
-var allowedMimeTypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-	"image/webp": true,
-	"image/gif":  true,
-}
 
 type MediaHandler struct {
 	service *service.MediaService
@@ -177,10 +169,10 @@ func (h *MediaHandler) UploadMedia(c *gin.Context) {
 		return
 	}
 
-	storedName := ensureWebPFilename(buildStoredMediaFilename(fileHeader.Filename))
+	storedName := buildStoredMediaFilename(fileHeader.Filename)
 	objectKey := storagePrefix + "/" + storedName
 
-	uploadResult, imgWidth, imgHeight, err := convertAndUploadToStorage(
+	uploadResult, imgWidth, imgHeight, err := validateAndUploadToStorage(
 		c.Request.Context(), h.store, fileHeader, objectKey,
 	)
 	if err != nil {
@@ -297,21 +289,7 @@ func buildStoredMediaFilename(originalName string) string {
 	return fmt.Sprintf("%d-%s", time.Now().UnixNano(), cleaned)
 }
 
-func ensureWebPFilename(storedName string) string {
-	extension := strings.ToLower(filepath.Ext(storedName))
-	if extension == ".webp" {
-		return storedName
-	}
-
-	baseName := strings.TrimSuffix(storedName, extension)
-	if baseName == "" {
-		baseName = storedName
-	}
-
-	return baseName + ".webp"
-}
-
-func convertAndUploadToStorage(
+func validateAndUploadToStorage(
 	ctx context.Context,
 	store storage.Storage,
 	fileHeader *multipart.FileHeader,
@@ -335,91 +313,25 @@ func convertAndUploadToStorage(
 		return storage.UploadResult{}, 0, 0, err
 	}
 
-	if isWebPUpload(fileHeader.Filename, contentType, sourceData) {
-		result, err := store.Put(ctx, objectKey, bytes.NewReader(sourceData), int64(len(sourceData)), "image/webp")
-		if err != nil {
-			return storage.UploadResult{}, 0, 0, fmt.Errorf("upload webp to storage failed: %w", err)
-		}
-		return result, imgWidth, imgHeight, nil
-	}
-
-	webpData, err := convertImageToWebP(sourceData)
+	result, err := store.Put(ctx, objectKey, bytes.NewReader(sourceData), int64(len(sourceData)), contentType)
 	if err != nil {
-		return storage.UploadResult{}, 0, 0, err
-	}
-
-	result, err := store.Put(ctx, objectKey, bytes.NewReader(webpData), int64(len(webpData)), "image/webp")
-	if err != nil {
-		return storage.UploadResult{}, 0, 0, fmt.Errorf("upload converted webp to storage failed: %w", err)
+		return storage.UploadResult{}, 0, 0, fmt.Errorf("upload to storage failed: %w", err)
 	}
 	return result, imgWidth, imgHeight, nil
 }
 
 func validateUploadedImage(filename, contentType string, data []byte) (int, int, error) {
 	normalizedMime := strings.ToLower(strings.TrimSpace(contentType))
-	if normalizedMime != "" && !allowedMimeTypes[normalizedMime] {
-		return 0, 0, fmt.Errorf("unsupported media type: %s", normalizedMime)
+	if normalizedMime != "" && !strings.HasPrefix(normalizedMime, "image/") {
+		return 0, 0, fmt.Errorf("unsupported media type: %s, only images are allowed", normalizedMime)
 	}
 
-	extension := strings.ToLower(filepath.Ext(filename))
-	if extension != "" {
-		mimeFromExt := mimeByExtension(extension)
-		if mimeFromExt != "" && !allowedMimeTypes[mimeFromExt] {
-			return 0, 0, fmt.Errorf("unsupported file extension: %s", extension)
-		}
-	}
-
-	config, format, err := image.DecodeConfig(bytes.NewReader(data))
+	config, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
 		return 0, 0, fmt.Errorf("invalid or unsupported image: %w", err)
-	}
-
-	formatMime := "image/" + format
-	if !allowedMimeTypes[formatMime] {
-		return 0, 0, fmt.Errorf("unsupported image format: %s", format)
 	}
 
 	return config.Width, config.Height, nil
 }
 
-func mimeByExtension(ext string) string {
-	switch ext {
-	case ".jpg", ".jpeg":
-		return "image/jpeg"
-	case ".png":
-		return "image/png"
-	case ".webp":
-		return "image/webp"
-	case ".gif":
-		return "image/gif"
-	default:
-		return ""
-	}
-}
 
-func convertImageToWebP(sourceData []byte) ([]byte, error) {
-	img, _, err := image.Decode(bytes.NewReader(sourceData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode image for conversion: %w", err)
-	}
-
-	var buf bytes.Buffer
-	if err := webp.Encode(img, 75, &buf); err != nil {
-		return nil, fmt.Errorf("webp conversion failed: %w", err)
-	}
-
-	return buf.Bytes(), nil
-}
-
-func isWebPUpload(filename string, contentType string, sourceData []byte) bool {
-	extension := strings.ToLower(filepath.Ext(filename))
-	if extension == ".webp" {
-		return true
-	}
-
-	if strings.EqualFold(strings.TrimSpace(contentType), "image/webp") {
-		return true
-	}
-
-	return len(sourceData) >= 12 && string(sourceData[:4]) == "RIFF" && string(sourceData[8:12]) == "WEBP"
-}

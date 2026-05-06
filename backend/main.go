@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/config"
+	"github.com/itdiagonals/website/backend/middleware"
 	"github.com/itdiagonals/website/backend/migrations"
 	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
@@ -56,6 +57,7 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
+	router.Use(middleware.RequireCSRF())
 
 	trustedProxies := getTrustedProxies()
 	if err := router.SetTrustedProxies(trustedProxies); err != nil {

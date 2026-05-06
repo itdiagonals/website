@@ -16,6 +16,7 @@ func registerAuthRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Cl
 	authService := service.NewAuthService(userRepository, authSessionRepository)
 	authHandler := handler.NewAuthHandler(authService)
 
+	api.GET("/auth/csrf", authHandler.CSRF)
 	api.POST("/auth/register", authHandler.Register)
 	api.POST("/auth/login", authHandler.Login)
 	api.POST("/auth/refresh", authHandler.Refresh)
