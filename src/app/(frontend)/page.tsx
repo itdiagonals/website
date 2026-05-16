@@ -1,3 +1,4 @@
+import { headers as getHeaders } from 'next/headers.js'
 import Image from 'next/image'
 // import { getPayload } from 'payload'
 import React from 'react'
@@ -12,7 +13,6 @@ export default async function HomePage() {
   // const payload = await getPayload({ config: payloadConfig })
   // const { user } = await payload.auth({ headers })
 
-export default async function HomePage() {
   const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
 
   return (
@@ -32,7 +32,7 @@ export default async function HomePage() {
         <div className="links">
           {/* <a
             className="admin"
-            href="/admin"
+            href={payloadConfig.routes.admin}
             rel="noopener noreferrer"
             target="_blank"
           >
