@@ -53,15 +53,15 @@ func NewCartHandler(cartService service.CartService) *CartHandler {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/cart/add [post]
 func (handler *CartHandler) AddToCart(context *gin.Context) {
-	customerID, ok := context.Get("customer_id")
+	userID, ok := context.Get("user_id")
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	typedCustomerID, ok := customerID.(uint)
+	typedUserID, ok := userID.(uint)
 	if !ok {
-		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid customer context"})
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
 
@@ -71,7 +71,7 @@ func (handler *CartHandler) AddToCart(context *gin.Context) {
 		return
 	}
 
-	cart, err := handler.cartService.AddToCart(context.Request.Context(), typedCustomerID, domain.CartItem{
+	cart, err := handler.cartService.AddToCart(context.Request.Context(), typedUserID, domain.CartItem{
 		ProductID:         request.ProductID,
 		Quantity:          request.Quantity,
 		SelectedSize:      request.SelectedSize,
@@ -112,15 +112,15 @@ func (handler *CartHandler) AddToCart(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/cart/remove [delete]
 func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
-	customerID, ok := context.Get("customer_id")
+	userID, ok := context.Get("user_id")
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	typedCustomerID, ok := customerID.(uint)
+	typedUserID, ok := userID.(uint)
 	if !ok {
-		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid customer context"})
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
 
@@ -130,7 +130,7 @@ func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
 		return
 	}
 
-	cart, err := handler.cartService.RemoveFromCartByID(context.Request.Context(), typedCustomerID, request.CartItemID)
+	cart, err := handler.cartService.RemoveFromCartByID(context.Request.Context(), typedUserID, request.CartItemID)
 
 	if err != nil {
 		switch err {
@@ -163,15 +163,15 @@ func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/cart/quantity [patch]
 func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
-	customerID, ok := context.Get("customer_id")
+	userID, ok := context.Get("user_id")
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	typedCustomerID, ok := customerID.(uint)
+	typedUserID, ok := userID.(uint)
 	if !ok {
-		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid customer context"})
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
 
@@ -181,7 +181,7 @@ func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
 		return
 	}
 
-	cart, err := handler.cartService.UpdateQuantityByID(context.Request.Context(), typedCustomerID, request.CartItemID, request.Quantity)
+	cart, err := handler.cartService.UpdateQuantityByID(context.Request.Context(), typedUserID, request.CartItemID, request.Quantity)
 
 	if err != nil {
 		var insufficientStockError *service.InsufficientStockError
@@ -216,19 +216,19 @@ func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/cart [get]
 func (handler *CartHandler) GetCart(context *gin.Context) {
-	customerID, ok := context.Get("customer_id")
+	userID, ok := context.Get("user_id")
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	typedCustomerID, ok := customerID.(uint)
+	typedUserID, ok := userID.(uint)
 	if !ok {
-		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid customer context"})
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
 
-	cart, err := handler.cartService.GetMyCart(context.Request.Context(), typedCustomerID)
+	cart, err := handler.cartService.GetMyCart(context.Request.Context(), typedUserID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return

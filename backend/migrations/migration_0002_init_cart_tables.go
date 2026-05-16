@@ -7,17 +7,13 @@ var migration0002InitCartTables = Migration{
 	Description: "Create carts and cart_items tables",
 	Up: func(tx *gorm.DB) error {
 		statements := []string{
-			`CREATE TABLE IF NOT EXISTS carts (
-				id BIGSERIAL PRIMARY KEY,
-				customer_id BIGINT NOT NULL UNIQUE,
-				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-				updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-				CONSTRAINT fk_carts_customer FOREIGN KEY (customer_id)
-					REFERENCES customers(id)
-					ON UPDATE CASCADE
-					ON DELETE CASCADE
-			)`,
-			`CREATE INDEX IF NOT EXISTS idx_carts_customer_id ON carts(customer_id)`,
+		`CREATE TABLE IF NOT EXISTS carts (
+			id BIGSERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL UNIQUE,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_carts_user_id ON carts(user_id)`,
 			`CREATE TABLE IF NOT EXISTS cart_items (
 				id BIGSERIAL PRIMARY KEY,
 				cart_id BIGINT NOT NULL,

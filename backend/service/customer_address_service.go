@@ -34,9 +34,9 @@ type AddCustomerAddressInput struct {
 }
 
 type CustomerAddressService interface {
-	AddAddress(context context.Context, customerID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
-	UpdateAddress(context context.Context, customerID uint, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
-	GetMyAddresses(context context.Context, customerID uint) ([]domain.CustomerAddress, error)
+	AddAddress(context context.Context, userID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
+	UpdateAddress(context context.Context, userID uint, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
+	GetMyAddresses(context context.Context, userID uint) ([]domain.CustomerAddress, error)
 }
 
 type customerAddressService struct {
@@ -53,13 +53,13 @@ func NewCustomerAddressService(db *gorm.DB, customerAddressRepository repository
 	}
 }
 
-func (service *customerAddressService) AddAddress(context context.Context, customerID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
+func (service *customerAddressService) AddAddress(context context.Context, userID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
 	if !isValidCoordinatePair(input.Latitude, input.Longitude) {
 		return nil, ErrInvalidCustomerAddress
 	}
 
 	address := &domain.CustomerAddress{
-		CustomerID:           customerID,
+		UserID:               userID,
 		Title:                strings.TrimSpace(input.Title),
 		RecipientName:        strings.TrimSpace(input.RecipientName),
 		PhoneNumber:          strings.TrimSpace(input.PhoneNumber),
@@ -87,7 +87,7 @@ func (service *customerAddressService) AddAddress(context context.Context, custo
 		address.LocationSource = strings.ToLower(address.LocationSource)
 	}
 
-	if customerID == 0 ||
+	if userID == 0 ||
 		address.Title == "" ||
 		address.RecipientName == "" ||
 		address.PhoneNumber == "" ||
@@ -110,7 +110,7 @@ func (service *customerAddressService) AddAddress(context context.Context, custo
 	if address.IsPrimary {
 		if err := service.db.WithContext(context).Transaction(func(tx *gorm.DB) error {
 			txRepository := repository.NewCustomerAddressRepository(tx)
-			if err := txRepository.SetAllToNonPrimary(context, customerID); err != nil {
+			if err := txRepository.SetAllToNonPrimary(context, userID); err != nil {
 				return err
 			}
 
@@ -129,16 +129,16 @@ func (service *customerAddressService) AddAddress(context context.Context, custo
 	return address, nil
 }
 
-func (service *customerAddressService) GetMyAddresses(context context.Context, customerID uint) ([]domain.CustomerAddress, error) {
-	if customerID == 0 {
+func (service *customerAddressService) GetMyAddresses(context context.Context, userID uint) ([]domain.CustomerAddress, error) {
+	if userID == 0 {
 		return nil, ErrInvalidCustomerAddress
 	}
 
-	return service.customerAddressRepository.FindByCustomerID(context, customerID)
+	return service.customerAddressRepository.FindByUserID(context, userID)
 }
 
-func (service *customerAddressService) UpdateAddress(context context.Context, customerID uint, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
-	if customerID == 0 || addressID == 0 {
+func (service *customerAddressService) UpdateAddress(context context.Context, userID uint, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
+	if userID == 0 || addressID == 0 {
 		return nil, ErrInvalidCustomerAddress
 	}
 
@@ -146,7 +146,7 @@ func (service *customerAddressService) UpdateAddress(context context.Context, cu
 		return nil, ErrInvalidCustomerAddress
 	}
 
-	address, err := service.customerAddressRepository.FindByID(context, customerID, addressID)
+	address, err := service.customerAddressRepository.FindByID(context, userID, addressID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrCustomerAddressNotFound
@@ -194,7 +194,7 @@ func (service *customerAddressService) UpdateAddress(context context.Context, cu
 	if address.IsPrimary {
 		if err := service.db.WithContext(context).Transaction(func(tx *gorm.DB) error {
 			txRepository := repository.NewCustomerAddressRepository(tx)
-			if err := txRepository.SetAllToNonPrimary(context, customerID); err != nil {
+			if err := txRepository.SetAllToNonPrimary(context, userID); err != nil {
 				return err
 			}
 

@@ -97,15 +97,15 @@ func NewCheckoutHandler(checkoutService service.CheckoutService) *CheckoutHandle
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/checkout/rates [post]
 func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
-	customerIDValue, ok := context.Get("customer_id")
+	userIDValue, ok := context.Get("user_id")
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	customerID, ok := customerIDValue.(uint)
-	if !ok || customerID == 0 {
-		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid customer context"})
+	userID, ok := userIDValue.(uint)
+	if !ok || userID == 0 {
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
 
@@ -115,7 +115,7 @@ func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
 		return
 	}
 
-	result, err := handler.checkoutService.GetAvailableShippingRates(context.Request.Context(), customerID, service.ShippingRatesRequest{
+	result, err := handler.checkoutService.GetAvailableShippingRates(context.Request.Context(), userID, service.ShippingRatesRequest{
 		AddressID:           request.AddressID,
 		Couriers:            request.Couriers,
 		SelectedCartItemIDs: request.SelectedCartItemIDs,
@@ -160,15 +160,15 @@ func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/checkout [post]
 func (handler *CheckoutHandler) Checkout(context *gin.Context) {
-	customerIDValue, ok := context.Get("customer_id")
+	userIDValue, ok := context.Get("user_id")
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	customerID, ok := customerIDValue.(uint)
-	if !ok || customerID == 0 {
-		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid customer context"})
+	userID, ok := userIDValue.(uint)
+	if !ok || userID == 0 {
+		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
 
@@ -178,7 +178,7 @@ func (handler *CheckoutHandler) Checkout(context *gin.Context) {
 		return
 	}
 
-	transaction, err := handler.checkoutService.Checkout(context.Request.Context(), customerID, service.CheckoutRequest{
+	transaction, err := handler.checkoutService.Checkout(context.Request.Context(), userID, service.CheckoutRequest{
 		AddressID:           request.AddressID,
 		CourierName:         request.CourierName,
 		CourierService:      request.CourierService,
@@ -214,7 +214,7 @@ func toCheckoutData(transaction *domain.Transaction) CheckoutData {
 	return CheckoutData{
 		ID:                transaction.ID,
 		OrderID:           transaction.OrderID,
-		CustomerID:        transaction.CustomerID,
+		CustomerID:        transaction.UserID,
 		ShippingAddressID: transaction.ShippingAddressID,
 		TotalAmount:       transaction.TotalAmount,
 		ShippingCost:      transaction.ShippingCost,

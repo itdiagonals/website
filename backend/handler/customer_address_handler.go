@@ -80,7 +80,7 @@ func NewCustomerAddressHandler(customerAddressService service.CustomerAddressSer
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/addresses [post]
 func (handler *CustomerAddressHandler) AddAddress(context *gin.Context) {
-	customerID, ok := getCurrentCustomerID(context)
+	userID, ok := getCurrentUserID(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
@@ -92,7 +92,7 @@ func (handler *CustomerAddressHandler) AddAddress(context *gin.Context) {
 		return
 	}
 
-	address, err := handler.customerAddressService.AddAddress(context.Request.Context(), customerID, service.AddCustomerAddressInput{
+	address, err := handler.customerAddressService.AddAddress(context.Request.Context(), userID, service.AddCustomerAddressInput{
 		Title:                request.Title,
 		RecipientName:        request.RecipientName,
 		PhoneNumber:          request.PhoneNumber,
@@ -140,7 +140,7 @@ func (handler *CustomerAddressHandler) AddAddress(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/addresses/{id} [put]
 func (handler *CustomerAddressHandler) UpdateAddress(context *gin.Context) {
-	customerID, ok := getCurrentCustomerID(context)
+	userID, ok := getCurrentUserID(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
@@ -158,7 +158,7 @@ func (handler *CustomerAddressHandler) UpdateAddress(context *gin.Context) {
 		return
 	}
 
-	address, err := handler.customerAddressService.UpdateAddress(context.Request.Context(), customerID, uint(addressIDValue), service.AddCustomerAddressInput{
+	address, err := handler.customerAddressService.UpdateAddress(context.Request.Context(), userID, uint(addressIDValue), service.AddCustomerAddressInput{
 		Title:                request.Title,
 		RecipientName:        request.RecipientName,
 		PhoneNumber:          request.PhoneNumber,
@@ -207,13 +207,13 @@ func (handler *CustomerAddressHandler) UpdateAddress(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/addresses [get]
 func (handler *CustomerAddressHandler) GetMyAddresses(context *gin.Context) {
-	customerID, ok := getCurrentCustomerID(context)
+	userID, ok := getCurrentUserID(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	addresses, err := handler.customerAddressService.GetMyAddresses(context.Request.Context(), customerID)
+	addresses, err := handler.customerAddressService.GetMyAddresses(context.Request.Context(), userID)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCustomerAddress) {
 			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
@@ -227,16 +227,16 @@ func (handler *CustomerAddressHandler) GetMyAddresses(context *gin.Context) {
 	context.JSON(http.StatusOK, CustomerAddressListResponse{Data: addresses})
 }
 
-func getCurrentCustomerID(context *gin.Context) (uint, bool) {
-	customerIDValue, ok := context.Get("customer_id")
+func getCurrentUserID(context *gin.Context) (uint, bool) {
+	userIDValue, ok := context.Get("user_id")
 	if !ok {
 		return 0, false
 	}
 
-	customerID, ok := customerIDValue.(uint)
-	if !ok || customerID == 0 {
+	userID, ok := userIDValue.(uint)
+	if !ok || userID == 0 {
 		return 0, false
 	}
 
-	return customerID, true
+	return userID, true
 }

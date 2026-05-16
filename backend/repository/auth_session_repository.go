@@ -2,85 +2,180 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/itdiagonals/website/backend/domain"
-	"gorm.io/gorm"
+	"github.com/redis/go-redis/v9"
 )
 
 type AuthSessionRepository interface {
-	Create(context context.Context, session *domain.AuthSession) error
-	FindByID(context context.Context, sessionID string) (*domain.AuthSession, error)
-	UpdateRefreshToken(context context.Context, sessionID string, refreshTokenHash string, expiresAt time.Time, lastSeenAt time.Time) error
-	RevokeSession(context context.Context, customerID uint, sessionID string, revokedAt time.Time) error
-	RevokeAllSessions(context context.Context, customerID uint, revokedAt time.Time) error
-	ListActiveByCustomerID(context context.Context, customerID uint) ([]domain.AuthSession, error)
+	Create(ctx context.Context, session *domain.AuthSession) error
+	FindByID(ctx context.Context, sessionID string) (*domain.AuthSession, error)
+	UpdateRefreshToken(ctx context.Context, sessionID string, refreshTokenHash string, expiresAt time.Time, lastSeenAt time.Time) error
+	RevokeSession(ctx context.Context, userID uint, sessionID string, revokedAt time.Time) error
+	RevokeAllSessions(ctx context.Context, userID uint, revokedAt time.Time) error
+	ListActiveByUserID(ctx context.Context, userID uint) ([]domain.AuthSession, error)
 }
 
 type authSessionRepository struct {
-	db *gorm.DB
+	redisClient *redis.Client
 }
 
-func NewAuthSessionRepository(db *gorm.DB) AuthSessionRepository {
-	return &authSessionRepository{db: db}
+func NewAuthSessionRepository(redisClient *redis.Client) AuthSessionRepository {
+	return &authSessionRepository{redisClient: redisClient}
 }
 
-func (repository *authSessionRepository) Create(context context.Context, session *domain.AuthSession) error {
-	return repository.db.WithContext(context).Create(session).Error
+func sessionKey(sessionID string) string {
+	return fmt.Sprintf("auth:session:%s", sessionID)
 }
 
-func (repository *authSessionRepository) FindByID(context context.Context, sessionID string) (*domain.AuthSession, error) {
-	var session domain.AuthSession
+func userSessionsKey(userID uint) string {
+	return fmt.Sprintf("auth:user:%d:sessions", userID)
+}
 
-	err := repository.db.WithContext(context).Where("id = ?", sessionID).First(&session).Error
+func (r *authSessionRepository) Create(ctx context.Context, session *domain.AuthSession) error {
+	data, err := json.Marshal(session)
 	if err != nil {
+		return err
+	}
+
+	ttl := time.Until(session.ExpiresAt)
+	if ttl <= 0 {
+		return fmt.Errorf("session already expired")
+	}
+
+	pipe := r.redisClient.Pipeline()
+	pipe.Set(ctx, sessionKey(session.ID), data, ttl)
+	pipe.SAdd(ctx, userSessionsKey(session.UserID), session.ID)
+	_, err = pipe.Exec(ctx)
+	return err
+}
+
+func (r *authSessionRepository) FindByID(ctx context.Context, sessionID string) (*domain.AuthSession, error) {
+	data, err := r.redisClient.Get(ctx, sessionKey(sessionID)).Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, fmt.Errorf("session not found")
+		}
+		return nil, err
+	}
+
+	var session domain.AuthSession
+	if err := json.Unmarshal(data, &session); err != nil {
 		return nil, err
 	}
 
 	return &session, nil
 }
 
-func (repository *authSessionRepository) UpdateRefreshToken(context context.Context, sessionID string, refreshTokenHash string, expiresAt time.Time, lastSeenAt time.Time) error {
-	return repository.db.WithContext(context).
-		Model(&domain.AuthSession{}).
-		Where("id = ?", sessionID).
-		Updates(map[string]any{
-			"refresh_token_hash": refreshTokenHash,
-			"expires_at":         expiresAt,
-			"last_seen_at":       lastSeenAt,
-			"updated_at":         lastSeenAt,
-		}).Error
+func (r *authSessionRepository) UpdateRefreshToken(ctx context.Context, sessionID string, refreshTokenHash string, expiresAt time.Time, lastSeenAt time.Time) error {
+	data, err := r.redisClient.Get(ctx, sessionKey(sessionID)).Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return fmt.Errorf("session not found")
+		}
+		return err
+	}
+
+	var session domain.AuthSession
+	if err := json.Unmarshal(data, &session); err != nil {
+		return err
+	}
+
+	session.RefreshTokenHash = refreshTokenHash
+	session.ExpiresAt = expiresAt
+	session.LastSeenAt = lastSeenAt
+	session.UpdatedAt = lastSeenAt
+
+	updated, err := json.Marshal(session)
+	if err != nil {
+		return err
+	}
+
+	ttl := time.Until(expiresAt)
+	if ttl <= 0 {
+		return r.redisClient.Del(ctx, sessionKey(sessionID)).Err()
+	}
+
+	return r.redisClient.Set(ctx, sessionKey(sessionID), updated, ttl).Err()
 }
 
-func (repository *authSessionRepository) RevokeSession(context context.Context, customerID uint, sessionID string, revokedAt time.Time) error {
-	return repository.db.WithContext(context).
-		Model(&domain.AuthSession{}).
-		Where("id = ? AND customer_id = ? AND revoked_at IS NULL", sessionID, customerID).
-		Updates(map[string]any{
-			"revoked_at": revokedAt,
-			"updated_at": revokedAt,
-		}).Error
+func (r *authSessionRepository) RevokeSession(ctx context.Context, userID uint, sessionID string, _ time.Time) error {
+	pipe := r.redisClient.Pipeline()
+	pipe.Del(ctx, sessionKey(sessionID))
+	pipe.SRem(ctx, userSessionsKey(userID), sessionID)
+	_, err := pipe.Exec(ctx)
+	return err
 }
 
-func (repository *authSessionRepository) RevokeAllSessions(context context.Context, customerID uint, revokedAt time.Time) error {
-	return repository.db.WithContext(context).
-		Model(&domain.AuthSession{}).
-		Where("customer_id = ? AND revoked_at IS NULL", customerID).
-		Updates(map[string]any{
-			"revoked_at": revokedAt,
-			"updated_at": revokedAt,
-		}).Error
+func (r *authSessionRepository) RevokeAllSessions(ctx context.Context, userID uint, _ time.Time) error {
+	key := userSessionsKey(userID)
+	sessionIDs, err := r.redisClient.SMembers(ctx, key).Result()
+	if err != nil {
+		return err
+	}
+
+	if len(sessionIDs) == 0 {
+		return nil
+	}
+
+	sessionKeys := make([]string, 0, len(sessionIDs))
+	for _, id := range sessionIDs {
+		sessionKeys = append(sessionKeys, sessionKey(id))
+	}
+
+	pipe := r.redisClient.Pipeline()
+	pipe.Del(ctx, sessionKeys...)
+	pipe.Del(ctx, key)
+	_, err = pipe.Exec(ctx)
+	return err
 }
 
-func (repository *authSessionRepository) ListActiveByCustomerID(context context.Context, customerID uint) ([]domain.AuthSession, error) {
-	var sessions []domain.AuthSession
-
-	err := repository.db.WithContext(context).
-		Where("customer_id = ? AND revoked_at IS NULL AND expires_at > ?", customerID, time.Now()).
-		Order("last_seen_at DESC, created_at DESC").
-		Find(&sessions).Error
+func (r *authSessionRepository) ListActiveByUserID(ctx context.Context, userID uint) ([]domain.AuthSession, error) {
+	key := userSessionsKey(userID)
+	sessionIDs, err := r.redisClient.SMembers(ctx, key).Result()
 	if err != nil {
 		return nil, err
+	}
+
+	if len(sessionIDs) == 0 {
+		return []domain.AuthSession{}, nil
+	}
+
+	now := time.Now()
+	sessions := make([]domain.AuthSession, 0, len(sessionIDs))
+	staleIDs := make([]string, 0)
+
+	for _, id := range sessionIDs {
+		data, err := r.redisClient.Get(ctx, sessionKey(id)).Bytes()
+		if err != nil {
+			if err == redis.Nil {
+				staleIDs = append(staleIDs, id)
+			}
+			continue
+		}
+
+		var session domain.AuthSession
+		if err := json.Unmarshal(data, &session); err != nil {
+			continue
+		}
+
+		if session.RevokedAt != nil || !session.ExpiresAt.After(now) {
+			continue
+		}
+
+		sessions = append(sessions, session)
+	}
+
+	// Lazy cleanup: remove stale session IDs from the user's set
+	if len(staleIDs) > 0 {
+		members := make([]any, len(staleIDs))
+		for i, id := range staleIDs {
+			members[i] = id
+		}
+		_ = r.redisClient.SRem(ctx, key, members...).Err()
 	}
 
 	return sessions, nil
