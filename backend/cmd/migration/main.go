@@ -12,7 +12,7 @@ func main() {
 
 	config.ConnectDB()
 
-	if err := migrations.Apply(config.DBBackend); err != nil {
+	if err := migrations.Apply(config.DB); err != nil {
 		log.Printf("migration failed: %v", err)
 		return
 	}
