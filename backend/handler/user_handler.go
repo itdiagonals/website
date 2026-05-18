@@ -2,7 +2,7 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
@@ -46,22 +46,22 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        id   path      int  true  "User ID"
+// @Param        id   path      string  true  "User ID"
 // @Success      200  {object}  response.Response[domain.User]
 // @Failure      400  {object}  response.Response[any]
 // @Failure      404  {object}  response.Response[any]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/users/{id} [get]
 func (h *UserHandler) GetUserByID(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
 		logger.Warn("handler.users.invalid_id", "param", c.Param("id"))
 		response.Error(c, http.StatusBadRequest, apperror.CodeBadRequest, "invalid user id")
 		return
 	}
 
 	logger.Info("handler.users.get_by_id", "id", id)
-	user, err := h.service.GetUserByID(c.Request.Context(), uint(id))
+	user, err := h.service.GetUserByID(c.Request.Context(), id)
 	if err != nil {
 		logger.Error("handler.users.get_by_id_failed", "id", id, "error", err.Error())
 		response.FromError(c, err)
@@ -107,7 +107,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        id    path      int                        true  "User ID"
+// @Param        id    path      string                        true  "User ID"
 // @Param        user  body      domain.UpdateUserRequest   true  "User payload"
 // @Success      200   {object}  response.Response[domain.User]
 // @Failure      400   {object}  response.Response[any]
@@ -115,8 +115,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // @Failure      500   {object}  response.Response[any]
 // @Router       /api/v1/users/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
 		logger.Warn("handler.users.invalid_id", "param", c.Param("id"))
 		response.Error(c, http.StatusBadRequest, apperror.CodeBadRequest, "invalid user id")
 		return
@@ -128,7 +128,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
-	user := req.ToUser(uint(id))
+	user := req.ToUser(id)
 
 	logger.Info("handler.users.update", "id", id)
 	if err := h.service.UpdateUser(c.Request.Context(), &user); err != nil {
@@ -145,21 +145,21 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Tags         Users
 // @Accept       json
 // @Produce      json
-// @Param        id   path      int  true  "User ID"
+// @Param        id   path      string  true  "User ID"
 // @Success      204
 // @Failure      400  {object}  response.Response[any]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
 		logger.Warn("handler.users.invalid_id", "param", c.Param("id"))
 		response.Error(c, http.StatusBadRequest, apperror.CodeBadRequest, "invalid user id")
 		return
 	}
 
 	logger.Info("handler.users.delete", "id", id)
-	if err := h.service.DeleteUser(c.Request.Context(), uint(id)); err != nil {
+	if err := h.service.DeleteUser(c.Request.Context(), id); err != nil {
 		logger.Error("handler.users.delete_failed", "id", id, "error", err.Error())
 		response.FromError(c, err)
 		return

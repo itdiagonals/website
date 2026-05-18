@@ -14,9 +14,9 @@ type AuthSessionRepository interface {
 	Create(ctx context.Context, session *domain.AuthSession) error
 	FindByID(ctx context.Context, sessionID string) (*domain.AuthSession, error)
 	UpdateRefreshToken(ctx context.Context, sessionID string, refreshTokenHash string, expiresAt time.Time, lastSeenAt time.Time) error
-	RevokeSession(ctx context.Context, userID uint, sessionID string, revokedAt time.Time) error
-	RevokeAllSessions(ctx context.Context, userID uint, revokedAt time.Time) error
-	ListActiveByUserID(ctx context.Context, userID uint) ([]domain.AuthSession, error)
+	RevokeSession(ctx context.Context, userID string, sessionID string, revokedAt time.Time) error
+	RevokeAllSessions(ctx context.Context, userID string, revokedAt time.Time) error
+	ListActiveByUserID(ctx context.Context, userID string) ([]domain.AuthSession, error)
 }
 
 type authSessionRepository struct {
@@ -31,8 +31,8 @@ func sessionKey(sessionID string) string {
 	return fmt.Sprintf("auth:session:%s", sessionID)
 }
 
-func userSessionsKey(userID uint) string {
-	return fmt.Sprintf("auth:user:%d:sessions", userID)
+func userSessionsKey(userID string) string {
+	return fmt.Sprintf("auth:user:%s:sessions", userID)
 }
 
 func (r *authSessionRepository) Create(ctx context.Context, session *domain.AuthSession) error {
@@ -102,7 +102,7 @@ func (r *authSessionRepository) UpdateRefreshToken(ctx context.Context, sessionI
 	return r.redisClient.Set(ctx, sessionKey(sessionID), updated, ttl).Err()
 }
 
-func (r *authSessionRepository) RevokeSession(ctx context.Context, userID uint, sessionID string, _ time.Time) error {
+func (r *authSessionRepository) RevokeSession(ctx context.Context, userID string, sessionID string, _ time.Time) error {
 	pipe := r.redisClient.Pipeline()
 	pipe.Del(ctx, sessionKey(sessionID))
 	pipe.SRem(ctx, userSessionsKey(userID), sessionID)
@@ -110,7 +110,7 @@ func (r *authSessionRepository) RevokeSession(ctx context.Context, userID uint, 
 	return err
 }
 
-func (r *authSessionRepository) RevokeAllSessions(ctx context.Context, userID uint, _ time.Time) error {
+func (r *authSessionRepository) RevokeAllSessions(ctx context.Context, userID string, _ time.Time) error {
 	key := userSessionsKey(userID)
 	sessionIDs, err := r.redisClient.SMembers(ctx, key).Result()
 	if err != nil {
@@ -133,7 +133,7 @@ func (r *authSessionRepository) RevokeAllSessions(ctx context.Context, userID ui
 	return err
 }
 
-func (r *authSessionRepository) ListActiveByUserID(ctx context.Context, userID uint) ([]domain.AuthSession, error) {
+func (r *authSessionRepository) ListActiveByUserID(ctx context.Context, userID string) ([]domain.AuthSession, error) {
 	key := userSessionsKey(userID)
 	sessionIDs, err := r.redisClient.SMembers(ctx, key).Result()
 	if err != nil {

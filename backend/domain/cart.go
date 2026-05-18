@@ -18,6 +18,6 @@ type CartItem struct {
 }
 
 type Cart struct {
-	UserID uint       `json:"user_id"`
+	UserID string     `json:"user_id"`
 	Items  []CartItem `json:"items"`
 }

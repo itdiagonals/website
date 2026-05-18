@@ -4,7 +4,7 @@ import "time"
 
 type AuthSession struct {
 	ID               string     `json:"id"`
-	UserID           uint       `json:"user_id"`
+	UserID           string     `json:"user_id"`
 	RefreshTokenHash string     `json:"refresh_token_hash"`
 	UserAgent        string     `json:"user_agent"`
 	IPAddress        string     `json:"ip_address"`

@@ -9,7 +9,7 @@ var migration0003InitAuthSessionsTable = Migration{
 		statements := []string{
 		`CREATE TABLE IF NOT EXISTS auth_sessions (
 			id VARCHAR(64) PRIMARY KEY,
-			user_id BIGINT NOT NULL,
+			user_id UUID NOT NULL,
 			refresh_token_hash TEXT NOT NULL,
 			user_agent TEXT,
 			ip_address VARCHAR(255),

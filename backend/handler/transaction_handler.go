@@ -61,7 +61,7 @@ type TransactionTrackingData struct {
 type TransactionHistoryDetail struct {
 	ID                uint                             `json:"id"`
 	OrderID           string                           `json:"order_id"`
-	CustomerID        uint                             `json:"customer_id"`
+	CustomerID        string                           `json:"customer_id"`
 	ShippingAddressID uint                             `json:"shipping_address_id"`
 	TotalAmount       float64                          `json:"total_amount"`
 	ShippingCost      float64                          `json:"shipping_cost"`

@@ -315,25 +315,25 @@ func buildSessionMetadata(context *gin.Context) service.SessionMetadata {
 	}
 }
 
-func getCurrentAuthContext(context *gin.Context) (uint, string, bool) {
+func getCurrentAuthContext(context *gin.Context) (string, string, bool) {
 	userIDValue, ok := context.Get("user_id")
 	if !ok {
-		return 0, "", false
+		return "", "", false
 	}
 
-	userID, ok := userIDValue.(uint)
-	if !ok {
-		return 0, "", false
+	userID, ok := userIDValue.(string)
+	if !ok || strings.TrimSpace(userID) == "" {
+		return "", "", false
 	}
 
 	sessionIDValue, ok := context.Get("session_id")
 	if !ok {
-		return 0, "", false
+		return "", "", false
 	}
 
 	sessionID, ok := sessionIDValue.(string)
 	if !ok || strings.TrimSpace(sessionID) == "" {
-		return 0, "", false
+		return "", "", false
 	}
 
 	return userID, sessionID, true

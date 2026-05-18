@@ -41,6 +41,8 @@ var allMigrations = []Migration{
 	migration0013InitPayloadTables,
 	migration0014UnifyUsersCustomers,
 	migration0015DropAuthSessionsTable,
+	migration0016UserIDToUUID,
+	migration0017AddPerformanceIndexes,
 }
 
 func Apply(db *gorm.DB) error {

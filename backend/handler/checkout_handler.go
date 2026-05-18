@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ type CheckoutResponse struct {
 type CheckoutData struct {
 	ID                uint                   `json:"id"`
 	OrderID           string                 `json:"order_id"`
-	CustomerID        uint                   `json:"customer_id"`
+	CustomerID        string                 `json:"customer_id"`
 	ShippingAddressID uint                   `json:"shipping_address_id"`
 	TotalAmount       float64                `json:"total_amount"`
 	ShippingCost      float64                `json:"shipping_cost"`
@@ -103,8 +104,8 @@ func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
 		return
 	}
 
-	userID, ok := userIDValue.(uint)
-	if !ok || userID == 0 {
+	userID, ok := userIDValue.(string)
+	if !ok || strings.TrimSpace(userID) == "" {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
@@ -166,8 +167,8 @@ func (handler *CheckoutHandler) Checkout(context *gin.Context) {
 		return
 	}
 
-	userID, ok := userIDValue.(uint)
-	if !ok || userID == 0 {
+	userID, ok := userIDValue.(string)
+	if !ok || strings.TrimSpace(userID) == "" {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}

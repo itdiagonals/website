@@ -9,7 +9,7 @@ var migration0002InitCartTables = Migration{
 		statements := []string{
 		`CREATE TABLE IF NOT EXISTS carts (
 			id BIGSERIAL PRIMARY KEY,
-			user_id BIGINT NOT NULL UNIQUE,
+			user_id UUID NOT NULL UNIQUE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		)`,
