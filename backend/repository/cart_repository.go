@@ -16,9 +16,9 @@ import (
 )
 
 type CartRepository interface {
-	GetCart(context context.Context, customerID uint) (*domain.Cart, error)
+	GetCart(context context.Context, userID uint) (*domain.Cart, error)
 	SaveCart(context context.Context, cart *domain.Cart) error
-	ClearCart(context context.Context, customerID uint) error
+	ClearCart(context context.Context, userID uint) error
 }
 
 type cartRepository struct {
@@ -35,9 +35,9 @@ func NewCartRepository(db *gorm.DB, redisClient *redis.Client) CartRepository {
 	}
 }
 
-func (repository *cartRepository) GetCart(context context.Context, customerID uint) (*domain.Cart, error) {
+func (repository *cartRepository) GetCart(context context.Context, userID uint) (*domain.Cart, error) {
 	if repository.redisClient != nil {
-		value, err := repository.redisClient.Get(context, repository.key(customerID)).Result()
+		value, err := repository.redisClient.Get(context, repository.key(userID)).Result()
 		if err == nil {
 			var cart domain.Cart
 			if err := json.Unmarshal([]byte(value), &cart); err == nil {
@@ -52,7 +52,7 @@ func (repository *cartRepository) GetCart(context context.Context, customerID ui
 		}
 	}
 
-	cart, err := repository.loadCartFromDatabase(context, customerID)
+	cart, err := repository.loadCartFromDatabase(context, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,16 +63,16 @@ func (repository *cartRepository) GetCart(context context.Context, customerID ui
 }
 
 func (repository *cartRepository) SaveCart(context context.Context, cart *domain.Cart) error {
-	if cart == nil || cart.CustomerID == 0 {
+	if cart == nil || cart.UserID == 0 {
 		return errors.New("invalid cart payload")
 	}
 
 	if err := repository.db.WithContext(context).Transaction(func(tx *gorm.DB) error {
 		var cartRecord domain.CartRecord
-		err := tx.Where("customer_id = ?", cart.CustomerID).First(&cartRecord).Error
+		err := tx.Where("user_id = ?", cart.UserID).First(&cartRecord).Error
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
-				cartRecord = domain.CartRecord{CustomerID: cart.CustomerID}
+				cartRecord = domain.CartRecord{UserID: cart.UserID}
 				if err := tx.Create(&cartRecord).Error; err != nil {
 					return err
 				}
@@ -165,14 +165,14 @@ func (repository *cartRepository) SaveCart(context context.Context, cart *domain
 	return nil
 }
 
-func (repository *cartRepository) ClearCart(context context.Context, customerID uint) error {
-	emptyCart := &domain.Cart{CustomerID: customerID, Items: []domain.CartItem{}}
+func (repository *cartRepository) ClearCart(context context.Context, userID uint) error {
+	emptyCart := &domain.Cart{UserID: userID, Items: []domain.CartItem{}}
 	if err := repository.SaveCart(context, emptyCart); err != nil {
 		return err
 	}
 
 	if repository.redisClient != nil {
-		if err := repository.redisClient.Del(context, repository.key(customerID)).Err(); err != nil {
+		if err := repository.redisClient.Del(context, repository.key(userID)).Err(); err != nil {
 			return err
 		}
 	}
@@ -180,16 +180,16 @@ func (repository *cartRepository) ClearCart(context context.Context, customerID 
 	return nil
 }
 
-func (repository *cartRepository) key(customerID uint) string {
-	return fmt.Sprintf("cart:customer:%d", customerID)
+func (repository *cartRepository) key(userID uint) string {
+	return fmt.Sprintf("cart:user:%d", userID)
 }
 
-func (repository *cartRepository) loadCartFromDatabase(context context.Context, customerID uint) (*domain.Cart, error) {
+func (repository *cartRepository) loadCartFromDatabase(context context.Context, userID uint) (*domain.Cart, error) {
 	var cartRecord domain.CartRecord
-	err := repository.db.WithContext(context).Preload("Items").Where("customer_id = ?", customerID).First(&cartRecord).Error
+	err := repository.db.WithContext(context).Preload("Items").Where("user_id = ?", userID).First(&cartRecord).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return &domain.Cart{CustomerID: customerID, Items: []domain.CartItem{}}, nil
+			return &domain.Cart{UserID: userID, Items: []domain.CartItem{}}, nil
 		}
 
 		return nil, err
@@ -212,7 +212,7 @@ func (repository *cartRepository) loadCartFromDatabase(context context.Context, 
 		})
 	}
 
-	return &domain.Cart{CustomerID: customerID, Items: items}, nil
+	return &domain.Cart{UserID: userID, Items: items}, nil
 }
 
 func cartItemVariantKey(productID int, selectedSize string, selectedColorName string, selectedColorHex string) string {
@@ -234,7 +234,7 @@ func (repository *cartRepository) setCache(context context.Context, cart *domain
 		return
 	}
 
-	_ = repository.redisClient.Set(context, repository.key(cart.CustomerID), payload, repository.cacheTTL).Err()
+	_ = repository.redisClient.Set(context, repository.key(cart.UserID), payload, repository.cacheTTL).Err()
 }
 
 func getCartCacheTTL() time.Duration {

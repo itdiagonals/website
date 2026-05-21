@@ -10,7 +10,7 @@ import (
 	"github.com/itdiagonals/website/backend/utils"
 )
 
-func RequireAuth(authSessionRepository repository.AuthSessionRepository) gin.HandlerFunc {
+func RequireAuth(authSessionRepository repository.AuthSessionRepository, userRepository repository.UserRepository) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		token, err := extractAccessToken(context)
 		if err != nil {
@@ -25,14 +25,46 @@ func RequireAuth(authSessionRepository repository.AuthSessionRepository) gin.Han
 		}
 
 		session, err := authSessionRepository.FindByID(context.Request.Context(), claims.SessionID)
-		if err != nil || session.CustomerID != claims.CustomerID || session.RevokedAt != nil || !session.ExpiresAt.After(time.Now()) {
+		if err != nil || session.UserID != claims.UserID || session.RevokedAt != nil || !session.ExpiresAt.After(time.Now()) {
 			context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 			return
 		}
 
-		context.Set("customer_id", claims.CustomerID)
+		user, err := userRepository.FindByID(context.Request.Context(), claims.UserID)
+		if err != nil {
+			context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+			return
+		}
+
+		context.Set("user_id", claims.UserID)
 		context.Set("session_id", claims.SessionID)
+		context.Set("role", user.Role)
 		context.Next()
+	}
+}
+
+func RequireRole(allowedRoles ...string) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		roleValue, exists := context.Get("role")
+		if !exists {
+			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "forbidden"})
+			return
+		}
+
+		role, ok := roleValue.(string)
+		if !ok {
+			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "forbidden"})
+			return
+		}
+
+		for _, allowed := range allowedRoles {
+			if role == allowed {
+				context.Next()
+				return
+			}
+		}
+
+		context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "forbidden"})
 	}
 }
 

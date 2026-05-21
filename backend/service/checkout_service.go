@@ -62,7 +62,7 @@ type checkoutService struct {
 	shippingService            ShippingService
 	cartRepository             repository.CartRepository
 	customerAddressRepository  repository.CustomerAddressRepository
-	customerRepository         repository.CustomerRepository
+	userRepository             repository.UserRepository
 	productRepository          repository.ProductRepository
 	transactionRepository      repository.TransactionRepository
 	stockReservationRepository repository.StockReservationRepository
@@ -70,7 +70,7 @@ type checkoutService struct {
 }
 
 func NewCheckoutService(
-	customerRepository repository.CustomerRepository,
+	userRepository repository.UserRepository,
 	customerAddressRepository repository.CustomerAddressRepository,
 	cartRepository repository.CartRepository,
 	productRepository repository.ProductRepository,
@@ -82,7 +82,7 @@ func NewCheckoutService(
 		shippingService:            shippingService,
 		cartRepository:             cartRepository,
 		customerAddressRepository:  customerAddressRepository,
-		customerRepository:         customerRepository,
+		userRepository:             userRepository,
 		productRepository:          productRepository,
 		transactionRepository:      transactionRepository,
 		stockReservationRepository: stockReservationRepository,
@@ -142,7 +142,7 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID uint, r
 		return nil, err
 	}
 
-	address, customer, subtotal, _, shippingItems, transactionItems, err := service.prepareCheckout(ctx, customerID, req.AddressID, selectedCartItemIDs)
+	address, user, subtotal, _, shippingItems, transactionItems, err := service.prepareCheckout(ctx, customerID, req.AddressID, selectedCartItemIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID uint, r
 		Qty:   1,
 	})
 
-	snapResponse, err := createSnapTransaction(orderID, grandTotal, customer, address, midtransItems)
+	snapResponse, err := createSnapTransaction(orderID, grandTotal, user, address, midtransItems)
 	if err != nil {
 		_ = service.releaseStockForOrder(ctx, orderID)
 		return nil, err
@@ -192,7 +192,7 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID uint, r
 
 	transaction := &domain.Transaction{
 		OrderID:           orderID,
-		CustomerID:        customerID,
+		UserID:            customerID,
 		ShippingAddressID: req.AddressID,
 		TotalAmount:       grandTotal,
 		ShippingCost:      shippingCost,
@@ -201,7 +201,7 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID uint, r
 		Status:            "pending",
 		ShippingStatus:    "pending",
 		SnapToken:         snapResponse.Token,
-		Customer:          *customer,
+		User:              *user,
 		ShippingAddress:   *address,
 	}
 
@@ -345,8 +345,8 @@ func (service *checkoutService) releaseStockForOrder(ctx context.Context, orderI
 	return service.stockReservationRepository.UpdateStatusByIDs(ctx, reservationIDs, stockReservationStatusReserved, stockReservationStatusReleased)
 }
 
-func (service *checkoutService) prepareCheckout(ctx context.Context, customerID uint, addressID uint, selectedCartItemIDs []uint) (*domain.CustomerAddress, *domain.Customer, float64, int, []ShippingRateItem, []checkoutLineItem, error) {
-	address, err := service.customerAddressRepository.FindByID(ctx, customerID, addressID)
+func (service *checkoutService) prepareCheckout(ctx context.Context, userID uint, addressID uint, selectedCartItemIDs []uint) (*domain.CustomerAddress, *domain.User, float64, int, []ShippingRateItem, []checkoutLineItem, error) {
+	address, err := service.customerAddressRepository.FindByID(ctx, userID, addressID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil, 0, 0, nil, nil, ErrCheckoutAddressNotFound
@@ -355,12 +355,12 @@ func (service *checkoutService) prepareCheckout(ctx context.Context, customerID 
 		return nil, nil, 0, 0, nil, nil, err
 	}
 
-	customer, err := service.customerRepository.FindByID(ctx, customerID)
+	user, err := service.userRepository.FindByID(ctx, userID)
 	if err != nil {
 		return nil, nil, 0, 0, nil, nil, err
 	}
 
-	cart, err := service.cartRepository.GetCart(ctx, customerID)
+	cart, err := service.cartRepository.GetCart(ctx, userID)
 	if err != nil {
 		return nil, nil, 0, 0, nil, nil, err
 	}
@@ -429,7 +429,7 @@ func (service *checkoutService) prepareCheckout(ctx context.Context, customerID 
 		return nil, nil, 0, 0, nil, nil, ErrCheckoutSelectedItemNotFound
 	}
 
-	return address, customer, subtotal, totalWeight, shippingItems, transactionItems, nil
+	return address, user, subtotal, totalWeight, shippingItems, transactionItems, nil
 }
 
 func normalizeSelectedCartItemIDs(selectedCartItemIDs []uint) ([]uint, error) {
@@ -459,8 +459,8 @@ func normalizeSelectedCartItemIDs(selectedCartItemIDs []uint) ([]uint, error) {
 	return normalized, nil
 }
 
-func (service *checkoutService) removeSelectedItemsFromCart(ctx context.Context, customerID uint, selectedCartItemIDs []uint) error {
-	cart, err := service.cartRepository.GetCart(ctx, customerID)
+func (service *checkoutService) removeSelectedItemsFromCart(ctx context.Context, userID uint, selectedCartItemIDs []uint) error {
+	cart, err := service.cartRepository.GetCart(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -507,7 +507,7 @@ func buildMidtransItems(transactionItems []checkoutLineItem) []midtrans.ItemDeta
 	return items
 }
 
-func createSnapTransaction(orderID string, grandTotal float64, customer *domain.Customer, address *domain.CustomerAddress, items []midtrans.ItemDetails) (*snap.Response, error) {
+func createSnapTransaction(orderID string, grandTotal float64, user *domain.User, address *domain.CustomerAddress, items []midtrans.ItemDetails) (*snap.Response, error) {
 	if config.MidtransSnapClient == nil {
 		config.InitMidtrans()
 	}
@@ -532,9 +532,9 @@ func createSnapTransaction(orderID string, grandTotal float64, customer *domain.
 		},
 		Items: &items,
 		CustomerDetail: &midtrans.CustomerDetails{
-			FName:    customer.Name,
-			Email:    customer.Email,
-			Phone:    firstNonEmpty(address.PhoneNumber, customer.Phone),
+			FName:    user.Name,
+			Email:    user.Email,
+			Phone:    firstNonEmpty(address.PhoneNumber, user.Phone),
 			BillAddr: midtransAddress,
 			ShipAddr: midtransAddress,
 		},

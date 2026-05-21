@@ -24,7 +24,7 @@ var migration0006AlterTransactionsForLogisticsAndPayment = Migration{
 					ALTER TABLE transactions
 					ADD CONSTRAINT fk_transactions_shipping_address
 					FOREIGN KEY (shipping_address_id)
-					REFERENCES customer_addresses(id)
+					REFERENCES user_addresses(id)
 					ON UPDATE CASCADE
 					ON DELETE RESTRICT;
 				END IF;

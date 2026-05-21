@@ -45,6 +45,17 @@ const dorivalUINrwTrial = localFont({
   variable: '--font-dorivaluinrwtrial',
 })
 
+const handi = localFont({
+  src: [
+    {
+      path: '../../../public/fonts/Handi-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-handi',
+})
+
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
@@ -55,7 +66,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
   return (
     <html lang="en">
-      <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${inter.variable} antialiased`}>
+      <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${handi.variable} ${inter.variable} antialiased`}>
         <main>{children}</main>
       </body>
     </html>
