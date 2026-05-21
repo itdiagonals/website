@@ -11,12 +11,12 @@ export const metadata = {
 const dorivalUITrial = localFont({
   src: [
     {
-      path: '../../../public/fonts/DorivalUITrial-Regular.otf',
+      path: '../../public/fonts/DorivalUITrial-Regular.otf',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../../../public/fonts/DorivalUITrial-Bold.otf',
+      path: '../../public/fonts/DorivalUITrial-Bold.otf',
       weight: '700',
       style: 'normal',
     },
@@ -27,17 +27,17 @@ const dorivalUITrial = localFont({
 const dorivalUINrwTrial = localFont({
   src: [
     {
-      path: '../../../public/fonts/DorivalUINrwTrial-Regular.otf',
+      path: '../../public/fonts/DorivalUINrwTrial-Regular.otf',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../../../public/fonts/DorivalUINrwTrial-Medium.otf',
+      path: '../../public/fonts/DorivalUINrwTrial-Medium.otf',
       weight: '500',
       style: 'normal',
     },
     {
-      path: '../../../public/fonts/DorivalUINrwTrial-Bold.otf',
+      path: '../../public/fonts/DorivalUINrwTrial-Bold.otf',
       weight: '700',
       style: 'normal',
     },
@@ -48,7 +48,7 @@ const dorivalUINrwTrial = localFont({
 const handi = localFont({
   src: [
     {
-      path: '../../../public/fonts/Handi-Regular.ttf',
+      path: '../../public/fonts/Handi-Regular.ttf',
       weight: '400',
       style: 'normal',
     },

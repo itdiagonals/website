@@ -1,10 +1,19 @@
 import React from "react";
 
-export default function CrossPlayer() {
+interface ThemeHeroProps {
+  theme: {
+    title: string;
+    image: string;
+  };
+}
+
+export default function ThemeHero({ theme }: ThemeHeroProps) {
+  const { title, image } = theme;
+
   return (
     <section
       style={{
-        backgroundImage: "url('/CrossPlayer.png')",
+        backgroundImage: `url('${image}')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -25,7 +34,7 @@ export default function CrossPlayer() {
           Theme of the season!
         </h4>
         <h1 className="relative w-fit text-7xl font-bold leading-[102px]">
-          Cross Player
+          {title}
         </h1>
       </div>
     </section>

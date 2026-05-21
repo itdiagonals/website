@@ -1,5 +1,5 @@
 import Image from "next/image";
-import ProductCard from "@/src/components/ProductCard";
+import ProductCard from "@/src/components/product-card";
 import Hero from "@/src/modules/Hero";
 import { PRODUCT_CATEGORIES, productData } from "../dummydata";
 
