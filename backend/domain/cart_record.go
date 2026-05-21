@@ -4,7 +4,7 @@ import "time"
 
 type CartRecord struct {
 	ID         uint             `gorm:"column:id;primaryKey;autoIncrement"`
-	CustomerID uint             `gorm:"column:customer_id;not null;uniqueIndex"`
+	UserID     uint             `gorm:"column:user_id;not null;uniqueIndex"`
 	CreatedAt  time.Time        `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt  time.Time        `gorm:"column:updated_at;autoUpdateTime"`
 	Items      []CartItemRecord `gorm:"foreignKey:CartID;references:ID"`

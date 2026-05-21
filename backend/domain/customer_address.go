@@ -4,7 +4,7 @@ import "time"
 
 type CustomerAddress struct {
 	ID                   uint      `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
-	CustomerID           uint      `json:"customer_id" gorm:"column:customer_id;not null;index"`
+	UserID               uint      `json:"user_id" gorm:"column:user_id;not null;index"`
 	Title                string    `json:"title" gorm:"column:title;type:varchar(100);not null"`
 	RecipientName        string    `json:"recipient_name" gorm:"column:recipient_name;type:varchar(255);not null"`
 	PhoneNumber          string    `json:"phone_number" gorm:"column:phone_number;type:varchar(50);not null"`
@@ -27,5 +27,5 @@ type CustomerAddress struct {
 }
 
 func (CustomerAddress) TableName() string {
-	return "customer_addresses"
+	return "user_addresses"
 }

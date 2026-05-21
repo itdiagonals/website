@@ -12,9 +12,9 @@ type TransactionRepository interface {
 	FindByOrderID(context context.Context, orderID string) (*domain.Transaction, error)
 	FindByBiteshipOrderID(context context.Context, biteshipOrderID string) (*domain.Transaction, error)
 	FindByOrderIDWithDetails(context context.Context, orderID string) (*domain.Transaction, error)
-	FindByCustomerIDPaginated(context context.Context, customerID uint, page int, limit int, status string) ([]domain.Transaction, error)
-	CountByCustomerID(context context.Context, customerID uint, status string) (int64, error)
-	FindByCustomerAndOrderID(context context.Context, customerID uint, orderID string) (*domain.Transaction, error)
+	FindByUserIDPaginated(context context.Context, userID uint, page int, limit int, status string) ([]domain.Transaction, error)
+	CountByUserID(context context.Context, userID uint, status string) (int64, error)
+	FindByUserAndOrderID(context context.Context, userID uint, orderID string) (*domain.Transaction, error)
 	UpdateStatusByOrderIDAndCurrent(context context.Context, orderID string, currentStatus string, nextStatus string) (bool, error)
 	UpdateStatusByOrderID(context context.Context, orderID string, status string) error
 	SetBiteshipBooking(context context.Context, orderID string, biteshipOrderID string, biteshipReferenceID string, trackingNumber string, shippingStatus string) error
@@ -82,9 +82,9 @@ func (repository *transactionRepository) FindByOrderIDWithDetails(context contex
 	return &transaction, nil
 }
 
-func (repository *transactionRepository) FindByCustomerIDPaginated(context context.Context, customerID uint, page int, limit int, status string) ([]domain.Transaction, error) {
+func (repository *transactionRepository) FindByUserIDPaginated(context context.Context, userID uint, page int, limit int, status string) ([]domain.Transaction, error) {
 	query := repository.db.WithContext(context).
-		Where("customer_id = ?", customerID)
+		Where("user_id = ?", userID)
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -104,10 +104,10 @@ func (repository *transactionRepository) FindByCustomerIDPaginated(context conte
 	return transactions, nil
 }
 
-func (repository *transactionRepository) CountByCustomerID(context context.Context, customerID uint, status string) (int64, error) {
+func (repository *transactionRepository) CountByUserID(context context.Context, userID uint, status string) (int64, error) {
 	query := repository.db.WithContext(context).
 		Model(&domain.Transaction{}).
-		Where("customer_id = ?", customerID)
+		Where("user_id = ?", userID)
 
 	if status != "" {
 		query = query.Where("status = ?", status)
@@ -122,12 +122,12 @@ func (repository *transactionRepository) CountByCustomerID(context context.Conte
 	return total, nil
 }
 
-func (repository *transactionRepository) FindByCustomerAndOrderID(context context.Context, customerID uint, orderID string) (*domain.Transaction, error) {
+func (repository *transactionRepository) FindByUserAndOrderID(context context.Context, userID uint, orderID string) (*domain.Transaction, error) {
 	var transaction domain.Transaction
 	err := repository.db.WithContext(context).
 		Preload("ShippingAddress").
 		Preload("Items").
-		Where("customer_id = ? AND order_id = ?", customerID, orderID).
+		Where("user_id = ? AND order_id = ?", userID, orderID).
 		First(&transaction).Error
 	if err != nil {
 		return nil, err

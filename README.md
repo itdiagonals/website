@@ -1,28 +1,27 @@
 # Diagonals Website
 
-This repository contains two main application surfaces:
+This repository contains two application surfaces:
 
-- a Next.js + Payload CMS application in the repository root
-- a Go backend API in `backend/`
+- Next.js + Payload app in repository root
+- Go backend API in `backend/`
 
-The local stack uses separate Postgres databases for Payload and the Go backend so schema ownership stays explicit and safer to operate.
+The local stack now uses a single Postgres database shared between Payload CMS and the Go backend.
 
 ## Architecture summary
 
-- Payload CMS owns the CMS database and admin panel.
-- Go backend owns its own database and serves customer auth, cart, and product API endpoints.
-- Backend public product endpoints read catalog data directly from Payload-owned tables.
+- Payload CMS provides the admin panel and manages catalog schema.
+- Go backend serves customer auth, cart, checkout, and product API endpoints.
+- Both applications read from and write to the same shared database.
+- Backend provides full REST CRUD APIs for all Payload collections.
 
 ## Prerequisites
-
-Make sure the following are installed locally:
 
 - Node.js 20+
 - pnpm
 - Docker Desktop
-- make (GNU Make)
+- GNU Make
 
-Go 1.25+ is only needed if you want to run the backend outside Docker.
+Go 1.25+ is only required if running backend outside Docker.
 
 ## Environment files
 
@@ -30,8 +29,8 @@ There are three env files in this repository, but Docker-first local development
 
 Root `.env` is used by Next.js / Payload.
 
-- `PAYLOAD_DATABASE_URL`: Payload database connection
-- `PAYLOAD_ENABLE_PUSH`: local-only schema push flag for Payload dedicated database
+- `PAYLOAD_DATABASE_URL`: database connection (shared with backend)
+- `PAYLOAD_ENABLE_PUSH`: local-only schema push flag
 - `REDIS_URL`: Redis connection for local stack
 - `S3_*`: MinIO / object storage settings
 
@@ -45,15 +44,13 @@ Before running Docker stack, create `backend/.env.docker` from the template:
 cp backend/.env.example backend/.env.docker
 ```
 
-PowerShell alternative:
+PowerShell:
 
 ```powershell
 Copy-Item backend/.env.example backend/.env.docker
 ```
 
-Then adjust values as needed.
-
-`backend/.env.docker` should include at least:
+Important keys in `backend/.env.docker`:
 
 - `REFRESH_TOKEN_SECRET`: refresh token signing secret
 - `ACCESS_TOKEN_SECRET`: access token signing secret
@@ -65,9 +62,10 @@ Then adjust values as needed.
 
 Important:
 
-- For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable because Payload uses its own dedicated database.
+- For local development, `PAYLOAD_ENABLE_PUSH=true` is acceptable.
 - For production, set `PAYLOAD_ENABLE_PUSH=false`.
 - In Docker mode, the Go backend reads `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` from `backend/.env.docker`.
+- Both `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL` should point to the same shared database.
 - Biteship Maps, Rates, and Tracking APIs are paid in both sandbox and production. Use caching and debounce in clients to reduce request volume.
 
 ## Local setup from zero
@@ -80,13 +78,13 @@ Follow these steps in order (Docker Compose only).
 cp backend/.env.example backend/.env.docker
 ```
 
-2. Clean old Docker state if you are coming from the previous shared-database setup.
+2. Clean old Docker state if you are coming from the previous separate-database setup.
 
 ```bash
 make downv
 ```
 
-3. Start all services with Docker Compose.
+3. Start infra only (detached).
 
 ```bash
 make updb
@@ -94,8 +92,7 @@ make updb
 
 This command builds and runs the stack in detached mode:
 
-- Payload Postgres on `localhost:5432`
-- Backend Postgres on `localhost:5433`
+- Shared Postgres on `localhost:5432`
 - Backend API on `localhost:8080`
 - Redis on `localhost:6379`
 - MinIO on `localhost:9000`
@@ -108,7 +105,7 @@ Backend migrations run automatically when the backend container starts.
 Invoke-RestMethod http://localhost:8080/ping
 ```
 
-5. Stop all services.
+6. Stop all containers.
 
 ```bash
 make down
@@ -129,8 +126,26 @@ After initial setup, normal daily flow is:
 
 Catalog behavior:
 
-- create/update/delete in Payload is reflected immediately because the backend reads the Payload database directly.
+- create/update/delete in Payload is reflected immediately because both Payload and backend share the same database.
 - shipping accuracy depends on product dimensions and weight in Payload (`length`, `width`, `height`, `weight`).
+
+## Backend CRUD APIs
+
+The Go backend now provides full REST CRUD endpoints for all Payload collections:
+
+- `GET/POST /api/v1/categories`
+- `GET/PUT/DELETE /api/v1/categories/:id`
+- `GET /api/v1/categories/slug/:slug`
+- `GET/POST /api/v1/seasons`
+- `GET/PUT/DELETE /api/v1/seasons/:id`
+- `GET /api/v1/seasons/slug/:slug`
+- `GET/POST /api/v1/care-guides`
+- `GET/PUT/DELETE /api/v1/care-guides/:id`
+- `GET/POST /api/v1/products`
+- `GET/PUT/DELETE /api/v1/products/:id`
+- `GET /api/v1/products/slug/:slug`
+- `GET/POST /api/v1/media`
+- `GET/PUT/DELETE /api/v1/media/:id`
 
 ## Useful commands
 
@@ -146,75 +161,100 @@ Start all services with build (detached):
 make updb
 ```
 
-Start all services (foreground):
-
-```bash
-make up
-```
-
-Follow logs:
-
-```bash
-make logs
-```
-
-Stop all services:
+Stop when done:
 
 ```bash
 make down
 ```
 
-Hard reset local data:
+### 2) Backend integration workflow (on demand)
+
+Start backend on top of existing infra:
 
 ```bash
-make downv
+make backend-up
 ```
 
-Open backend container shell:
+Notes:
+
+- migration runs first through `backend-migrate`
+- backend container starts after migration succeeds
+
+Stop backend only (keep infra running):
 
 ```bash
-make shell
+make backend-down
 ```
 
-Open backend database psql:
+### 3) Full stack workflow (one command)
+
+Run infra + backend integration stack directly:
 
 ```bash
-make db
+make full-updb
 ```
 
-Build containers:
+Open database psql:
 
 ```bash
-make build
+make migrate-up
 ```
 
-Compile-test backend packages:
+Run migration locally from host:
 
 ```bash
-make backend-test
+make migrate-up-local
 ```
+
+## Make targets quick reference
+
+Show all targets:
+
+```bash
+make help
+```
+
+Common targets:
+
+- `make up`, `make upb`, `make updb`: infra stack only
+- `make full-up`, `make full-upb`, `make full-updb`: infra + backend stack
+- `make backend-up`, `make backend-down`: toggle backend integration mode
+- `make down`, `make downv`: stop/remove containers (and volumes for `downv`)
+- `make logs`: combined logs with full compose set
+- `make shell`: open backend shell (backend must be running)
+- `make db`: open psql to backend postgres
+- `make backend-run`: run backend on host (`go run .`)
+- `make backend-test`: run backend tests
+
+## Ports
+
+- Payload Postgres: `localhost:5432`
+- Backend Postgres: `localhost:5433`
+- Redis: `localhost:6379`
+- MinIO API: `localhost:9000`
+- MinIO Console: `localhost:9001`
+- Backend API: `localhost:8080` (only when backend is started)
 
 ## Customer auth model
 
-The Go backend uses customer sessions with:
+Go backend uses:
 
 - short-lived access token
 - longer-lived refresh token
-- server-side session records in backend-owned tables
+- server-side session records
 
-This means customer auth is handled by the Go backend, not by Payload auth.
+So customer auth is managed by Go backend, not Payload auth.
 
 ## Production notes
 
-Before production deployment, make sure all of the following are done:
+Before production:
 
 1. Set `PAYLOAD_ENABLE_PUSH=false`.
 2. Replace all local secrets with strong production secrets.
-3. Keep Payload and backend databases separated.
-4. Inject deployment-safe values for `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL`.
-5. Set `BACKEND_GIN_MODE=release`.
-6. Set `BACKEND_TRUSTED_PROXIES` to the actual proxy or ingress IP ranges.
-7. Add regular backup and restore procedures for both databases.
+3. Inject deployment-safe values for `BACKEND_DATABASE_URL` and `PAYLOAD_DATABASE_URL`.
+4. Set `BACKEND_GIN_MODE=release`.
+5. Set `BACKEND_TRUSTED_PROXIES` to the actual proxy or ingress IP ranges.
+6. Add regular backup and restore procedures for the shared database.
 
 ## Troubleshooting
 
@@ -223,5 +263,5 @@ If ports are already occupied, stop the stale process or container first.
 If backend products return `null` or an empty list:
 
 1. make sure containers are healthy (`make ps` and `make logs`)
-2. make sure Payload schema has been pushed to `payload`
-3. make sure `backend/.env.docker` points `PAYLOAD_DATABASE_URL` to `payload-postgres:5432` and `BACKEND_DATABASE_URL` to `backend-postgres:5432`
+2. make sure Payload schema has been pushed to the shared database
+3. make sure `backend/.env.docker` points both `PAYLOAD_DATABASE_URL` and `BACKEND_DATABASE_URL` to the shared postgres container

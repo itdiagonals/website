@@ -23,14 +23,14 @@ const (
 )
 
 type TokenClaims struct {
-	CustomerID uint   `json:"customer_id"`
-	SessionID  string `json:"session_id"`
-	TokenType  string `json:"token_type"`
+	UserID    uint   `json:"user_id"`
+	SessionID string `json:"session_id"`
+	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(customerID uint, sessionID string) (string, error) {
-	token, _, _, err := generateSignedToken(customerID, sessionID, accessTokenType)
+func GenerateToken(userID uint, sessionID string) (string, error) {
+	token, _, _, err := generateSignedToken(userID, sessionID, accessTokenType)
 	if err != nil {
 		return "", err
 	}
@@ -38,8 +38,8 @@ func GenerateToken(customerID uint, sessionID string) (string, error) {
 	return token, nil
 }
 
-func GenerateRefreshToken(customerID uint, sessionID string) (string, string, time.Time, error) {
-	return generateSignedToken(customerID, sessionID, refreshTokenType)
+func GenerateRefreshToken(userID uint, sessionID string) (string, string, time.Time, error) {
+	return generateSignedToken(userID, sessionID, refreshTokenType)
 }
 
 func ValidateToken(tokenString string) (*TokenClaims, error) {
@@ -68,7 +68,7 @@ func VerifyTokenHash(token string, hashedToken string) bool {
 	return subtle.ConstantTimeCompare([]byte(computedHash), []byte(hashedToken)) == 1
 }
 
-func generateSignedToken(customerID uint, sessionID string, tokenType string) (string, string, time.Time, error) {
+func generateSignedToken(userID uint, sessionID string, tokenType string) (string, string, time.Time, error) {
 	secret, err := getSecretForTokenType(tokenType)
 	if err != nil {
 		return "", "", time.Time{}, err
@@ -81,11 +81,11 @@ func generateSignedToken(customerID uint, sessionID string, tokenType string) (s
 	}
 
 	claims := TokenClaims{
-		CustomerID: customerID,
-		SessionID:  sessionID,
-		TokenType:  tokenType,
+		UserID:    userID,
+		SessionID: sessionID,
+		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   fmt.Sprintf("%d", customerID),
+			Subject:   fmt.Sprintf("%d", userID),
 			ID:        tokenID,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),

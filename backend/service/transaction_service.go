@@ -92,9 +92,9 @@ type TransactionHistoryDetail struct {
 }
 
 type TransactionHistoryService interface {
-	ListMyTransactions(ctx context.Context, customerID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error)
-	GetMyTransactionByOrderID(ctx context.Context, customerID uint, orderID string) (*TransactionHistoryDetail, error)
-	GetMyTransactionTracking(ctx context.Context, customerID uint, orderID string, refresh bool) (*ShippingTrackingResult, error)
+	ListMyTransactions(ctx context.Context, userID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error)
+	GetMyTransactionByOrderID(ctx context.Context, userID uint, orderID string) (*TransactionHistoryDetail, error)
+	GetMyTransactionTracking(ctx context.Context, userID uint, orderID string, refresh bool) (*ShippingTrackingResult, error)
 }
 
 type transactionHistoryService struct {
@@ -117,8 +117,8 @@ func NewTransactionHistoryService(transactionRepository repository.TransactionRe
 	return &transactionHistoryService{transactionRepository: transactionRepository, shippingService: shippingService}
 }
 
-func (service *transactionHistoryService) ListMyTransactions(ctx context.Context, customerID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error) {
-	if customerID == 0 {
+func (service *transactionHistoryService) ListMyTransactions(ctx context.Context, userID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error) {
+	if userID == 0 {
 		return nil, ErrTransactionHistoryInvalidQuery
 	}
 
@@ -127,12 +127,12 @@ func (service *transactionHistoryService) ListMyTransactions(ctx context.Context
 		return nil, err
 	}
 
-	total, err := service.transactionRepository.CountByCustomerID(ctx, customerID, normalizedStatus)
+	total, err := service.transactionRepository.CountByUserID(ctx, userID, normalizedStatus)
 	if err != nil {
 		return nil, err
 	}
 
-	transactions, err := service.transactionRepository.FindByCustomerIDPaginated(ctx, customerID, normalizedPage, normalizedLimit, normalizedStatus)
+	transactions, err := service.transactionRepository.FindByUserIDPaginated(ctx, userID, normalizedPage, normalizedLimit, normalizedStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +166,12 @@ func (service *transactionHistoryService) ListMyTransactions(ctx context.Context
 	}, nil
 }
 
-func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.Context, customerID uint, orderID string) (*TransactionHistoryDetail, error) {
-	if customerID == 0 || strings.TrimSpace(orderID) == "" {
+func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.Context, userID uint, orderID string) (*TransactionHistoryDetail, error) {
+	if userID == 0 || strings.TrimSpace(orderID) == "" {
 		return nil, ErrTransactionHistoryInvalidQuery
 	}
 
-	transaction, err := service.transactionRepository.FindByCustomerAndOrderID(ctx, customerID, strings.TrimSpace(orderID))
+	transaction, err := service.transactionRepository.FindByUserAndOrderID(ctx, userID, strings.TrimSpace(orderID))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrTransactionNotFound
@@ -201,7 +201,7 @@ func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.
 	return &TransactionHistoryDetail{
 		ID:                transaction.ID,
 		OrderID:           transaction.OrderID,
-		CustomerID:        transaction.CustomerID,
+		CustomerID:        transaction.UserID,
 		ShippingAddressID: transaction.ShippingAddressID,
 		TotalAmount:       transaction.TotalAmount,
 		ShippingCost:      transaction.ShippingCost,
@@ -261,12 +261,12 @@ func normalizeTransactionQuery(query TransactionHistoryQuery) (int, int, string,
 	}
 }
 
-func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.Context, customerID uint, orderID string, refresh bool) (*ShippingTrackingResult, error) {
-	if customerID == 0 || strings.TrimSpace(orderID) == "" {
+func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.Context, userID uint, orderID string, refresh bool) (*ShippingTrackingResult, error) {
+	if userID == 0 || strings.TrimSpace(orderID) == "" {
 		return nil, ErrTransactionHistoryInvalidQuery
 	}
 
-	transaction, err := service.transactionRepository.FindByCustomerAndOrderID(ctx, customerID, strings.TrimSpace(orderID))
+	transaction, err := service.transactionRepository.FindByUserAndOrderID(ctx, userID, strings.TrimSpace(orderID))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrTransactionNotFound

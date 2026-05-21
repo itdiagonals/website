@@ -4,13 +4,13 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/config"
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/middleware"
 	"github.com/itdiagonals/website/backend/service"
 )
 
@@ -35,8 +35,13 @@ type LoginRequest struct {
 }
 
 type StatusResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message,omitempty"`
+	Status    string `json:"status"`
+	Message   string `json:"message,omitempty"`
+	CSRFToken string `json:"csrf_token,omitempty"`
+}
+
+type CSRFResponse struct {
+	CSRFToken string `json:"csrf_token"`
 }
 
 type AuthSessionsResponse struct {
@@ -83,8 +88,13 @@ func (handler *AuthHandler) Register(context *gin.Context) {
 		return
 	}
 
-	handler.setAuthCookies(context, *response)
-	context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "register successful"})
+	csrfToken, err := handler.setAuthCookies(context, *response)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "register successful", CSRFToken: csrfToken})
 }
 
 // Login godoc
@@ -120,8 +130,13 @@ func (handler *AuthHandler) Login(context *gin.Context) {
 		return
 	}
 
-	handler.setAuthCookies(context, *response)
-	context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "login successful"})
+	csrfToken, err := handler.setAuthCookies(context, *response)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "login successful", CSRFToken: csrfToken})
 }
 
 // Refresh godoc
@@ -152,8 +167,13 @@ func (handler *AuthHandler) Refresh(context *gin.Context) {
 		return
 	}
 
-	handler.setAuthCookies(context, *response)
-	context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "token refreshed"})
+	csrfToken, err := handler.setAuthCookies(context, *response)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "token refreshed", CSRFToken: csrfToken})
 }
 
 // Logout godoc
@@ -167,13 +187,13 @@ func (handler *AuthHandler) Refresh(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/auth/logout [post]
 func (handler *AuthHandler) Logout(context *gin.Context) {
-	customerID, sessionID, ok := getCurrentAuthContext(context)
+	userID, sessionID, ok := getCurrentAuthContext(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	if err := handler.authService.LogoutCurrentSession(context.Request.Context(), customerID, sessionID); err != nil {
+	if err := handler.authService.LogoutCurrentSession(context.Request.Context(), userID, sessionID); err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -184,7 +204,7 @@ func (handler *AuthHandler) Logout(context *gin.Context) {
 
 // LogoutAll godoc
 // @Summary Logout all sessions
-// @Description Revoke all active sessions for the authenticated customer and clear auth cookies on the current device
+// @Description Revoke all active sessions for the authenticated user and clear auth cookies on the current device
 // @Tags Auth
 // @Security BearerAuth
 // @Produce json
@@ -193,13 +213,13 @@ func (handler *AuthHandler) Logout(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/auth/logout-all [post]
 func (handler *AuthHandler) LogoutAll(context *gin.Context) {
-	customerID, _, ok := getCurrentAuthContext(context)
+	userID, _, ok := getCurrentAuthContext(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	if err := handler.authService.LogoutAllSessions(context.Request.Context(), customerID); err != nil {
+	if err := handler.authService.LogoutAllSessions(context.Request.Context(), userID); err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return
 	}
@@ -210,7 +230,7 @@ func (handler *AuthHandler) LogoutAll(context *gin.Context) {
 
 // ListSessions godoc
 // @Summary List active sessions
-// @Description List all active sessions for the authenticated customer across devices and browsers
+// @Description List all active sessions for the authenticated user across devices and browsers
 // @Tags Auth
 // @Security BearerAuth
 // @Produce json
@@ -219,13 +239,13 @@ func (handler *AuthHandler) LogoutAll(context *gin.Context) {
 // @Failure 500 {object} handler.ErrorResponse
 // @Router /api/v1/auth/sessions [get]
 func (handler *AuthHandler) ListSessions(context *gin.Context) {
-	customerID, sessionID, ok := getCurrentAuthContext(context)
+	userID, sessionID, ok := getCurrentAuthContext(context)
 	if !ok {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "unauthorized"})
 		return
 	}
 
-	sessions, err := handler.authService.ListSessions(context.Request.Context(), customerID, sessionID)
+	sessions, err := handler.authService.ListSessions(context.Request.Context(), userID, sessionID)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
 		return
@@ -234,17 +254,35 @@ func (handler *AuthHandler) ListSessions(context *gin.Context) {
 	context.JSON(http.StatusOK, AuthSessionsResponse{Data: sessions})
 }
 
-func (handler *AuthHandler) setAuthCookies(context *gin.Context, tokens service.AuthTokens) {
+// CSRF godoc
+// @Summary Get CSRF token
+// @Description Generate CSRF token, set it in secure HttpOnly cookie, and return token in response body
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} handler.CSRFResponse
+// @Failure 500 {object} handler.ErrorResponse
+// @Router /api/v1/auth/csrf [get]
+func (handler *AuthHandler) CSRF(context *gin.Context) {
+	csrfToken, err := middleware.IssueCSRFToken(context)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	context.JSON(http.StatusOK, CSRFResponse{CSRFToken: csrfToken})
+}
+
+func (handler *AuthHandler) setAuthCookies(context *gin.Context, tokens service.AuthTokens) (string, error) {
 	config.LoadEnv()
 
-	context.SetSameSite(getCookieSameSite())
+	context.SetSameSite(middleware.CookieSameSite())
 	context.SetCookie(
 		accessTokenCookieName,
 		tokens.AccessToken,
 		secondsUntil(tokens.AccessExpiresAt),
 		"/",
 		os.Getenv("COOKIE_DOMAIN"),
-		getCookieSecure(),
+		middleware.CookieSecure(),
 		true,
 	)
 	context.SetCookie(
@@ -253,37 +291,20 @@ func (handler *AuthHandler) setAuthCookies(context *gin.Context, tokens service.
 		secondsUntil(tokens.RefreshExpiresAt),
 		"/",
 		os.Getenv("COOKIE_DOMAIN"),
-		getCookieSecure(),
+		middleware.CookieSecure(),
 		true,
 	)
+
+	return middleware.IssueCSRFToken(context)
 }
 
 func (handler *AuthHandler) clearAuthCookies(context *gin.Context) {
 	config.LoadEnv()
 
-	context.SetSameSite(getCookieSameSite())
-	context.SetCookie(accessTokenCookieName, "", -1, "/", os.Getenv("COOKIE_DOMAIN"), getCookieSecure(), true)
-	context.SetCookie(refreshTokenCookieName, "", -1, "/", os.Getenv("COOKIE_DOMAIN"), getCookieSecure(), true)
-}
-
-func getCookieSecure() bool {
-	value, err := strconv.ParseBool(os.Getenv("COOKIE_SECURE"))
-	if err != nil {
-		return false
-	}
-
-	return value
-}
-
-func getCookieSameSite() http.SameSite {
-	switch os.Getenv("COOKIE_SAME_SITE") {
-	case "strict":
-		return http.SameSiteStrictMode
-	case "none":
-		return http.SameSiteNoneMode
-	default:
-		return http.SameSiteLaxMode
-	}
+	context.SetSameSite(middleware.CookieSameSite())
+	context.SetCookie(accessTokenCookieName, "", -1, "/", os.Getenv("COOKIE_DOMAIN"), middleware.CookieSecure(), true)
+	context.SetCookie(refreshTokenCookieName, "", -1, "/", os.Getenv("COOKIE_DOMAIN"), middleware.CookieSecure(), true)
+	middleware.ClearCSRFCookie(context)
 }
 
 func secondsUntil(expiresAt time.Time) int {
@@ -304,12 +325,12 @@ func buildSessionMetadata(context *gin.Context) service.SessionMetadata {
 }
 
 func getCurrentAuthContext(context *gin.Context) (uint, string, bool) {
-	customerIDValue, ok := context.Get("customer_id")
+	userIDValue, ok := context.Get("user_id")
 	if !ok {
 		return 0, "", false
 	}
 
-	customerID, ok := customerIDValue.(uint)
+	userID, ok := userIDValue.(uint)
 	if !ok {
 		return 0, "", false
 	}
@@ -324,5 +345,5 @@ func getCurrentAuthContext(context *gin.Context) (uint, string, bool) {
 		return 0, "", false
 	}
 
-	return customerID, sessionID, true
+	return userID, sessionID, true
 }
