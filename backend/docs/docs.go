@@ -186,9 +186,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/csrf": {
+            "get": {
+                "description": "Return the Gorilla CSRF token for the current browser session and ensure the CSRF cookie is present",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get CSRF token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.CSRFResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
-                "description": "Authenticate a customer and create a new active session for the current device or browser",
+                "description": "Authenticate a customer and create a new active session for the current device or browser. Returns a CSRF token in the csrf_token field.",
                 "consumes": [
                     "application/json"
                 ],
@@ -225,6 +251,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid or missing CSRF token",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -314,7 +346,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/refresh": {
             "post": {
-                "description": "Validate the refresh token from HttpOnly cookie against the current session, rotate it, and update auth cookies",
+                "description": "Validate the refresh token from HttpOnly cookie against the current session, rotate it, and update auth cookies. Returns a CSRF token in the csrf_token field.",
                 "produces": [
                     "application/json"
                 ],
@@ -335,6 +367,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid or missing CSRF token",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -346,7 +384,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/register": {
             "post": {
-                "description": "Register a new customer in Go-owned tables and issue access and refresh tokens",
+                "description": "Register a new customer in Go-owned tables and issue access and refresh tokens. Returns a CSRF token in the csrf_token field.",
                 "consumes": [
                     "application/json"
                 ],
@@ -377,6 +415,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid or missing CSRF token",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -1357,7 +1401,7 @@ const docTemplate = `{
         },
         "/api/v1/media/upload": {
             "post": {
-                "description": "Upload a media file via multipart/form-data, save it on the backend file store, and create a media record",
+                "description": "Upload a media file via multipart/form-data, convert non-WebP images to WebP, upload to MinIO, and create a media record",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -3791,6 +3835,14 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.CSRFResponse": {
+            "type": "object",
+            "properties": {
+                "csrf_token": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.CartResponse": {
             "type": "object",
             "properties": {
@@ -4096,6 +4148,9 @@ const docTemplate = `{
         "handler.StatusResponse": {
             "type": "object",
             "properties": {
+                "csrf_token": {
+                    "type": "string"
+                },
                 "message": {
                     "type": "string"
                 },
@@ -4776,6 +4831,11 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "CsrfHeader": {
+            "type": "apiKey",
+            "name": "X-CSRF-Token",
+            "in": "header"
         }
     }
 }`
@@ -4787,7 +4847,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "Diagonals API",
-	Description:      "Customer auth, product catalog, and admin CMS API for the Diagonals website backend.",
+	Description:      "Customer auth, product catalog, and admin CMS API for the Diagonals website backend.\nCSRF Protection:\n- State-changing requests (POST/PUT/PATCH/DELETE) without a Bearer token must include the X-CSRF-Token header.\n- Obtain a CSRF token via GET /api/v1/auth/csrf or from the csrf_token field in login/register/refresh responses.\n- The server sets an HttpOnly cookie named csrf_token automatically.\n- Requests with Authorization: Bearer <token> skip CSRF validation.\n- Webhook endpoints (/api/v1/payments/midtrans/notification, /api/v1/payments/biteship/notification) are exempt.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

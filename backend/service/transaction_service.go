@@ -75,7 +75,7 @@ type TransactionHistoryDetailItem struct {
 type TransactionHistoryDetail struct {
 	ID                uint                             `json:"id"`
 	OrderID           string                           `json:"order_id"`
-	CustomerID        uint                             `json:"customer_id"`
+	CustomerID        string                           `json:"customer_id"`
 	ShippingAddressID uint                             `json:"shipping_address_id"`
 	TotalAmount       float64                          `json:"total_amount"`
 	ShippingCost      float64                          `json:"shipping_cost"`
@@ -92,9 +92,9 @@ type TransactionHistoryDetail struct {
 }
 
 type TransactionHistoryService interface {
-	ListMyTransactions(ctx context.Context, userID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error)
-	GetMyTransactionByOrderID(ctx context.Context, userID uint, orderID string) (*TransactionHistoryDetail, error)
-	GetMyTransactionTracking(ctx context.Context, userID uint, orderID string, refresh bool) (*ShippingTrackingResult, error)
+	ListMyTransactions(ctx context.Context, userID string, query TransactionHistoryQuery) (*TransactionHistoryListResult, error)
+	GetMyTransactionByOrderID(ctx context.Context, userID string, orderID string) (*TransactionHistoryDetail, error)
+	GetMyTransactionTracking(ctx context.Context, userID string, orderID string, refresh bool) (*ShippingTrackingResult, error)
 }
 
 type transactionHistoryService struct {
@@ -117,8 +117,8 @@ func NewTransactionHistoryService(transactionRepository repository.TransactionRe
 	return &transactionHistoryService{transactionRepository: transactionRepository, shippingService: shippingService}
 }
 
-func (service *transactionHistoryService) ListMyTransactions(ctx context.Context, userID uint, query TransactionHistoryQuery) (*TransactionHistoryListResult, error) {
-	if userID == 0 {
+func (service *transactionHistoryService) ListMyTransactions(ctx context.Context, userID string, query TransactionHistoryQuery) (*TransactionHistoryListResult, error) {
+	if userID == "" {
 		return nil, ErrTransactionHistoryInvalidQuery
 	}
 
@@ -166,8 +166,8 @@ func (service *transactionHistoryService) ListMyTransactions(ctx context.Context
 	}, nil
 }
 
-func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.Context, userID uint, orderID string) (*TransactionHistoryDetail, error) {
-	if userID == 0 || strings.TrimSpace(orderID) == "" {
+func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.Context, userID string, orderID string) (*TransactionHistoryDetail, error) {
+	if userID == "" || strings.TrimSpace(orderID) == "" {
 		return nil, ErrTransactionHistoryInvalidQuery
 	}
 
@@ -261,8 +261,8 @@ func normalizeTransactionQuery(query TransactionHistoryQuery) (int, int, string,
 	}
 }
 
-func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.Context, userID uint, orderID string, refresh bool) (*ShippingTrackingResult, error) {
-	if userID == 0 || strings.TrimSpace(orderID) == "" {
+func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.Context, userID string, orderID string, refresh bool) (*ShippingTrackingResult, error) {
+	if userID == "" || strings.TrimSpace(orderID) == "" {
 		return nil, ErrTransactionHistoryInvalidQuery
 	}
 

@@ -1,9 +1,8 @@
 package middleware
 
 import (
-	"crypto/rand"
-	"crypto/subtle"
-	"encoding/base64"
+	"crypto/sha256"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/csrf"
 )
 
 const (
@@ -21,72 +21,56 @@ const (
 )
 
 var csrfExemptPaths = map[string]struct{}{
-	"/api/v1/auth/csrf":                      {},
 	"/api/v1/payments/midtrans/notification": {},
 	"/api/v1/payments/biteship/notification": {},
 }
 
-func RequireCSRF() gin.HandlerFunc {
-	trustedOrigins := trustedCSRFOrigins()
+func NewCSRFHandler(next http.Handler) (http.Handler, error) {
+	authKey, err := csrfAuthKey()
+	if err != nil {
+		return nil, err
+	}
 
+	options := []csrf.Option{
+		csrf.CookieName(csrfCookieNameDefault),
+		csrf.RequestHeader(csrfHeaderName),
+		csrf.Path("/"),
+		csrf.MaxAge(cookieMaxAgeFromEnv()),
+		csrf.Secure(CookieSecure()),
+		csrf.HttpOnly(true),
+		csrf.SameSite(csrfSameSiteMode()),
+		csrf.ErrorHandler(http.HandlerFunc(handleCSRFFailure)),
+	}
+
+	if cookieDomain := strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")); cookieDomain != "" {
+		options = append(options, csrf.Domain(cookieDomain))
+	}
+
+	if trustedOrigins := trustedCSRFOrigins(); len(trustedOrigins) > 0 {
+		options = append(options, csrf.TrustedOrigins(trustedOrigins))
+	}
+
+	protected := csrf.Protect(authKey, options...)(next)
+
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		request = prepareCSRFRequest(request)
+		protected.ServeHTTP(writer, request)
+	}), nil
+}
+
+func WriteCSRFToken() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		if isSafeMethod(context.Request.Method) || hasBearerAuthorization(context.GetHeader("Authorization")) {
-			context.Next()
-			return
-		}
-
-		if _, exempt := csrfExemptPaths[context.Request.URL.Path]; exempt {
-			context.Next()
-			return
-		}
-
-		if !isOriginAllowed(context, trustedOrigins) {
-			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "invalid request origin"})
-			return
-		}
-
-		cookieToken, err := context.Cookie(csrfCookieNameDefault)
-		if err != nil || strings.TrimSpace(cookieToken) == "" {
-			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "missing csrf token"})
-			return
-		}
-
-		headerToken := strings.TrimSpace(context.GetHeader(csrfHeaderName))
-		if headerToken == "" {
-			headerToken = strings.TrimSpace(context.GetHeader(csrfAltHeaderName))
-		}
-		if headerToken == "" {
-			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "invalid csrf token"})
-			return
-		}
-
-		if subtle.ConstantTimeCompare([]byte(headerToken), []byte(cookieToken)) != 1 {
-			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "invalid csrf token"})
-			return
+		token := strings.TrimSpace(csrf.Token(context.Request))
+		if token != "" {
+			context.Header(csrfHeaderName, token)
 		}
 
 		context.Next()
 	}
 }
 
-func IssueCSRFToken(context *gin.Context) (string, error) {
-	token, err := generateCSRFToken()
-	if err != nil {
-		return "", err
-	}
-
-	context.SetSameSite(CookieSameSite())
-	context.SetCookie(
-		csrfCookieNameDefault,
-		token,
-		cookieMaxAgeFromEnv(),
-		"/",
-		strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
-		CookieSecure(),
-		true,
-	)
-
-	return token, nil
+func CSRFToken(context *gin.Context) string {
+	return strings.TrimSpace(csrf.Token(context.Request))
 }
 
 func ClearCSRFCookie(context *gin.Context) {
@@ -100,15 +84,6 @@ func ClearCSRFCookie(context *gin.Context) {
 		CookieSecure(),
 		true,
 	)
-}
-
-func generateCSRFToken() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
 func CookieSecure() bool {
@@ -145,79 +120,134 @@ func cookieMaxAgeFromEnv() int {
 	return value
 }
 
-func trustedCSRFOrigins() map[string]struct{} {
-	origins := map[string]struct{}{}
+func trustedCSRFOrigins() []string {
 	configured := strings.TrimSpace(os.Getenv("BACKEND_CSRF_TRUSTED_ORIGINS"))
 	if configured == "" {
-		return origins
+		return nil
 	}
 
+	origins := make([]string, 0)
 	for _, origin := range strings.Split(configured, ",") {
-		normalized := normalizeOrigin(origin)
-		if normalized == "" {
-			continue
+		if normalized := normalizeTrustedOrigin(origin); normalized != "" {
+			origins = append(origins, normalized)
 		}
-		origins[normalized] = struct{}{}
+	}
+
+	if len(origins) == 0 {
+		return nil
 	}
 
 	return origins
 }
 
-func isOriginAllowed(context *gin.Context, trustedOrigins map[string]struct{}) bool {
-	originHeader := strings.TrimSpace(context.GetHeader("Origin"))
-	if originHeader == "" {
-		return true
+func normalizeTrustedOrigin(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
 	}
 
-	origin := normalizeOrigin(originHeader)
-	if origin == "" {
+	if !strings.Contains(trimmed, "://") {
+		trimmed = "https://" + trimmed
+	}
+
+	parsed, err := url.Parse(trimmed)
+	if err != nil || parsed.Host == "" {
+		return ""
+	}
+
+	return strings.ToLower(parsed.Host)
+}
+
+func prepareCSRFRequest(request *http.Request) *http.Request {
+	if request == nil {
+		return request
+	}
+
+	if isPlaintextRequest(request) {
+		request = csrf.PlaintextHTTPRequest(request)
+	}
+
+	if headerToken := strings.TrimSpace(request.Header.Get(csrfHeaderName)); headerToken == "" {
+		if altHeaderToken := strings.TrimSpace(request.Header.Get(csrfAltHeaderName)); altHeaderToken != "" {
+			request.Header.Set(csrfHeaderName, altHeaderToken)
+		}
+	}
+
+	if shouldSkipCSRF(request) {
+		return csrf.UnsafeSkipCheck(request)
+	}
+
+	return request
+}
+
+func isPlaintextRequest(request *http.Request) bool {
+	if request == nil {
 		return false
 	}
 
-	if origin == requestOrigin(context) {
+	if request.TLS != nil {
+		return false
+	}
+
+	forwardedProto := strings.ToLower(strings.TrimSpace(request.Header.Get("X-Forwarded-Proto")))
+	if forwardedProto == "https" {
+		return false
+	}
+
+	return true
+}
+
+func shouldSkipCSRF(request *http.Request) bool {
+	if request == nil {
+		return false
+	}
+
+	if hasBearerAuthorization(request.Header.Get("Authorization")) {
 		return true
 	}
 
-	_, trusted := trustedOrigins[origin]
-	return trusted
+	_, exempt := csrfExemptPaths[request.URL.Path]
+	return exempt
 }
 
-func requestOrigin(context *gin.Context) string {
-	host := strings.TrimSpace(context.Request.Host)
-	if host == "" {
-		return ""
+func csrfAuthKey() ([]byte, error) {
+	candidates := []string{
+		strings.TrimSpace(os.Getenv("CSRF_AUTH_KEY")),
+		strings.TrimSpace(os.Getenv("PAYLOAD_SECRET")),
+		strings.TrimSpace(os.Getenv("ACCESS_TOKEN_SECRET")),
+		strings.TrimSpace(os.Getenv("REFRESH_TOKEN_SECRET")),
 	}
 
-	scheme := "http"
-	if context.Request.TLS != nil {
-		scheme = "https"
-	}
-	if forwardedProto := strings.TrimSpace(context.GetHeader("X-Forwarded-Proto")); forwardedProto != "" {
-		scheme = strings.ToLower(forwardedProto)
+	for _, candidate := range candidates {
+		if candidate == "" {
+			continue
+		}
+
+		sum := sha256.Sum256([]byte(candidate))
+		return sum[:], nil
 	}
 
-	return normalizeOrigin(scheme + "://" + host)
+	return nil, errors.New("CSRF_AUTH_KEY or another application secret must be set")
 }
 
-func normalizeOrigin(raw string) string {
-	parsed, err := url.Parse(strings.TrimSpace(raw))
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return ""
+func csrfSameSiteMode() csrf.SameSiteMode {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("COOKIE_SAME_SITE"))) {
+	case "strict":
+		return csrf.SameSiteStrictMode
+	case "none":
+		return csrf.SameSiteNoneMode
+	default:
+		return csrf.SameSiteLaxMode
 	}
+}
 
-	return strings.ToLower(parsed.Scheme) + "://" + strings.ToLower(parsed.Host)
+func handleCSRFFailure(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusForbidden)
+	_, _ = writer.Write([]byte(`{"message":"invalid csrf token"}`))
 }
 
 func hasBearerAuthorization(header string) bool {
 	parts := strings.SplitN(strings.TrimSpace(header), " ", 2)
 	return len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") && strings.TrimSpace(parts[1]) != ""
-}
-
-func isSafeMethod(method string) bool {
-	switch strings.ToUpper(strings.TrimSpace(method)) {
-	case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
-		return true
-	default:
-		return false
-	}
 }

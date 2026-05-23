@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
@@ -227,15 +228,15 @@ func (handler *CustomerAddressHandler) GetMyAddresses(context *gin.Context) {
 	context.JSON(http.StatusOK, CustomerAddressListResponse{Data: addresses})
 }
 
-func getCurrentUserID(context *gin.Context) (uint, bool) {
+func getCurrentUserID(context *gin.Context) (string, bool) {
 	userIDValue, ok := context.Get("user_id")
 	if !ok {
-		return 0, false
+		return "", false
 	}
 
-	userID, ok := userIDValue.(uint)
-	if !ok || userID == 0 {
-		return 0, false
+	userID, ok := userIDValue.(string)
+	if !ok || strings.TrimSpace(userID) == "" {
+		return "", false
 	}
 
 	return userID, true

@@ -727,6 +727,11 @@ definitions:
           $ref: '#/definitions/domain.AuthSessionSummary'
         type: array
     type: object
+  handler.CSRFResponse:
+    properties:
+      csrf_token:
+        type: string
+    type: object
   handler.CartResponse:
     properties:
       data:
@@ -930,6 +935,8 @@ definitions:
     type: object
   handler.StatusResponse:
     properties:
+      csrf_token:
+        type: string
       message:
         type: string
       status:
@@ -1375,8 +1382,14 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Customer auth, product catalog, and admin CMS API for the Diagonals
-    website backend.
+  description: |-
+    Customer auth, product catalog, and admin CMS API for the Diagonals website backend.
+    CSRF Protection:
+    - State-changing requests (POST/PUT/PATCH/DELETE) without a Bearer token must include the X-CSRF-Token header.
+    - Obtain a CSRF token via GET /api/v1/auth/csrf or from the csrf_token field in login/register/refresh responses.
+    - The server sets an HttpOnly cookie named csrf_token automatically.
+    - Requests with Authorization: Bearer <token> skip CSRF validation.
+    - Webhook endpoints (/api/v1/payments/midtrans/notification, /api/v1/payments/biteship/notification) are exempt.
   title: Diagonals API
   version: "1.0"
 paths:
@@ -1494,12 +1507,30 @@ paths:
       summary: Update customer address
       tags:
       - Addresses
+  /api/v1/auth/csrf:
+    get:
+      description: Return the Gorilla CSRF token for the current browser session and
+        ensure the CSRF cookie is present
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.CSRFResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Get CSRF token
+      tags:
+      - Auth
   /api/v1/auth/login:
     post:
       consumes:
       - application/json
       description: Authenticate a customer and create a new active session for the
-        current device or browser
+        current device or browser. Returns a CSRF token in the csrf_token field.
       parameters:
       - description: Login payload
         in: body
@@ -1520,6 +1551,10 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: Invalid or missing CSRF token
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "500":
@@ -1580,7 +1615,8 @@ paths:
   /api/v1/auth/refresh:
     post:
       description: Validate the refresh token from HttpOnly cookie against the current
-        session, rotate it, and update auth cookies
+        session, rotate it, and update auth cookies. Returns a CSRF token in the csrf_token
+        field.
       produces:
       - application/json
       responses:
@@ -1590,6 +1626,10 @@ paths:
             $ref: '#/definitions/handler.StatusResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: Invalid or missing CSRF token
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "500":
@@ -1604,7 +1644,7 @@ paths:
       consumes:
       - application/json
       description: Register a new customer in Go-owned tables and issue access and
-        refresh tokens
+        refresh tokens. Returns a CSRF token in the csrf_token field.
       parameters:
       - description: Registration payload
         in: body
@@ -1621,6 +1661,10 @@ paths:
             $ref: '#/definitions/handler.StatusResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: Invalid or missing CSRF token
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "409":
@@ -2365,8 +2409,8 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Upload a media file via multipart/form-data, save it on the backend
-        file store, and create a media record
+      description: Upload a media file via multipart/form-data, convert non-WebP images
+        to WebP, upload to MinIO, and create a media record
       parameters:
       - description: Media file
         in: formData
@@ -3160,5 +3204,9 @@ securityDefinitions:
   BearerAuth:
     in: header
     name: Authorization
+    type: apiKey
+  CsrfHeader:
+    in: header
+    name: X-CSRF-Token
     type: apiKey
 swagger: "2.0"

@@ -10,16 +10,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerAuthRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+func registerAuthRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client, otpService service.OTPService) {
 	userRepository := repository.NewUserRepository(db)
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	authService := service.NewAuthService(userRepository, authSessionRepository)
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, otpService)
 
 	api.GET("/auth/csrf", authHandler.CSRF)
 	api.POST("/auth/register", authHandler.Register)
 	api.POST("/auth/login", authHandler.Login)
 	api.POST("/auth/refresh", authHandler.Refresh)
+	api.POST("/auth/reset-password", authHandler.ResetPassword)
 
 	protectedAuth := api.Group("/auth")
 	protectedAuth.Use(middleware.RequireAuth(authSessionRepository, userRepository))

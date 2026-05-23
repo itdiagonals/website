@@ -16,9 +16,9 @@ import (
 )
 
 type CartRepository interface {
-	GetCart(context context.Context, userID uint) (*domain.Cart, error)
+	GetCart(context context.Context, userID string) (*domain.Cart, error)
 	SaveCart(context context.Context, cart *domain.Cart) error
-	ClearCart(context context.Context, userID uint) error
+	ClearCart(context context.Context, userID string) error
 }
 
 type cartRepository struct {
@@ -35,7 +35,7 @@ func NewCartRepository(db *gorm.DB, redisClient *redis.Client) CartRepository {
 	}
 }
 
-func (repository *cartRepository) GetCart(context context.Context, userID uint) (*domain.Cart, error) {
+func (repository *cartRepository) GetCart(context context.Context, userID string) (*domain.Cart, error) {
 	if repository.redisClient != nil {
 		value, err := repository.redisClient.Get(context, repository.key(userID)).Result()
 		if err == nil {
@@ -63,7 +63,7 @@ func (repository *cartRepository) GetCart(context context.Context, userID uint) 
 }
 
 func (repository *cartRepository) SaveCart(context context.Context, cart *domain.Cart) error {
-	if cart == nil || cart.UserID == 0 {
+	if cart == nil || cart.UserID == "" {
 		return errors.New("invalid cart payload")
 	}
 
@@ -165,7 +165,7 @@ func (repository *cartRepository) SaveCart(context context.Context, cart *domain
 	return nil
 }
 
-func (repository *cartRepository) ClearCart(context context.Context, userID uint) error {
+func (repository *cartRepository) ClearCart(context context.Context, userID string) error {
 	emptyCart := &domain.Cart{UserID: userID, Items: []domain.CartItem{}}
 	if err := repository.SaveCart(context, emptyCart); err != nil {
 		return err
@@ -180,11 +180,11 @@ func (repository *cartRepository) ClearCart(context context.Context, userID uint
 	return nil
 }
 
-func (repository *cartRepository) key(userID uint) string {
-	return fmt.Sprintf("cart:user:%d", userID)
+func (repository *cartRepository) key(userID string) string {
+	return fmt.Sprintf("cart:user:%s", userID)
 }
 
-func (repository *cartRepository) loadCartFromDatabase(context context.Context, userID uint) (*domain.Cart, error) {
+func (repository *cartRepository) loadCartFromDatabase(context context.Context, userID string) (*domain.Cart, error) {
 	var cartRecord domain.CartRecord
 	err := repository.db.WithContext(context).Preload("Items").Where("user_id = ?", userID).First(&cartRecord).Error
 	if err != nil {

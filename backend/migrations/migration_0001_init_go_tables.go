@@ -10,7 +10,7 @@ var migration0001InitGoTables = Migration{
 		`CREATE TABLE IF NOT EXISTS transactions (
 			id BIGSERIAL PRIMARY KEY,
 			order_id VARCHAR(100) NOT NULL UNIQUE,
-			user_id BIGINT NOT NULL,
+			user_id UUID NOT NULL,
 			total_amount NUMERIC(15,2) NOT NULL,
 			status VARCHAR(50) NOT NULL,
 			snap_token TEXT,

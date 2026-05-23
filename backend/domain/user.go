@@ -1,17 +1,23 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type User struct {
-	ID        uint      `json:"id" gorm:"column:id;primaryKey"`
-	Email     string    `json:"email" gorm:"column:email;uniqueIndex;not null"`
-	Password  string    `json:"-" gorm:"column:password"`
-	Name      string    `json:"name" gorm:"column:name"`
-	Role      string    `json:"role" gorm:"column:role;default:admin"`
-	Phone     string    `json:"phone" gorm:"column:phone"`
-	Address   string    `json:"address" gorm:"column:address"`
-	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
+	ID         string    `json:"id" gorm:"column:id;primaryKey;type:uuid;default:gen_random_uuid()"`
+	Email      string    `json:"email" gorm:"column:email;uniqueIndex;not null"`
+	Password   string    `json:"-" gorm:"column:password"`
+	Name       string    `json:"name" gorm:"column:name"`
+	Role       string    `json:"role" gorm:"column:role;default:admin;index"`
+	Phone      string    `json:"phone" gorm:"column:phone"`
+	Address    string    `json:"address" gorm:"column:address"`
+	IsVerified bool      `json:"is_verified" gorm:"column:is_verified;default:false"`
+	OTPCode    string    `json:"-" gorm:"column:otp_code"`
+	CreatedAt  time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt  time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (User) TableName() string {
@@ -34,6 +40,7 @@ func (r CreateUserRequest) ToUser() User {
 		role = "admin"
 	}
 	return User{
+		ID:       uuid.New().String(),
 		Email:    r.Email,
 		Password: r.Password,
 		Name:     r.Name,
@@ -52,7 +59,7 @@ type UpdateUserRequest struct {
 	Address string `json:"address"`
 }
 
-func (r UpdateUserRequest) ToUser(id uint) User {
+func (r UpdateUserRequest) ToUser(id string) User {
 	role := r.Role
 	if role == "" {
 		role = "admin"

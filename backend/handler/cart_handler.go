@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
@@ -59,8 +60,8 @@ func (handler *CartHandler) AddToCart(context *gin.Context) {
 		return
 	}
 
-	typedUserID, ok := userID.(uint)
-	if !ok {
+	typedUserID, ok := userID.(string)
+	if !ok || strings.TrimSpace(typedUserID) == "" {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
@@ -118,8 +119,8 @@ func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
 		return
 	}
 
-	typedUserID, ok := userID.(uint)
-	if !ok {
+	typedUserID, ok := userID.(string)
+	if !ok || strings.TrimSpace(typedUserID) == "" {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
@@ -169,8 +170,8 @@ func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
 		return
 	}
 
-	typedUserID, ok := userID.(uint)
-	if !ok {
+	typedUserID, ok := userID.(string)
+	if !ok || strings.TrimSpace(typedUserID) == "" {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}
@@ -222,8 +223,8 @@ func (handler *CartHandler) GetCart(context *gin.Context) {
 		return
 	}
 
-	typedUserID, ok := userID.(uint)
-	if !ok {
+	typedUserID, ok := userID.(string)
+	if !ok || strings.TrimSpace(typedUserID) == "" {
 		context.JSON(http.StatusUnauthorized, ErrorResponse{Message: "invalid user context"})
 		return
 	}

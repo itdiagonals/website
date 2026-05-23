@@ -5,7 +5,7 @@ import "time"
 type Transaction struct {
 	ID                uint    `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
 	OrderID           string  `json:"order_id" gorm:"column:order_id;type:varchar(100);uniqueIndex;not null"`
-	UserID            uint    `json:"user_id" gorm:"column:user_id;not null;index"`
+	UserID            string  `json:"user_id" gorm:"column:user_id;not null;index;type:uuid"`
 	ShippingAddressID uint    `json:"shipping_address_id" gorm:"column:shipping_address_id;index"`
 	TotalAmount       float64 `json:"total_amount" gorm:"column:total_amount;type:numeric(15,2);not null"`
 	ShippingCost      float64 `json:"shipping_cost" gorm:"column:shipping_cost;type:numeric(15,2);not null;default:0"`
@@ -14,9 +14,8 @@ type Transaction struct {
 	TrackingNumber    string  `json:"tracking_number" gorm:"column:tracking_number;type:varchar(100)"`
 	BiteshipOrderID   string  `json:"biteship_order_id" gorm:"column:biteship_order_id;type:varchar(100);index"`
 	BiteshipReference string  `json:"biteship_reference_id" gorm:"column:biteship_reference_id;type:varchar(120);index"`
-	// Status stores the payment status, for example: pending, paid, failed.
-	Status         string    `json:"status" gorm:"column:status;type:varchar(50);not null"`
-	ShippingStatus string    `json:"shipping_status" gorm:"column:shipping_status;type:varchar(50);not null;default:'pending'"`
+	Status         string    `json:"status" gorm:"column:status;type:varchar(50);not null;index"`
+	ShippingStatus string    `json:"shipping_status" gorm:"column:shipping_status;type:varchar(50);not null;default:'pending';index"`
 	SnapToken      string    `json:"snap_token" gorm:"column:snap_token;type:text"`
 	CreatedAt      time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt      time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`

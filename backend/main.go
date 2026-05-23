@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/config"
+	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/middleware"
 	"github.com/itdiagonals/website/backend/migrations"
 	"github.com/itdiagonals/website/backend/pkg/logger"
@@ -25,9 +26,19 @@ import (
 // @title Diagonals API
 // @version 1.0
 // @description Customer auth, product catalog, and admin CMS API for the Diagonals website backend.
+//
+// @description CSRF Protection:
+// @description - State-changing requests (POST/PUT/PATCH/DELETE) without a Bearer token must include the X-CSRF-Token header.
+// @description - Obtain a CSRF token via GET /api/v1/auth/csrf or from the csrf_token field in login/register/refresh responses.
+// @description - The server sets an HttpOnly cookie named csrf_token automatically.
+// @description - Requests with Authorization: Bearer <token> skip CSRF validation.
+// @description - Webhook endpoints (/api/v1/payments/midtrans/notification, /api/v1/payments/biteship/notification) are exempt.
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @securityDefinitions.apikey CsrfHeader
+// @in header
+// @name X-CSRF-Token
 // @BasePath /
 func main() {
 	config.LoadEnv()
@@ -55,16 +66,25 @@ func main() {
 
 	startShippingJobWorker(config.DB)
 
+	mailtrapConfig := config.LoadMailtrapConfig()
+	emailProvider := service.NewMailtrapProvider(mailtrapConfig)
+	emailQueue := service.NewInMemoryEmailQueue(1000)
+	emailWorker := service.NewEmailWorker(emailQueue, emailProvider, 3)
+	go emailWorker.Start(context.Background())
+
+	fromAddress := domain.EmailAddress{Email: mailtrapConfig.FromEmail, Name: mailtrapConfig.FromName}
+	otpService := service.NewOTPService(redisClient, emailQueue, fromAddress)
+
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
-	router.Use(middleware.RequireCSRF())
+	router.Use(middleware.WriteCSRFToken())
 
 	trustedProxies := getTrustedProxies()
 	if err := router.SetTrustedProxies(trustedProxies); err != nil {
 		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
-	routes.SetupRoutes(router, config.DB, redisClient)
+	routes.SetupRoutes(router, config.DB, redisClient, otpService)
 	router.Static("/uploads", "./uploads")
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -73,8 +93,13 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
+	protectedHandler, err := middleware.NewCSRFHandler(router)
+	if err != nil {
+		logger.Fatal("failed to configure csrf middleware", "error", err.Error())
+	}
+
 	logger.Info("server.starting", "address", ":8080")
-	if err := router.Run(":8080"); err != nil {
+	if err := http.ListenAndServe(":8080", protectedHandler); err != nil {
 		logger.Fatal("failed to start server", "error", err.Error())
 	}
 }

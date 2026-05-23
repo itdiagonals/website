@@ -4,13 +4,13 @@ import "time"
 
 type Product struct {
 	ID              int                  `json:"id" gorm:"column:id;primaryKey"`
-	Name            string               `json:"name" gorm:"column:name;not null"`
+	Name            string               `json:"name" gorm:"column:name;not null;index"`
 	Slug            string               `json:"slug" gorm:"column:slug;uniqueIndex;not null"`
 	SeasonID        int                  `json:"season_id" gorm:"column:season_id"`
 	Season          *Season              `json:"season,omitempty" gorm:"foreignKey:SeasonID;references:ID"`
 	CategoryID      int                  `json:"category_id" gorm:"column:category_id"`
 	Category        *Category            `json:"category,omitempty" gorm:"foreignKey:CategoryID;references:ID"`
-	Gender          string               `json:"gender" gorm:"column:gender;not null;default:unisex"`
+	Gender          string               `json:"gender" gorm:"column:gender;not null;default:unisex;index"`
 	BasePrice       float64              `json:"base_price" gorm:"column:base_price;not null"`
 	Weight          int                  `json:"weight" gorm:"column:weight;not null;default:0"`
 	Length          int                  `json:"length" gorm:"column:length;not null;default:0"`

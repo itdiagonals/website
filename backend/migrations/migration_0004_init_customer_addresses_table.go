@@ -9,7 +9,7 @@ var migration0004InitCustomerAddressesTable = Migration{
 		statements := []string{
 		`CREATE TABLE IF NOT EXISTS user_addresses (
 			id BIGSERIAL PRIMARY KEY,
-			user_id BIGINT NOT NULL,
+			user_id UUID NOT NULL,
 			title VARCHAR(100) NOT NULL,
 			recipient_name VARCHAR(255) NOT NULL,
 			phone_number VARCHAR(50) NOT NULL,
