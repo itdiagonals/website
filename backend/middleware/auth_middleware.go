@@ -39,6 +39,8 @@ func RequireAuth(authSessionRepository repository.AuthSessionRepository, userRep
 		context.Set("user_id", claims.UserID)
 		context.Set("session_id", claims.SessionID)
 		context.Set("role", user.Role)
+		context.Set("name", claims.Name)
+		context.Set("email", claims.Email)
 		context.Next()
 	}
 }

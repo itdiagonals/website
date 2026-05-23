@@ -9,7 +9,7 @@ var migration0013InitPayloadTables = Migration{
 		statements := []string{
 			// ── Users (Payload auth collection + app users) ──
 			`CREATE TABLE IF NOT EXISTS users (
-				id BIGSERIAL PRIMARY KEY,
+				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 				email VARCHAR(255) NOT NULL UNIQUE,
 				password VARCHAR(255),
 				name VARCHAR(255),

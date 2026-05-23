@@ -23,14 +23,17 @@ const (
 )
 
 type TokenClaims struct {
-	UserID    uint   `json:"user_id"`
+	UserID    string `json:"user_id"`
 	SessionID string `json:"session_id"`
 	TokenType string `json:"token_type"`
+	Name      string `json:"name,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Role      string `json:"role,omitempty"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID uint, sessionID string) (string, error) {
-	token, _, _, err := generateSignedToken(userID, sessionID, accessTokenType)
+func GenerateToken(userID string, sessionID string, name, email, role string) (string, error) {
+	token, _, _, err := generateSignedToken(userID, sessionID, accessTokenType, name, email, role)
 	if err != nil {
 		return "", err
 	}
@@ -38,8 +41,8 @@ func GenerateToken(userID uint, sessionID string) (string, error) {
 	return token, nil
 }
 
-func GenerateRefreshToken(userID uint, sessionID string) (string, string, time.Time, error) {
-	return generateSignedToken(userID, sessionID, refreshTokenType)
+func GenerateRefreshToken(userID string, sessionID string) (string, string, time.Time, error) {
+	return generateSignedToken(userID, sessionID, refreshTokenType, "", "", "")
 }
 
 func ValidateToken(tokenString string) (*TokenClaims, error) {
@@ -68,7 +71,7 @@ func VerifyTokenHash(token string, hashedToken string) bool {
 	return subtle.ConstantTimeCompare([]byte(computedHash), []byte(hashedToken)) == 1
 }
 
-func generateSignedToken(userID uint, sessionID string, tokenType string) (string, string, time.Time, error) {
+func generateSignedToken(userID string, sessionID string, tokenType string, name, email, role string) (string, string, time.Time, error) {
 	secret, err := getSecretForTokenType(tokenType)
 	if err != nil {
 		return "", "", time.Time{}, err
@@ -84,8 +87,11 @@ func generateSignedToken(userID uint, sessionID string, tokenType string) (strin
 		UserID:    userID,
 		SessionID: sessionID,
 		TokenType: tokenType,
+		Name:      name,
+		Email:     email,
+		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   fmt.Sprintf("%d", userID),
+			Subject:   userID,
 			ID:        tokenID,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),

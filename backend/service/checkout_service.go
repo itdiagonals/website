@@ -54,8 +54,8 @@ type checkoutLineItem struct {
 }
 
 type CheckoutService interface {
-	GetAvailableShippingRates(ctx context.Context, customerID uint, req ShippingRatesRequest) (*ShippingRatesResult, error)
-	Checkout(ctx context.Context, customerID uint, req CheckoutRequest) (*domain.Transaction, error)
+	GetAvailableShippingRates(ctx context.Context, customerID string, req ShippingRatesRequest) (*ShippingRatesResult, error)
+	Checkout(ctx context.Context, customerID string, req CheckoutRequest) (*domain.Transaction, error)
 }
 
 type checkoutService struct {
@@ -90,8 +90,8 @@ func NewCheckoutService(
 	}
 }
 
-func (service *checkoutService) GetAvailableShippingRates(ctx context.Context, customerID uint, req ShippingRatesRequest) (*ShippingRatesResult, error) {
-	if customerID == 0 || req.AddressID == 0 {
+func (service *checkoutService) GetAvailableShippingRates(ctx context.Context, customerID string, req ShippingRatesRequest) (*ShippingRatesResult, error) {
+	if customerID == "" || req.AddressID == 0 {
 		return nil, ErrInvalidShippingRequest
 	}
 
@@ -129,11 +129,11 @@ func (service *checkoutService) GetAvailableShippingRates(ctx context.Context, c
 
 }
 
-func (service *checkoutService) Checkout(ctx context.Context, customerID uint, req CheckoutRequest) (*domain.Transaction, error) {
+func (service *checkoutService) Checkout(ctx context.Context, customerID string, req CheckoutRequest) (*domain.Transaction, error) {
 	req.CourierName = strings.TrimSpace(strings.ToLower(req.CourierName))
 	req.CourierService = strings.TrimSpace(strings.ToLower(req.CourierService))
 
-	if customerID == 0 || req.AddressID == 0 || req.CourierName == "" || req.CourierService == "" {
+	if customerID == "" || req.AddressID == 0 || req.CourierName == "" || req.CourierService == "" {
 		return nil, ErrInvalidShippingRequest
 	}
 
@@ -345,7 +345,7 @@ func (service *checkoutService) releaseStockForOrder(ctx context.Context, orderI
 	return service.stockReservationRepository.UpdateStatusByIDs(ctx, reservationIDs, stockReservationStatusReserved, stockReservationStatusReleased)
 }
 
-func (service *checkoutService) prepareCheckout(ctx context.Context, userID uint, addressID uint, selectedCartItemIDs []uint) (*domain.CustomerAddress, *domain.User, float64, int, []ShippingRateItem, []checkoutLineItem, error) {
+func (service *checkoutService) prepareCheckout(ctx context.Context, userID string, addressID uint, selectedCartItemIDs []uint) (*domain.CustomerAddress, *domain.User, float64, int, []ShippingRateItem, []checkoutLineItem, error) {
 	address, err := service.customerAddressRepository.FindByID(ctx, userID, addressID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -459,7 +459,7 @@ func normalizeSelectedCartItemIDs(selectedCartItemIDs []uint) ([]uint, error) {
 	return normalized, nil
 }
 
-func (service *checkoutService) removeSelectedItemsFromCart(ctx context.Context, userID uint, selectedCartItemIDs []uint) error {
+func (service *checkoutService) removeSelectedItemsFromCart(ctx context.Context, userID string, selectedCartItemIDs []uint) error {
 	cart, err := service.cartRepository.GetCart(ctx, userID)
 	if err != nil {
 		return err

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/repository"
 	"github.com/itdiagonals/website/backend/utils"
@@ -17,6 +18,7 @@ var (
 	ErrInvalidCredentials     = errors.New("invalid email or password")
 	ErrInvalidRefreshToken    = errors.New("invalid refresh token")
 	ErrWeakPassword           = errors.New("password must be at least 8 characters")
+	ErrUserNotFound           = errors.New("user not found")
 )
 
 type RegisterInput struct {
@@ -47,9 +49,10 @@ type AuthService interface {
 	Register(context context.Context, input RegisterInput, metadata SessionMetadata) (*AuthTokens, error)
 	Login(context context.Context, input LoginInput, metadata SessionMetadata) (*AuthTokens, error)
 	Refresh(context context.Context, refreshToken string) (*AuthTokens, error)
-	LogoutCurrentSession(context context.Context, userID uint, sessionID string) error
-	LogoutAllSessions(context context.Context, userID uint) error
-	ListSessions(context context.Context, userID uint, currentSessionID string) ([]domain.AuthSessionSummary, error)
+	LogoutCurrentSession(context context.Context, userID string, sessionID string) error
+	LogoutAllSessions(context context.Context, userID string) error
+	ListSessions(context context.Context, userID string, currentSessionID string) ([]domain.AuthSessionSummary, error)
+	ResetPassword(context context.Context, email string, newPassword string) error
 }
 
 type authService struct {
@@ -70,12 +73,12 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 		return nil, ErrWeakPassword
 	}
 
-	_, err := service.userRepository.FindByEmail(context, input.Email)
-	if err == nil {
-		return nil, ErrEmailAlreadyRegistered
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	exists, err := service.userRepository.ExistsByEmail(context, input.Email)
+	if err != nil {
 		return nil, err
+	}
+	if exists {
+		return nil, ErrEmailAlreadyRegistered
 	}
 
 	hashedPassword, err := utils.HashPassword(input.Password)
@@ -84,6 +87,7 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 	}
 
 	user := &domain.User{
+		ID:       uuid.New().String(),
 		Name:     strings.TrimSpace(input.Name),
 		Email:    input.Email,
 		Password: hashedPassword,
@@ -94,7 +98,7 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 		return nil, err
 	}
 
-	tokens, err := service.createSessionAndIssueTokens(context, user.ID, metadata)
+	tokens, err := service.createSessionAndIssueTokens(context, user, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +122,7 @@ func (service *authService) Login(context context.Context, input LoginInput, met
 		return nil, ErrInvalidCredentials
 	}
 
-	tokens, err := service.createSessionAndIssueTokens(context, user.ID, metadata)
+	tokens, err := service.createSessionAndIssueTokens(context, user, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +149,12 @@ func (service *authService) Refresh(context context.Context, refreshToken string
 		return nil, ErrInvalidRefreshToken
 	}
 
-	tokens, refreshTokenHash, err := service.issueTokens(claims.UserID, session.ID)
+	user, err := service.userRepository.FindByID(context, claims.UserID)
+	if err != nil {
+		return nil, ErrInvalidRefreshToken
+	}
+
+	tokens, refreshTokenHash, err := service.issueTokens(user, session.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +166,7 @@ func (service *authService) Refresh(context context.Context, refreshToken string
 	return &tokens, nil
 }
 
-func (service *authService) LogoutCurrentSession(context context.Context, userID uint, sessionID string) error {
+func (service *authService) LogoutCurrentSession(context context.Context, userID string, sessionID string) error {
 	if strings.TrimSpace(sessionID) == "" {
 		return ErrInvalidRefreshToken
 	}
@@ -165,11 +174,11 @@ func (service *authService) LogoutCurrentSession(context context.Context, userID
 	return service.authSessionRepository.RevokeSession(context, userID, sessionID, time.Now())
 }
 
-func (service *authService) LogoutAllSessions(context context.Context, userID uint) error {
+func (service *authService) LogoutAllSessions(context context.Context, userID string) error {
 	return service.authSessionRepository.RevokeAllSessions(context, userID, time.Now())
 }
 
-func (service *authService) ListSessions(context context.Context, userID uint, currentSessionID string) ([]domain.AuthSessionSummary, error) {
+func (service *authService) ListSessions(context context.Context, userID string, currentSessionID string) ([]domain.AuthSessionSummary, error) {
 	sessions, err := service.authSessionRepository.ListActiveByUserID(context, userID)
 	if err != nil {
 		return nil, err
@@ -192,13 +201,13 @@ func (service *authService) ListSessions(context context.Context, userID uint, c
 	return summaries, nil
 }
 
-func (service *authService) createSessionAndIssueTokens(context context.Context, userID uint, metadata SessionMetadata) (*AuthTokens, error) {
+func (service *authService) createSessionAndIssueTokens(context context.Context, user *domain.User, metadata SessionMetadata) (*AuthTokens, error) {
 	sessionID, err := utils.GenerateSessionID()
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, refreshTokenHash, err := service.issueTokens(userID, sessionID)
+	tokens, refreshTokenHash, err := service.issueTokens(user, sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +215,7 @@ func (service *authService) createSessionAndIssueTokens(context context.Context,
 	now := time.Now()
 	session := &domain.AuthSession{
 		ID:               sessionID,
-		UserID:           userID,
+		UserID:           user.ID,
 		RefreshTokenHash: refreshTokenHash,
 		UserAgent:        strings.TrimSpace(metadata.UserAgent),
 		IPAddress:        strings.TrimSpace(metadata.IPAddress),
@@ -222,13 +231,13 @@ func (service *authService) createSessionAndIssueTokens(context context.Context,
 	return &tokens, nil
 }
 
-func (service *authService) issueTokens(userID uint, sessionID string) (AuthTokens, string, error) {
-	accessToken, err := utils.GenerateToken(userID, sessionID)
+func (service *authService) issueTokens(user *domain.User, sessionID string) (AuthTokens, string, error) {
+	accessToken, err := utils.GenerateToken(user.ID, sessionID, user.Name, user.Email, user.Role)
 	if err != nil {
 		return AuthTokens{}, "", err
 	}
 
-	refreshToken, _, refreshExpiresAt, err := utils.GenerateRefreshToken(userID, sessionID)
+	refreshToken, _, refreshExpiresAt, err := utils.GenerateRefreshToken(user.ID, sessionID)
 	if err != nil {
 		return AuthTokens{}, "", err
 	}
@@ -239,4 +248,28 @@ func (service *authService) issueTokens(userID uint, sessionID string) (AuthToke
 		RefreshToken:     refreshToken,
 		RefreshExpiresAt: refreshExpiresAt,
 	}, utils.HashToken(refreshToken), nil
+}
+
+func (service *authService) ResetPassword(context context.Context, email string, newPassword string) error {
+	if len(newPassword) < 8 {
+		return ErrWeakPassword
+	}
+
+	email = strings.TrimSpace(strings.ToLower(email))
+
+	user, err := service.userRepository.FindByEmail(context, email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	user.Password = hashedPassword
+	return service.userRepository.Update(context, user)
 }

@@ -21,6 +21,7 @@ const (
 
 type AuthHandler struct {
 	authService service.AuthService
+	otpService  service.OTPService
 }
 
 type RegisterRequest struct {
@@ -32,6 +33,12 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
+}
+
+type ResetPasswordRequest struct {
+	Email       string `json:"email" binding:"required,email"`
+	Code        string `json:"code" binding:"required,len=6"`
+	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
 type StatusResponse struct {
@@ -48,8 +55,8 @@ type AuthSessionsResponse struct {
 	Data []domain.AuthSessionSummary `json:"data"`
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService service.AuthService, otpService service.OTPService) *AuthHandler {
+	return &AuthHandler{authService: authService, otpService: otpService}
 }
 
 // Register godoc
@@ -245,6 +252,53 @@ func (handler *AuthHandler) ListSessions(context *gin.Context) {
 	context.JSON(http.StatusOK, AuthSessionsResponse{Data: sessions})
 }
 
+// ResetPassword godoc
+// @Summary Reset password with OTP
+// @Description Verify OTP code and set a new password for the account
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param payload body handler.ResetPasswordRequest true "Reset password payload"
+// @Success 200 {object} handler.StatusResponse
+// @Failure 400 {object} handler.ErrorResponse
+// @Failure 401 {object} handler.ErrorResponse
+// @Failure 403 {object} handler.ErrorResponse "Invalid or missing CSRF token"
+// @Failure 500 {object} handler.ErrorResponse
+// @Router /api/v1/auth/reset-password [post]
+func (handler *AuthHandler) ResetPassword(context *gin.Context) {
+	var request ResetPasswordRequest
+	if err := context.ShouldBindJSON(&request); err != nil {
+		context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	request.Email = strings.TrimSpace(strings.ToLower(request.Email))
+	request.Code = strings.TrimSpace(request.Code)
+
+	if err := handler.otpService.VerifyOTP(context.Request.Context(), request.Email, request.Code); err != nil {
+		if errors.Is(err, service.ErrOTPInvalid) {
+			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
+			return
+		}
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	if err := handler.authService.ResetPassword(context.Request.Context(), request.Email, request.NewPassword); err != nil {
+		switch {
+		case errors.Is(err, service.ErrUserNotFound):
+			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
+		case errors.Is(err, service.ErrWeakPassword):
+			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
+		default:
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		}
+		return
+	}
+
+	context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "password reset successful"})
+}
+
 // CSRF godoc
 // @Summary Get CSRF token
 // @Description Return the Gorilla CSRF token for the current browser session and ensure the CSRF cookie is present
@@ -315,25 +369,25 @@ func buildSessionMetadata(context *gin.Context) service.SessionMetadata {
 	}
 }
 
-func getCurrentAuthContext(context *gin.Context) (uint, string, bool) {
+func getCurrentAuthContext(context *gin.Context) (string, string, bool) {
 	userIDValue, ok := context.Get("user_id")
 	if !ok {
-		return 0, "", false
+		return "", "", false
 	}
 
-	userID, ok := userIDValue.(uint)
-	if !ok {
-		return 0, "", false
+	userID, ok := userIDValue.(string)
+	if !ok || strings.TrimSpace(userID) == "" {
+		return "", "", false
 	}
 
 	sessionIDValue, ok := context.Get("session_id")
 	if !ok {
-		return 0, "", false
+		return "", "", false
 	}
 
 	sessionID, ok := sessionIDValue.(string)
 	if !ok || strings.TrimSpace(sessionID) == "" {
-		return 0, "", false
+		return "", "", false
 	}
 
 	return userID, sessionID, true

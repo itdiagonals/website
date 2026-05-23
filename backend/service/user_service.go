@@ -20,7 +20,7 @@ func (s *UserService) GetAllUsers(ctx context.Context) ([]domain.User, error) {
 	return s.repo.FindAll(ctx)
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id uint) (*domain.User, error) {
+func (s *UserService) GetUserByID(ctx context.Context, id string) (*domain.User, error) {
 	return s.repo.FindByID(ctx, id)
 }
 
@@ -32,12 +32,12 @@ func (s *UserService) CreateUser(ctx context.Context, user *domain.User) error {
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, user *domain.User) error {
-	if user.ID == 0 {
+	if user.ID == "" {
 		return fmt.Errorf("user id is required")
 	}
 	return s.repo.Update(ctx, user)
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, id uint) error {
+func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }

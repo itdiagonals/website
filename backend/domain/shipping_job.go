@@ -5,7 +5,7 @@ import "time"
 type ShippingJob struct {
 	ID          uint       `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
 	JobType     string     `json:"job_type" gorm:"column:job_type;type:varchar(50);not null"`
-	OrderID     string     `json:"order_id" gorm:"column:order_id;type:varchar(120);not null"`
+	OrderID     string     `json:"order_id" gorm:"column:order_id;type:varchar(120);not null;index"`
 	Status      string     `json:"status" gorm:"column:status;type:varchar(30);not null;index"`
 	Attempts    int        `json:"attempts" gorm:"column:attempts;not null;default:0"`
 	MaxAttempts int        `json:"max_attempts" gorm:"column:max_attempts;not null;default:8"`

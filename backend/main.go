@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/config"
+	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/middleware"
 	"github.com/itdiagonals/website/backend/migrations"
 	"github.com/itdiagonals/website/backend/pkg/logger"
@@ -65,6 +66,15 @@ func main() {
 
 	startShippingJobWorker(config.DB)
 
+	mailtrapConfig := config.LoadMailtrapConfig()
+	emailProvider := service.NewMailtrapProvider(mailtrapConfig)
+	emailQueue := service.NewInMemoryEmailQueue(1000)
+	emailWorker := service.NewEmailWorker(emailQueue, emailProvider, 3)
+	go emailWorker.Start(context.Background())
+
+	fromAddress := domain.EmailAddress{Email: mailtrapConfig.FromEmail, Name: mailtrapConfig.FromName}
+	otpService := service.NewOTPService(redisClient, emailQueue, fromAddress)
+
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 	router.Use(middleware.WriteCSRFToken())
@@ -74,7 +84,7 @@ func main() {
 		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
-	routes.SetupRoutes(router, config.DB, redisClient)
+	routes.SetupRoutes(router, config.DB, redisClient, otpService)
 	router.Static("/uploads", "./uploads")
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -47,6 +47,8 @@ func loadMigrations() []Migration {
 		migration0013InitPayloadTables,
 		migration0014UnifyUsersCustomers,
 		migration0015DropAuthSessionsTable,
+		migration0016UserIDToUUID,
+		migration0017AddPerformanceIndexes,
 	}
 
 	sqlMigrations, err := loadSQLMigrations()

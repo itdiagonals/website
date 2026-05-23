@@ -34,9 +34,9 @@ type AddCustomerAddressInput struct {
 }
 
 type CustomerAddressService interface {
-	AddAddress(context context.Context, userID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
-	UpdateAddress(context context.Context, userID uint, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
-	GetMyAddresses(context context.Context, userID uint) ([]domain.CustomerAddress, error)
+	AddAddress(context context.Context, userID string, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
+	UpdateAddress(context context.Context, userID string, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error)
+	GetMyAddresses(context context.Context, userID string) ([]domain.CustomerAddress, error)
 }
 
 type customerAddressService struct {
@@ -53,7 +53,7 @@ func NewCustomerAddressService(db *gorm.DB, customerAddressRepository repository
 	}
 }
 
-func (service *customerAddressService) AddAddress(context context.Context, userID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
+func (service *customerAddressService) AddAddress(context context.Context, userID string, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
 	if !isValidCoordinatePair(input.Latitude, input.Longitude) {
 		return nil, ErrInvalidCustomerAddress
 	}
@@ -87,7 +87,7 @@ func (service *customerAddressService) AddAddress(context context.Context, userI
 		address.LocationSource = strings.ToLower(address.LocationSource)
 	}
 
-	if userID == 0 ||
+	if userID == "" ||
 		address.Title == "" ||
 		address.RecipientName == "" ||
 		address.PhoneNumber == "" ||
@@ -129,16 +129,16 @@ func (service *customerAddressService) AddAddress(context context.Context, userI
 	return address, nil
 }
 
-func (service *customerAddressService) GetMyAddresses(context context.Context, userID uint) ([]domain.CustomerAddress, error) {
-	if userID == 0 {
+func (service *customerAddressService) GetMyAddresses(context context.Context, userID string) ([]domain.CustomerAddress, error) {
+	if userID == "" {
 		return nil, ErrInvalidCustomerAddress
 	}
 
 	return service.customerAddressRepository.FindByUserID(context, userID)
 }
 
-func (service *customerAddressService) UpdateAddress(context context.Context, userID uint, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
-	if userID == 0 || addressID == 0 {
+func (service *customerAddressService) UpdateAddress(context context.Context, userID string, addressID uint, input AddCustomerAddressInput) (*domain.CustomerAddress, error) {
+	if userID == "" || addressID == 0 {
 		return nil, ErrInvalidCustomerAddress
 	}
 

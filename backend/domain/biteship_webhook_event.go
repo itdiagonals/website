@@ -7,7 +7,7 @@ type BiteshipWebhookEvent struct {
 	EventKey   string    `json:"event_key" gorm:"column:event_key;type:varchar(80);not null;uniqueIndex"`
 	EventType  string    `json:"event_type" gorm:"column:event_type;type:varchar(80);not null;index"`
 	OrderID    string    `json:"order_id" gorm:"column:order_id;type:varchar(120);index"`
-	Status     string    `json:"status" gorm:"column:status;type:varchar(80)"`
+	Status     string    `json:"status" gorm:"column:status;type:varchar(80);index"`
 	WaybillID  string    `json:"waybill_id" gorm:"column:waybill_id;type:varchar(120)"`
 	ReceivedAt time.Time `json:"received_at" gorm:"column:received_at;autoCreateTime"`
 }
