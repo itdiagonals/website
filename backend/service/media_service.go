@@ -17,12 +17,23 @@ func NewMediaService(repo repository.MediaRepository) *MediaService {
 	return &MediaService{repo: repo}
 }
 
-func (s *MediaService) GetAllMedia(ctx context.Context) ([]domain.Media, error) {
-	return s.repo.FindAll(ctx)
+func (s *MediaService) GetAllMedia(ctx context.Context, page, limit int) ([]domain.Media, int64, error) {
+	return s.repo.FindAll(ctx, page, limit)
 }
 
 func (s *MediaService) GetMediaByID(ctx context.Context, id int) (*domain.Media, error) {
 	return s.repo.FindByID(ctx, id)
+}
+
+func (s *MediaService) GetMediaByDraftID(ctx context.Context, draftID string) ([]domain.Media, error) {
+	return s.repo.FindByDraftID(ctx, draftID)
+}
+
+func (s *MediaService) FinalizeDraftMedia(ctx context.Context, draftID string) error {
+	if draftID == "" {
+		return nil
+	}
+	return s.repo.ClearDraftID(ctx, draftID)
 }
 
 func (s *MediaService) CreateMedia(ctx context.Context, media *domain.Media) error {

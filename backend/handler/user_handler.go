@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -26,18 +27,31 @@ func NewUserHandler(service *service.UserService) *UserHandler {
 // @Tags         Users
 // @Accept       json
 // @Produce      json
+// @Param        page   query     int  false  "Page number"
+// @Param        limit  query     int  false  "Page size"
 // @Success      200  {object}  response.ListResponse[domain.User]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/users [get]
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	logger.Info("handler.users.get_all")
-	users, err := h.service.GetAllUsers(c.Request.Context())
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	users, total, err := h.service.GetAllUsers(c.Request.Context(), page, limit)
 	if err != nil {
 		logger.Error("handler.users.get_all_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
 	}
-	response.List(c, users, 1, len(users), len(users))
+	response.List(c, users, page, limit, int(total))
 }
 
 // GetUserByID godoc

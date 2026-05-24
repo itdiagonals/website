@@ -12,7 +12,7 @@ import (
 var ErrProductNotFound = errors.New("product not found")
 
 type ProductService interface {
-	GetAllProducts(ctx context.Context, categorySlug string) ([]domain.Product, error)
+	GetAllProducts(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error)
 	GetProductBySlug(ctx context.Context, slug string) (*domain.ProductDetail, error)
 }
 
@@ -24,13 +24,13 @@ func NewProductService(productRepository repository.ProductRepository) ProductSe
 	return &productService{productRepository: productRepository}
 }
 
-func (service *productService) GetAllProducts(ctx context.Context, categorySlug string) ([]domain.Product, error) {
-	products, err := service.productRepository.FindAll(ctx, categorySlug)
+func (service *productService) GetAllProducts(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
+	products, total, err := service.productRepository.FindAll(ctx, categorySlug, page, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return products, nil
+	return products, total, nil
 }
 
 func (service *productService) GetProductBySlug(ctx context.Context, slug string) (*domain.ProductDetail, error) {

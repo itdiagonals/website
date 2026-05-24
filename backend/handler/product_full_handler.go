@@ -27,19 +27,32 @@ func NewProductFullHandler(service *service.ProductFullService) *ProductFullHand
 // @Accept       json
 // @Produce      json
 // @Param        category  query     string  false  "Category slug"
+// @Param        page      query     int     false  "Page number"
+// @Param        limit     query     int     false  "Page size"
 // @Success      200       {object}  response.ListResponse[domain.Product]
 // @Failure      500       {object}  response.Response[any]
 // @Router       /api/v1/products [get]
 func (h *ProductFullHandler) GetAllProducts(c *gin.Context) {
 	categorySlug := c.Query("category")
 	logger.Info("handler.products.get_all", "category", categorySlug)
-	products, err := h.service.GetAllProducts(c.Request.Context(), categorySlug)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	products, total, err := h.service.GetAllProducts(c.Request.Context(), categorySlug, page, limit)
 	if err != nil {
 		logger.Error("handler.products.get_all_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
 	}
-	response.List(c, products, 1, len(products), len(products))
+	response.List(c, products, page, limit, int(total))
 }
 
 // GetProductByID godoc
@@ -118,7 +131,7 @@ func (h *ProductFullHandler) CreateProduct(c *gin.Context) {
 	product := req.ToProduct()
 
 	logger.Info("handler.products.create", "name", product.Name)
-	if err := h.service.CreateProduct(c.Request.Context(), &product); err != nil {
+	if err := h.service.CreateProduct(c.Request.Context(), &product, req.DraftID); err != nil {
 		logger.Error("handler.products.create_failed", "error", err.Error())
 		response.FromError(c, err)
 		return

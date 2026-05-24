@@ -26,18 +26,31 @@ func NewCategoryHandler(service *service.CategoryService) *CategoryHandler {
 // @Tags         Categories
 // @Accept       json
 // @Produce      json
+// @Param        page   query     int  false  "Page number"
+// @Param        limit  query     int  false  "Page size"
 // @Success      200  {object}  response.ListResponse[domain.Category]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/categories [get]
 func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 	logger.Info("handler.categories.get_all")
-	categories, err := h.service.GetAllCategories(c.Request.Context())
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	categories, total, err := h.service.GetAllCategories(c.Request.Context(), page, limit)
 	if err != nil {
 		logger.Error("handler.categories.get_all_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
 	}
-	response.List(c, categories, 1, len(categories), len(categories))
+	response.List(c, categories, page, limit, int(total))
 }
 
 // GetCategoryByID godoc
@@ -116,7 +129,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	category := req.ToCategory()
 
 	logger.Info("handler.categories.create", "name", category.Name)
-	if err := h.service.CreateCategory(c.Request.Context(), &category); err != nil {
+	if err := h.service.CreateCategory(c.Request.Context(), &category, req.DraftID); err != nil {
 		logger.Error("handler.categories.create_failed", "error", err.Error())
 		response.FromError(c, err)
 		return

@@ -8,7 +8,7 @@ import (
 )
 
 type SeasonRepository interface {
-	FindAll(ctx context.Context) ([]domain.Season, error)
+	FindAll(ctx context.Context, page, limit int) ([]domain.Season, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Season, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Season, error)
 	Create(ctx context.Context, season *domain.Season) error
@@ -24,12 +24,18 @@ func NewSeasonRepository(db *gorm.DB) SeasonRepository {
 	return &seasonRepository{db: db}
 }
 
-func (r *seasonRepository) FindAll(ctx context.Context) ([]domain.Season, error) {
+func (r *seasonRepository) FindAll(ctx context.Context, page, limit int) ([]domain.Season, int64, error) {
 	var seasons []domain.Season
-	if err := r.db.WithContext(ctx).Preload("CoverImage").Preload("LookbookImages").Find(&seasons).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := r.db.WithContext(ctx).Model(&domain.Season{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return seasons, nil
+
+	if err := r.db.WithContext(ctx).Preload("CoverImage").Preload("LookbookImages").Offset((page - 1) * limit).Limit(limit).Find(&seasons).Error; err != nil {
+		return nil, 0, err
+	}
+	return seasons, total, nil
 }
 
 func (r *seasonRepository) FindByID(ctx context.Context, id int) (*domain.Season, error) {

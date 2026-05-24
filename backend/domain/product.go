@@ -38,7 +38,7 @@ func (Product) TableName() string {
 // --- Sub-types (domain models for DB rows) ---
 
 type ProductColor struct {
-	ID        int       `json:"id" gorm:"column:id;primaryKey"`
+	ID        int       `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
 	ParentID  int       `json:"_parent_id" gorm:"column:_parent_id;not null"`
 	Order     int       `json:"_order" gorm:"column:_order"`
 	ColorName string    `json:"color_name" gorm:"column:color_name;not null"`
@@ -52,7 +52,7 @@ func (ProductColor) TableName() string {
 }
 
 type ProductSize struct {
-	ID        int       `json:"id" gorm:"column:id;primaryKey"`
+	ID        int       `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
 	ParentID  int       `json:"_parent_id" gorm:"column:_parent_id;not null"`
 	Order     int       `json:"_order" gorm:"column:_order"`
 	Size      string    `json:"size" gorm:"column:size;not null"`
@@ -65,7 +65,7 @@ func (ProductSize) TableName() string {
 }
 
 type ProductGalleryItem struct {
-	ID        int       `json:"id" gorm:"column:id;primaryKey"`
+	ID        int       `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
 	ParentID  int       `json:"_parent_id" gorm:"column:_parent_id;not null"`
 	Order     int       `json:"_order" gorm:"column:_order"`
 	ImageID   int       `json:"image_id" gorm:"column:image_id;not null"`
@@ -79,7 +79,7 @@ func (ProductGalleryItem) TableName() string {
 }
 
 type ProductVariant struct {
-	ID        int       `json:"id" gorm:"column:id;primaryKey"`
+	ID        int       `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
 	ParentID  int       `json:"_parent_id" gorm:"column:_parent_id;not null"`
 	Order     int       `json:"_order" gorm:"column:_order"`
 	ColorName string    `json:"color_name" gorm:"column:color_name;not null"`
@@ -169,6 +169,7 @@ type CreateProductRequest struct {
 	AvailableSizes  []CreateProductSizeRequest     `json:"available_sizes,omitempty"`
 	Gallery         []CreateProductGalleryItemRequest `json:"gallery,omitempty"`
 	Variants        []CreateProductVariantRequest  `json:"variants,omitempty"`
+	DraftID         string                         `json:"draft_id"`
 }
 
 func (r CreateProductRequest) ToProduct() Product {

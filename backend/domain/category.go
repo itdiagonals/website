@@ -21,6 +21,7 @@ type CreateCategoryRequest struct {
 	Name         string `json:"name" binding:"required"`
 	Slug         string `json:"slug" binding:"required"`
 	CoverImageID int    `json:"cover_image_id"`
+	DraftID      string `json:"draft_id"`
 }
 
 func (r CreateCategoryRequest) ToCategory() Category {

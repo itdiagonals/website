@@ -77,6 +77,7 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
+	router.Use(middleware.CORS())
 	router.Use(middleware.WriteCSRFToken())
 
 	trustedProxies := getTrustedProxies()

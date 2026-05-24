@@ -51,6 +51,23 @@ func NewMinioStorage() (*MinioStorage, error) {
 		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
 	}
 
+	ctx := context.Background()
+
+	exists, err := client.BucketExists(ctx, bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check MinIO bucket: %w", err)
+	}
+	if !exists {
+		if err := client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{Region: region}); err != nil {
+			return nil, fmt.Errorf("failed to create MinIO bucket: %w", err)
+		}
+	}
+
+	policy := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/*"]}]}`, bucket)
+	if err := client.SetBucketPolicy(ctx, bucket, policy); err != nil {
+		return nil, fmt.Errorf("failed to set MinIO bucket policy: %w", err)
+	}
+
 	publicURL := fmt.Sprintf("%s%s/%s", scheme, endpoint, bucket)
 
 	return &MinioStorage{

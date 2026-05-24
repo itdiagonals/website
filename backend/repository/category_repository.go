@@ -7,7 +7,7 @@ import (
 )
 
 type CategoryRepository interface {
-	FindAll(ctx context.Context) ([]domain.Category, error)
+	FindAll(ctx context.Context, page, limit int) ([]domain.Category, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Category, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Category, error)
 	Create(ctx context.Context, category *domain.Category) error
@@ -23,12 +23,18 @@ func NewCategoryRepository(db *gorm.DB) CategoryRepository {
 	return &categoryRepository{db: db}
 }
 
-func (r *categoryRepository) FindAll(ctx context.Context) ([]domain.Category, error) {
+func (r *categoryRepository) FindAll(ctx context.Context, page, limit int) ([]domain.Category, int64, error) {
 	var categories []domain.Category
-	if err := r.db.WithContext(ctx).Preload("CoverImage").Find(&categories).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := r.db.WithContext(ctx).Model(&domain.Category{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return categories, nil
+
+	if err := r.db.WithContext(ctx).Preload("CoverImage").Offset((page - 1) * limit).Limit(limit).Find(&categories).Error; err != nil {
+		return nil, 0, err
+	}
+	return categories, total, nil
 }
 
 func (r *categoryRepository) FindByID(ctx context.Context, id int) (*domain.Category, error) {

@@ -29,6 +29,7 @@ type CreateSeasonRequest struct {
 	CoverImageID     int    `json:"cover_image_id"`
 	LookbookImageIDs []int  `json:"lookbook_image_ids,omitempty"`
 	IsActive         *bool  `json:"is_active"`
+	DraftID          string `json:"draft_id"`
 }
 
 func (r CreateSeasonRequest) ToSeason() Season {

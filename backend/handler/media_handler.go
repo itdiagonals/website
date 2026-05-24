@@ -50,18 +50,44 @@ func NewMediaHandler(service *service.MediaService, store storage.Storage) *Medi
 // @Tags         Media
 // @Accept       json
 // @Produce      json
+// @Param        page   query     int  false  "Page number"
+// @Param        limit  query     int  false  "Page size"
 // @Success      200  {object}  response.ListResponse[domain.Media]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/media [get]
 func (h *MediaHandler) GetAllMedia(c *gin.Context) {
 	logger.Info("handler.media.get_all")
-	media, err := h.service.GetAllMedia(c.Request.Context())
+
+	draftID := c.Query("draft_id")
+	if draftID != "" {
+		media, err := h.service.GetMediaByDraftID(c.Request.Context(), draftID)
+		if err != nil {
+			logger.Error("handler.media.get_by_draft_failed", "error", err.Error())
+			response.FromError(c, err)
+			return
+		}
+		response.List(c, media, 1, len(media), len(media))
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	media, total, err := h.service.GetAllMedia(c.Request.Context(), page, limit)
 	if err != nil {
 		logger.Error("handler.media.get_all_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
 	}
-	response.List(c, media, 1, len(media), len(media))
+	response.List(c, media, page, limit, int(total))
 }
 
 // GetMediaByID godoc
@@ -191,6 +217,11 @@ func (h *MediaHandler) UploadMedia(c *gin.Context) {
 		Height:   imgHeight,
 	}
 
+	draftID := strings.TrimSpace(c.PostForm("draft_id"))
+	if draftID != "" {
+		media.DraftID = &draftID
+	}
+
 	if err := h.service.CreateMedia(c.Request.Context(), &media); err != nil {
 		logger.Error("handler.media.upload_create_failed", "error", err.Error())
 		_ = h.store.Delete(c.Request.Context(), objectKey)
@@ -308,7 +339,7 @@ func validateAndUploadToStorage(
 
 	contentType := fileHeader.Header.Get("Content-Type")
 
-	imgWidth, imgHeight, err := validateUploadedImage(fileHeader.Filename, contentType, sourceData)
+	imgWidth, imgHeight, err := validateUploadedImage(contentType, sourceData)
 	if err != nil {
 		return storage.UploadResult{}, 0, 0, err
 	}
@@ -320,18 +351,15 @@ func validateAndUploadToStorage(
 	return result, imgWidth, imgHeight, nil
 }
 
-func validateUploadedImage(filename, contentType string, data []byte) (int, int, error) {
+func validateUploadedImage(contentType string, data []byte) (int, int, error) {
 	normalizedMime := strings.ToLower(strings.TrimSpace(contentType))
 	if normalizedMime != "" && !strings.HasPrefix(normalizedMime, "image/") {
 		return 0, 0, fmt.Errorf("unsupported media type: %s, only images are allowed", normalizedMime)
 	}
 
 	config, _, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return 0, 0, fmt.Errorf("invalid or unsupported image: %w", err)
+	if err == nil {
+		return config.Width, config.Height, nil
 	}
-
-	return config.Width, config.Height, nil
+	return 0, 0, nil
 }
-
-

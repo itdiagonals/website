@@ -10,7 +10,7 @@ import (
 )
 
 type ProductFullRepository interface {
-	FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error)
+	FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Product, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Product, error)
 	Create(ctx context.Context, product *domain.Product) error
@@ -26,18 +26,23 @@ func NewProductFullRepository(db *gorm.DB) ProductFullRepository {
 	return &productFullRepository{db: db}
 }
 
-func (r *productFullRepository) FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error) {
+func (r *productFullRepository) FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
 	var products []domain.Product
 	query := r.db.WithContext(ctx).Preload("Season").Preload("Category").Preload("CoverImage").Preload("CareGuide")
-	
+
 	if categorySlug != "" {
 		query = query.Joins("JOIN categories ON categories.id = products.category_id").Where("categories.slug = ?", categorySlug)
 	}
-	
-	if err := query.Find(&products).Error; err != nil {
-		return nil, err
+
+	var total int64
+	if err := query.Model(&domain.Product{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return products, nil
+
+	if err := query.Offset((page - 1) * limit).Limit(limit).Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (r *productFullRepository) FindByID(ctx context.Context, id int) (*domain.Product, error) {
@@ -77,38 +82,42 @@ func (r *productFullRepository) FindBySlug(ctx context.Context, slug string) (*d
 
 func (r *productFullRepository) Create(ctx context.Context, product *domain.Product) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(product).Error; err != nil {
+		if err := tx.Omit("AvailableColors", "AvailableSizes", "Gallery", "Variants").Create(product).Error; err != nil {
 			return err
 		}
-		
+
 		for i := range product.AvailableColors {
+			product.AvailableColors[i].ID = 0
 			product.AvailableColors[i].ParentID = product.ID
 			if err := tx.Create(&product.AvailableColors[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		for i := range product.AvailableSizes {
+			product.AvailableSizes[i].ID = 0
 			product.AvailableSizes[i].ParentID = product.ID
 			if err := tx.Create(&product.AvailableSizes[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		for i := range product.Gallery {
+			product.Gallery[i].ID = 0
 			product.Gallery[i].ParentID = product.ID
 			if err := tx.Create(&product.Gallery[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		for i := range product.Variants {
+			product.Variants[i].ID = 0
 			product.Variants[i].ParentID = product.ID
 			if err := tx.Create(&product.Variants[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		return r.updateStockFromVariants(tx, product.ID)
 	})
 }
@@ -118,39 +127,43 @@ func (r *productFullRepository) Update(ctx context.Context, product *domain.Prod
 		if err := tx.Save(product).Error; err != nil {
 			return err
 		}
-		
+
 		tx.Where("_parent_id = ?", product.ID).Delete(&domain.ProductColor{})
 		for i := range product.AvailableColors {
+			product.AvailableColors[i].ID = 0
 			product.AvailableColors[i].ParentID = product.ID
 			if err := tx.Create(&product.AvailableColors[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		tx.Where("_parent_id = ?", product.ID).Delete(&domain.ProductSize{})
 		for i := range product.AvailableSizes {
+			product.AvailableSizes[i].ID = 0
 			product.AvailableSizes[i].ParentID = product.ID
 			if err := tx.Create(&product.AvailableSizes[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		tx.Where("_parent_id = ?", product.ID).Delete(&domain.ProductGalleryItem{})
 		for i := range product.Gallery {
+			product.Gallery[i].ID = 0
 			product.Gallery[i].ParentID = product.ID
 			if err := tx.Create(&product.Gallery[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		tx.Where("_parent_id = ?", product.ID).Delete(&domain.ProductVariant{})
 		for i := range product.Variants {
+			product.Variants[i].ID = 0
 			product.Variants[i].ParentID = product.ID
 			if err := tx.Create(&product.Variants[i]).Error; err != nil {
 				return err
 			}
 		}
-		
+
 		return r.updateStockFromVariants(tx, product.ID)
 	})
 }
@@ -161,7 +174,7 @@ func (r *productFullRepository) Delete(ctx context.Context, id int) error {
 		tx.Where("_parent_id = ?", id).Delete(&domain.ProductSize{})
 		tx.Where("_parent_id = ?", id).Delete(&domain.ProductGalleryItem{})
 		tx.Where("_parent_id = ?", id).Delete(&domain.ProductVariant{})
-		
+
 		return tx.Delete(&domain.Product{}, id).Error
 	})
 }
@@ -178,41 +191,41 @@ func ValidateVariants(variants []domain.ProductVariant, availableColors []domain
 	if len(variants) == 0 {
 		return fmt.Errorf("minimal harus ada satu varian stok")
 	}
-	
+
 	colorOptions := make(map[string]bool)
 	for _, c := range availableColors {
 		colorOptions[strings.ToLower(strings.TrimSpace(c.ColorName))] = true
 	}
-	
+
 	sizeOptions := make(map[string]bool)
 	for _, s := range availableSizes {
 		sizeOptions[strings.ToLower(strings.TrimSpace(s.Size))] = true
 	}
-	
+
 	seen := make(map[string]bool)
 	for _, v := range variants {
 		color := strings.ToLower(strings.TrimSpace(v.ColorName))
 		size := strings.ToLower(strings.TrimSpace(v.Size))
-		
+
 		if color == "" || size == "" {
 			return fmt.Errorf("setiap varian wajib memiliki color_name dan size")
 		}
-		
+
 		if len(colorOptions) > 0 && !colorOptions[color] {
 			return fmt.Errorf("warna varian tidak valid: %s", v.ColorName)
 		}
-		
+
 		if len(sizeOptions) > 0 && !sizeOptions[size] {
 			return fmt.Errorf("size varian tidak valid: %s", v.Size)
 		}
-		
+
 		key := fmt.Sprintf("%s::%s", color, size)
 		if seen[key] {
 			return fmt.Errorf("kombinasi varian duplikat ditemukan: %s - %s", v.ColorName, v.Size)
 		}
 		seen[key] = true
 	}
-	
+
 	return nil
 }
 

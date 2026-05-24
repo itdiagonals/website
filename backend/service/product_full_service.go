@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"gorm.io/gorm"
 )
@@ -34,8 +35,8 @@ func NewProductFullService(
 	}
 }
 
-func (s *ProductFullService) GetAllProducts(ctx context.Context, categorySlug string) ([]domain.Product, error) {
-	return s.repo.FindAll(ctx, categorySlug)
+func (s *ProductFullService) GetAllProducts(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
+	return s.repo.FindAll(ctx, categorySlug, page, limit)
 }
 
 func (s *ProductFullService) GetProductByID(ctx context.Context, id int) (*domain.Product, error) {
@@ -46,7 +47,7 @@ func (s *ProductFullService) GetProductBySlug(ctx context.Context, slug string) 
 	return s.repo.FindBySlug(ctx, slug)
 }
 
-func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.Product) error {
+func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.Product, draftID string) error {
 	if err := validateProduct(product); err != nil {
 		return err
 	}
@@ -57,7 +58,15 @@ func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.
 		return err
 	}
 	product.Stock = repository.CalculateTotalStock(product.Variants)
-	return s.repo.Create(ctx, product)
+	if err := s.repo.Create(ctx, product); err != nil {
+		return err
+	}
+	if draftID != "" && s.mediaRepo != nil {
+		if err := s.mediaRepo.ClearDraftID(ctx, draftID); err != nil {
+			logger.Error("service.products.finalize_draft_failed", "draft_id", draftID, "error", err.Error())
+		}
+	}
+	return nil
 }
 
 func (s *ProductFullService) UpdateProduct(ctx context.Context, product *domain.Product) error {

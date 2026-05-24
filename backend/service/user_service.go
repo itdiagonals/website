@@ -16,8 +16,8 @@ func NewUserService(repo repository.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) GetAllUsers(ctx context.Context) ([]domain.User, error) {
-	return s.repo.FindAll(ctx)
+func (s *UserService) GetAllUsers(ctx context.Context, page, limit int) ([]domain.User, int64, error) {
+	return s.repo.FindAll(ctx, page, limit)
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, id string) (*domain.User, error) {

@@ -9,7 +9,7 @@ import (
 )
 
 type ProductRepository interface {
-	FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error)
+	FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Product, error)
 	FindDetailByID(ctx context.Context, id int) (*domain.ProductDetail, error)
 	FindDetailBySlug(ctx context.Context, slug string) (*domain.ProductDetail, error)
@@ -27,21 +27,26 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 	return &productRepository{db: db}
 }
 
-func (repository *productRepository) FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error) {
+func (repository *productRepository) FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
 	var products []domain.Product
 
-	query := repository.db.WithContext(ctx).Table("products")
+	query := repository.db.WithContext(ctx).Model(&domain.Product{})
 	if categorySlug != "" {
 		query = query.
 			Joins("JOIN categories ON categories.id = products.category_id").
 			Where("categories.slug = ?", categorySlug)
 	}
 
-	if err := query.Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, COALESCE((SELECT SUM(variants.stock) FROM products_variants variants WHERE variants._parent_id = products.id), products.stock, 0) AS stock, products.weight, products.length, products.width, products.height, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
-		return nil, err
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return products, nil
+	if err := query.Offset((page - 1) * limit).Limit(limit).Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, COALESCE((SELECT SUM(variants.stock) FROM products_variants variants WHERE variants._parent_id = products.id), products.stock, 0) AS stock, products.weight, products.length, products.width, products.height, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
 }
 
 func (repository *productRepository) FindByID(ctx context.Context, id int) (*domain.Product, error) {

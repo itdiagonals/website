@@ -26,18 +26,31 @@ func NewSeasonHandler(service *service.SeasonService) *SeasonHandler {
 // @Tags         Seasons
 // @Accept       json
 // @Produce      json
+// @Param        page   query     int  false  "Page number"
+// @Param        limit  query     int  false  "Page size"
 // @Success      200  {object}  response.ListResponse[domain.Season]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/seasons [get]
 func (h *SeasonHandler) GetAllSeasons(c *gin.Context) {
 	logger.Info("handler.seasons.get_all")
-	seasons, err := h.service.GetAllSeasons(c.Request.Context())
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	seasons, total, err := h.service.GetAllSeasons(c.Request.Context(), page, limit)
 	if err != nil {
 		logger.Error("handler.seasons.get_all_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
 	}
-	response.List(c, seasons, 1, len(seasons), len(seasons))
+	response.List(c, seasons, page, limit, int(total))
 }
 
 // GetSeasonByID godoc
@@ -116,7 +129,7 @@ func (h *SeasonHandler) CreateSeason(c *gin.Context) {
 	season := req.ToSeason()
 
 	logger.Info("handler.seasons.create", "name", season.Name)
-	if err := h.service.CreateSeason(c.Request.Context(), &season); err != nil {
+	if err := h.service.CreateSeason(c.Request.Context(), &season, req.DraftID); err != nil {
 		logger.Error("handler.seasons.create_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
