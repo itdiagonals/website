@@ -22,7 +22,6 @@ export default async function HomePage() {
       />
       <RowGallery type="interactive" />
 
-      {/* <NewArrival /> */}
       <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer1.png", href: "/cross-player" }} />
         <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer.png" }} />
     </>
