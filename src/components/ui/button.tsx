@@ -6,8 +6,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary-700 text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100 bg-white/50',
+        default: 'bg-primary-700 text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
         white: 'bg-white text-primary-700 hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
+        primary: 'bg-primary-300 text-white hover:bg-primary-400 has-[>svg]:gap-2 cursor-pointer font-medium rounded-[6px] text-b3',
       },
       size: {
         default: 'w-full',

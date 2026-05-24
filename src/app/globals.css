@@ -68,3 +68,84 @@ body {
   font-family: "DorivalUITrial";
   src: url("/fonts/DorivalUITrial-Regular.otf") format("opentype");
 }
+
+/* Design System Typography Tokens */
+.font-heading {
+  font-family: var(--font-dorivaluitrial);
+}
+
+.font-body {
+  font-family: var(--font-dorivaluinrwtrial);
+}
+
+.text-h1 {
+  font-size: 68px;
+  line-height: 102px;
+  font-weight: 700;
+}
+
+.text-h2 {
+  font-size: 56px;
+  line-height: 84px;
+  font-weight: 700;
+}
+
+.text-h3 {
+  font-size: 46px;
+  line-height: 69px;
+  font-weight: 700;
+}
+
+.text-h4 {
+  font-size: 38px;
+  line-height: 57px;
+  font-weight: 700;
+}
+
+.text-h5 {
+  font-size: 32px;
+  line-height: 48px;
+  font-weight: 700;
+}
+
+.text-h6 {
+  font-size: 26px;
+  line-height: 39px;
+  font-weight: 700;
+}
+
+.text-h7 {
+  font-size: 22px;
+  line-height: 33px;
+  font-weight: 700;
+}
+
+.text-b1 {
+  font-size: 18px;
+  line-height: 27px;
+  font-weight: 500;
+}
+
+.text-b2 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.text-b3 {
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 400;
+}
+
+.text-b4 {
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+.text-b5 {
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 400;
+}
