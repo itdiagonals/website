@@ -1,202 +1,180 @@
-"use client";
+'use client'
 
-import StatCard from "@/components/admin/stat-card";
-import StatusBadge from "@/components/admin/status-badge";
-import { stats, transactions, dailySales, formatPrice, formatDateTime } from "@/lib/dummy-data";
-import Link from "next/link";
-import { DollarSign, Receipt, Package, Calendar } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import Link from 'next/link'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { BookOpen, Calendar, ImageIcon, Package, ShieldCheck, TriangleAlert } from 'lucide-react'
+
+import StatCard from '@/components/admin/stat-card'
+import { api, type CareGuide, type Media, type Product, type Season, type User } from '@/lib/api'
+import { formatDate, formatPrice } from '@/modules/admin/helpers'
+
+interface DashboardState {
+  products: Product[]
+  seasons: Season[]
+  careGuides: CareGuide[]
+  media: Media[]
+  users: User[]
+}
 
 export default function DashboardModule() {
-  const recentTransactions = transactions.slice(0, 5);
+  const [data, setData] = useState<DashboardState>({
+    products: [],
+    seasons: [],
+    careGuides: [],
+    media: [],
+    users: [],
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const [products, seasons, careGuides, media, users] = await Promise.all([
+          api.products.getAll(),
+          api.seasons.getAll(),
+          api.careGuides.getAll(),
+          api.media.getAll(),
+          api.users.getAll(),
+        ])
+
+        setData({ products, seasons, careGuides, media, users })
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load dashboard data.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadData()
+  }, [])
+
+  const activeSeasons = useMemo(() => data.seasons.filter((season) => season.is_active), [data.seasons])
+  const lowStockProducts = useMemo(() => data.products.filter((product) => product.stock < 10), [data.products])
+  const catalogValue = useMemo(() => data.products.reduce((sum, product) => sum + product.base_price * product.stock, 0), [data.products])
+  const recentProducts = useMemo(
+    () => [...data.products].sort((left, right) => right.updated_at.localeCompare(left.updated_at)).slice(0, 5),
+    [data.products],
+  )
 
   return (
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold text-primary-1000">Dashboard</h1>
-        <p className="text-sm text-neutral-700 mt-1">Overview of your store performance</p>
+        <p className="mt-1 text-sm text-neutral-700">Backend-backed overview for catalog and admin access.</p>
       </div>
 
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Revenue"
-          value={formatPrice(stats.totalRevenue)}
-          change="+12% from last month"
-          changeType="positive"
-          icon={<DollarSign className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Total Transactions"
-          value={stats.totalTransactions}
-          change="+5 new today"
-          changeType="positive"
-          icon={<Receipt className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Total Products"
-          value={stats.totalProducts}
-          change={`${stats.outOfStockProducts} out of stock`}
-          changeType={stats.outOfStockProducts > 0 ? "negative" : "neutral"}
-          icon={<Package className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Active Seasons"
-          value={stats.activeSeasons}
-          change="Currently running"
-          changeType="neutral"
-          icon={<Calendar className="h-5 w-5" />}
-        />
+        <StatCard title="Catalog Value" value={loading ? '...' : formatPrice(catalogValue)} change="Base price x stock" changeType="neutral" icon={<Package className="h-5 w-5" />} />
+        <StatCard title="Products" value={loading ? '...' : data.products.length} change={`${lowStockProducts.length} low stock`} changeType={lowStockProducts.length ? 'negative' : 'positive'} icon={<Package className="h-5 w-5" />} />
+        <StatCard title="Active Seasons" value={loading ? '...' : activeSeasons.length} change={`${data.seasons.length} total seasons`} changeType="neutral" icon={<Calendar className="h-5 w-5" />} />
+        <StatCard title="Admin Users" value={loading ? '...' : data.users.length} change="Verified by protected admin route" changeType="positive" icon={<ShieldCheck className="h-5 w-5" />} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-neutral-300 bg-neutral-100 shadow-sm">
           <div className="flex items-center justify-between border-b border-neutral-300 px-5 py-4">
-            <h2 className="text-base font-bold text-primary-1000">Recent Transactions</h2>
-            <Link
-              href="/admin/transactions"
-              className="text-sm font-medium text-primary-700 hover:text-primary-1000 transition-colors"
-            >
+            <h2 className="text-base font-bold text-primary-1000">Recently Updated Products</h2>
+            <Link href="/admin/products" className="text-sm font-medium text-primary-700 transition-colors hover:text-primary-1000">
               View All
             </Link>
           </div>
           <div className="divide-y divide-neutral-300">
-            {recentTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between px-5 py-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-primary-1000">{tx.orderId}</span>
-                  <span className="text-xs text-neutral-700">{tx.user.name}</span>
+            {loading && <div className="px-5 py-6 text-sm text-neutral-700">Loading products...</div>}
+            {!loading &&
+              recentProducts.map((product) => (
+                <div key={product.id} className="flex items-center justify-between px-5 py-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium text-primary-1000">{product.name}</span>
+                    <span className="text-xs text-neutral-700">{product.category?.name || 'No category'}</span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-sm font-medium text-primary-1000">{formatPrice(product.base_price)}</span>
+                    <span className="text-xs text-neutral-700">Updated {formatDate(product.updated_at)}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-sm font-medium text-primary-1000">{formatPrice(tx.totalAmount)}</span>
-                  <StatusBadge status={tx.status} variant="order" />
-                </div>
-              </div>
-            ))}
+              ))}
+            {!loading && recentProducts.length === 0 && <div className="px-5 py-6 text-sm text-neutral-700">No products available.</div>}
           </div>
         </div>
 
-        <div className="rounded-xl justify-center border border-neutral-300 bg-neutral-100 shadow-sm">
+        <div className="rounded-xl border border-neutral-300 bg-neutral-100 shadow-sm">
           <div className="flex items-center justify-between border-b border-neutral-300 px-5 py-4">
-            <div>
-              <h2 className="text-base font-bold text-primary-1000">Sales Overview</h2>
-              <p className="text-xs text-neutral-700 mt-0.5">Last 7 days revenue</p>
-            </div>
-            <span className="text-sm font-bold text-primary-700">
-              {formatPrice(dailySales.reduce((sum, d) => sum + d.revenue, 0))}
-            </span>
+            <h2 className="text-base font-bold text-primary-1000">Catalog Resources</h2>
+            <div className="text-sm font-bold text-primary-700">Live backend counts</div>
           </div>
-          <div className="px-2 py-10 ">
-            <div className="h-60">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4085F2" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#4085F2" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E5E5" vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#737373", fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#737373", fontSize: 11 }}
-                    width={55}
-                    domain={["auto", "auto"]}
-                    tickCount={5}
-                    tickFormatter={(value: number) => {
-                      if (value === 0) return "0";
-                      if (value >= 1000000) return `${(value / 1000000).toFixed(1)}jt`;
-                      return `${(value / 1000).toFixed(0)}rb`;
-                    }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #E5E5E5",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    }}
-                    formatter={(value) => {
-                      const num = typeof value === "number" ? value : 0;
-                      return [formatPrice(num), "Revenue"];
-                    }}
-                    labelStyle={{ color: "#171717", fontWeight: 600, marginBottom: "4px" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#4085F2"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="grid grid-cols-1 gap-3 px-5 py-5 sm:grid-cols-3">
+            <ResourceCard label="Care Guides" value={loading ? '...' : String(data.careGuides.length)} icon={<BookOpen className="h-4 w-4" />} />
+            <ResourceCard label="Media" value={loading ? '...' : String(data.media.length)} icon={<ImageIcon className="h-4 w-4" />} />
+            <ResourceCard label="Low Stock" value={loading ? '...' : String(lowStockProducts.length)} icon={<TriangleAlert className="h-4 w-4" />} />
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-neutral-300 bg-neutral-100 shadow-sm">
-        <div className="flex items-center justify-between border-b border-neutral-300 px-5 py-4">
-          <h2 className="text-base font-bold text-primary-1000">Pending Transactions</h2>
-          <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-bold text-yellow-200">
-            {stats.pendingTransactions}
-          </span>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-neutral-300 bg-neutral-100 shadow-sm">
+          <div className="flex items-center justify-between border-b border-neutral-300 px-5 py-4">
+            <h2 className="text-base font-bold text-primary-1000">Active Seasons</h2>
+            <Link href="/admin/seasons" className="text-sm font-medium text-primary-700 transition-colors hover:text-primary-1000">
+              Manage
+            </Link>
+          </div>
+          <div className="divide-y divide-neutral-300">
+            {loading && <div className="px-5 py-6 text-sm text-neutral-700">Loading seasons...</div>}
+            {!loading &&
+              activeSeasons.map((season) => (
+                <div key={season.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="font-medium text-primary-1000">{season.name}</p>
+                    <p className="text-xs text-neutral-700">{season.subtitle || season.slug}</p>
+                  </div>
+                  <span className="text-xs text-neutral-700">Updated {formatDate(season.updated_at)}</span>
+                </div>
+              ))}
+            {!loading && activeSeasons.length === 0 && <div className="px-5 py-6 text-sm text-neutral-700">No active seasons found.</div>}
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-300 bg-neutral-200">
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Order ID</th>
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Customer</th>
-                <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Date</th>
-                <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-neutral-800">Amount</th>
-                <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-neutral-800">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-300">
-              {transactions
-                .filter((t) => t.status === "pending")
-                .map((tx) => (
-                  <tr key={tx.id} className="hover:bg-neutral-200 transition-colors">
-                    <td className="px-5 py-3 font-medium text-primary-1000">{tx.orderId}</td>
-                    <td className="px-5 py-3 text-neutral-800">{tx.user.name}</td>
-                    <td className="px-5 py-3 text-neutral-700">{formatDateTime(tx.createdAt)}</td>
-                    <td className="px-5 py-3 text-right font-medium text-primary-1000">{formatPrice(tx.totalAmount)}</td>
-                    <td className="px-5 py-3 text-center">
-                      <StatusBadge status={tx.status} variant="order" />
-                    </td>
-                  </tr>
-                ))}
-              {transactions.filter((t) => t.status === "pending").length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-5 py-6 text-center text-neutral-700">
-                    No pending transactions
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+
+        <div className="rounded-xl border border-neutral-300 bg-neutral-100 shadow-sm">
+          <div className="flex items-center justify-between border-b border-neutral-300 px-5 py-4">
+            <h2 className="text-base font-bold text-primary-1000">Admin Accounts</h2>
+            <span className="text-sm font-medium text-primary-700">Protected `/users` route</span>
+          </div>
+          <div className="divide-y divide-neutral-300">
+            {loading && <div className="px-5 py-6 text-sm text-neutral-700">Loading users...</div>}
+            {!loading &&
+              data.users.map((user) => (
+                <div key={user.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="font-medium text-primary-1000">{user.name || user.email}</p>
+                    <p className="text-xs text-neutral-700">{user.email}</p>
+                  </div>
+                  <span className="text-xs uppercase tracking-wide text-neutral-700">{user.role}</span>
+                </div>
+              ))}
+            {!loading && data.users.length === 0 && <div className="px-5 py-6 text-sm text-neutral-700">No admin users found.</div>}
+          </div>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 shadow-sm">
+        <p className="font-semibold">Transaction analytics are not exposed on an admin backend route yet.</p>
+        <p className="mt-1">The current Go backend only exposes `/transactions` for role `customer`, so this dashboard intentionally avoids showing fake transaction data.</p>
       </div>
     </div>
-  );
+  )
 }
 
-
+function ResourceCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-neutral-300 bg-neutral-50 px-4 py-4">
+      <div className="flex items-center gap-2 text-primary-800">{icon}<span className="text-sm font-medium">{label}</span></div>
+      <p className="mt-3 text-2xl font-bold text-primary-1000">{value}</p>
+    </div>
+  )
+}
