@@ -85,7 +85,7 @@ func main() {
 		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
-	routes.SetupRoutes(router, config.DB, redisClient, otpService)
+	routes.SetupRoutes(router, config.DB, redisClient, otpService, emailQueue, fromAddress)
 	router.Static("/uploads", "./uploads")
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

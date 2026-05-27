@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
 import ImagePickerSingle from '@/components/admin/image-picker-single'
+import SlugInput from '@/components/admin/slug-input'
 import { api, type Category, type Media } from '@/lib/api'
 import { formatDate } from '@/modules/admin/helpers'
 
@@ -188,15 +189,11 @@ export default function CategoriesListModule() {
             />
           </label>
 
-          <label className="flex flex-col gap-2 text-sm text-primary-900">
-            <span>Slug</span>
-            <input
-              value={form.slug}
-              onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
-              required
-              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
-            />
-          </label>
+          <SlugInput
+            name={form.name}
+            slug={form.slug}
+            onChange={(slug) => setForm((current) => ({ ...current, slug }))}
+          />
 
           <div className="flex flex-col gap-2 text-sm text-primary-900">
             <span>Cover Image</span>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 
 import Label from '@/components/ui/label'
@@ -11,8 +11,12 @@ import { api } from '@/lib/api'
 
 export default function SignUpForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTarget = searchParams.get('redirect') || '/auth/sign-in'
+  const prefilledEmail = searchParams.get('email') || ''
+
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(prefilledEmail)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -35,7 +39,10 @@ export default function SignUpForm() {
 
     try {
       await api.auth.register({ name, email, password })
-      router.replace('/auth/sign-in?registered=1')
+      const signInUrl = redirectTarget.startsWith('/')
+        ? `/auth/sign-in?redirect=${encodeURIComponent(redirectTarget)}`
+        : '/auth/sign-in'
+      router.replace(signInUrl)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Registrasi gagal.')
     } finally {

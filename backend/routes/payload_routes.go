@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/handler"
 	"github.com/itdiagonals/website/backend/middleware"
 	"github.com/itdiagonals/website/backend/pkg/logger"
@@ -12,23 +13,30 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client, emailSender service.EmailSender, fromAddress domain.EmailAddress) {
 	repo := repository.NewUserRepository(db)
 	svc := service.NewUserService(repo)
 	h := handler.NewUserHandler(svc)
 
+	inviteSvc := service.NewInviteService(repo, redisClient, emailSender, fromAddress)
+	inviteH := handler.NewInviteHandler(inviteSvc)
+
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
-	routes := api.Group("/users")
-	routes.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
+	admin := api.Group("/users")
+	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
-		routes.GET("", h.GetAllUsers)
-		routes.GET("/:id", h.GetUserByID)
-		routes.POST("", h.CreateUser)
-		routes.PUT("/:id", h.UpdateUser)
-		routes.DELETE("/:id", h.DeleteUser)
+		admin.GET("", h.GetAllUsers)
+		admin.GET("/:id", h.GetUserByID)
+		admin.POST("", h.CreateUser)
+		admin.PUT("/:id", h.UpdateUser)
+		admin.DELETE("/:id", h.DeleteUser)
+		admin.POST("/invite", inviteH.InviteAdmin)
 	}
+
+	api.GET("/users/invite-check", inviteH.CheckInviteToken)
+	api.POST("/users/invite-redeem", inviteH.RedeemInviteToken)
 }
 
 func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
@@ -44,7 +52,7 @@ func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.C
 	}
 
 	repo := repository.NewMediaRepository(db)
-	svc := service.NewMediaService(repo)
+	svc := service.NewMediaService(repo, mediaStore)
 	h := handler.NewMediaHandler(svc, mediaStore)
 
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
@@ -56,6 +64,8 @@ func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.C
 	admin := api.Group("/media")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
+		admin.POST("/presigned-url", h.GetPresignedURL)
+		admin.POST("/confirm", h.ConfirmUpload)
 		admin.POST("/upload", h.UploadMedia)
 		admin.POST("", h.CreateMedia)
 		admin.PUT("/:id", h.UpdateMedia)

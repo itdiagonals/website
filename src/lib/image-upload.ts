@@ -108,6 +108,14 @@ async function loadImageElement(source: string) {
   })
 }
 
+export async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  const bitmap = await readImageBitmap(file)
+  const width = bitmap.width
+  const height = bitmap.height
+  bitmap.close()
+  return { width, height }
+}
+
 function toWebPFileName(fileName: string) {
   const baseName = fileName.replace(/\.[^.]+$/, '') || 'upload'
   return `${baseName}.webp`

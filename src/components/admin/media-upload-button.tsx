@@ -5,7 +5,7 @@ import { ImagePlus, LoaderCircle } from 'lucide-react'
 
 import type { Media } from '@/lib/api'
 import { api } from '@/lib/api'
-import { convertImageFileToWebP } from '@/lib/image-upload'
+import { convertImageFileToWebP, getImageDimensions } from '@/lib/image-upload'
 
 interface MediaUploadButtonProps {
   label: string
@@ -45,7 +45,26 @@ export default function MediaUploadButton({
       for (const [index, file] of files.entries()) {
         const webpFile = await convertImageFileToWebP(file)
         const alt = buildAltText(altPrefix, file.name, index)
-        const uploaded = await api.media.upload(webpFile, alt, draftId)
+
+        const { signed_url: signedUrl, object_key: objectKey } = await api.media.getPresignedUrl(
+          webpFile.name,
+          webpFile.type,
+        )
+
+        await api.media.uploadToSignedUrl(signedUrl, webpFile)
+
+        const { width, height } = await getImageDimensions(webpFile)
+
+        const uploaded = await api.media.confirmUpload({
+          object_key: objectKey,
+          alt,
+          draft_id: draftId,
+          width,
+          height,
+          filesize: webpFile.size,
+          mime_type: webpFile.type,
+        })
+
         uploadedItems.push(uploaded)
       }
 

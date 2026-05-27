@@ -590,6 +590,22 @@ export interface ProductPayload {
   draft_id?: string
 }
 
+export interface PresignedURLResponse {
+  signed_url: string
+  object_key: string
+  public_url: string
+}
+
+export interface ConfirmUploadPayload {
+  object_key: string
+  alt: string
+  draft_id?: string
+  width?: number
+  height?: number
+  filesize?: number
+  mime_type?: string
+}
+
 export const api = {
   auth: {
     getCsrf: () => ensureCsrfToken(true),
@@ -638,6 +654,8 @@ export const api = {
     create: (data: CreateUserPayload) => request<User>('/users', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     update: (id: string, data: UserPayload) => request<User>(`/users/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
     delete: (id: string) => request<void>(`/users/${id}`, { method: 'DELETE' }, { retryOnUnauthorized: true }),
+    invite: (data: { email: string }) => request<{ message: string; token?: string }>('/users/invite', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    inviteRedeem: (data: { token: string }) => request<{ message: string }>('/users/invite-redeem', { method: 'POST', body: data }),
   },
 
   categories: {
@@ -692,6 +710,22 @@ export const api = {
     getByDraft: (draftId: string) => request<Media[]>(`/media?draft_id=${encodeURIComponent(draftId)}`),
     create: (data: Pick<Media, 'alt' | 'url' | 'filename'> & Partial<Pick<Media, 'mime_type' | 'filesize' | 'width' | 'height'>>) =>
       request<Media>('/media', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    getPresignedUrl: (filename: string, contentType: string) =>
+      request<PresignedURLResponse>('/media/presigned-url', { method: 'POST', body: { filename, content_type: contentType } }, { retryOnUnauthorized: true }),
+    uploadToSignedUrl: async (signedUrl: string, file: File) => {
+      const response = await fetch(signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      })
+      if (!response.ok) {
+        throw new ApiError(`Direct upload failed: ${response.status}`, response.status)
+      }
+    },
+    confirmUpload: (data: ConfirmUploadPayload) =>
+      request<Media>('/media/confirm', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     upload: (file: File, alt: string, draftId?: string) => {
       const formData = new FormData()
       formData.append('file', file)

@@ -5,6 +5,7 @@ import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
 import ImagePickerSingle from '@/components/admin/image-picker-single'
 import ImagePickerMultiple from '@/components/admin/image-picker-multiple'
+import SlugInput from '@/components/admin/slug-input'
 import { api, type Media, type Season } from '@/lib/api'
 import { formatDate } from '@/modules/admin/helpers'
 
@@ -211,10 +212,11 @@ export default function SeasonsListModule() {
             <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
           </label>
 
-          <label className="flex flex-col gap-2 text-sm text-primary-900">
-            <span>Slug</span>
-            <input value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))} required className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
-          </label>
+          <SlugInput
+            name={form.name}
+            slug={form.slug}
+            onChange={(slug) => setForm((current) => ({ ...current, slug }))}
+          />
 
           <label className="flex flex-col gap-2 text-sm text-primary-900">
             <span>Subtitle</span>

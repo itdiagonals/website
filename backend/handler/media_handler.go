@@ -40,6 +40,27 @@ type UploadMediaRequest struct {
 	Alt string `form:"alt" binding:"required"`
 }
 
+type PresignedURLRequest struct {
+	Filename    string `json:"filename" binding:"required"`
+	ContentType string `json:"content_type" binding:"required"`
+}
+
+type PresignedURLResponse struct {
+	SignedURL string `json:"signed_url"`
+	ObjectKey string `json:"object_key"`
+	PublicURL string `json:"public_url"`
+}
+
+type ConfirmUploadRequest struct {
+	ObjectKey string `json:"object_key" binding:"required"`
+	Alt       string `json:"alt" binding:"required"`
+	DraftID   string `json:"draft_id"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
+	Filesize  int64  `json:"filesize"`
+	MimeType  string `json:"mime_type"`
+}
+
 func NewMediaHandler(service *service.MediaService, store storage.Storage) *MediaHandler {
 	return &MediaHandler{service: service, store: store}
 }
@@ -150,8 +171,87 @@ func (h *MediaHandler) CreateMedia(c *gin.Context) {
 	response.Created(c, media)
 }
 
+// GetPresignedURL godoc
+// @Summary      Get presigned upload URL
+// @Description  Generate a presigned URL for direct client upload to object storage temp folder
+// @Tags         Media
+// @Accept       json
+// @Produce      json
+// @Param        body  body      PresignedURLRequest  true  "Presigned URL request"
+// @Success      200   {object}  response.Response[PresignedURLResponse]
+// @Failure      400   {object}  response.Response[any]
+// @Failure      500   {object}  response.Response[any]
+// @Router       /api/v1/media/presigned-url [post]
+func (h *MediaHandler) GetPresignedURL(c *gin.Context) {
+	var req PresignedURLRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("handler.media.presigned_bind_failed", "error", err.Error())
+		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
+		return
+	}
+
+	if !strings.HasPrefix(req.ContentType, "image/") {
+		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, "only image uploads are allowed")
+		return
+	}
+
+	storedName := buildStoredMediaFilename(req.Filename)
+	objectKey := "temp/" + storedName
+
+	signedURL, publicURL, err := h.service.GeneratePresignedURL(c.Request.Context(), objectKey)
+	if err != nil {
+		logger.Error("handler.media.presigned_failed", "error", err.Error())
+		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, err.Error())
+		return
+	}
+
+	response.OK(c, PresignedURLResponse{
+		SignedURL: signedURL,
+		ObjectKey: objectKey,
+		PublicURL: publicURL,
+	})
+}
+
+// ConfirmUpload godoc
+// @Summary      Confirm upload
+// @Description  Confirm a direct upload by moving object from temp to final path and creating a media record
+// @Tags         Media
+// @Accept       json
+// @Produce      json
+// @Param        body  body      ConfirmUploadRequest  true  "Confirm upload request"
+// @Success      201   {object}  response.Response[domain.Media]
+// @Failure      400   {object}  response.Response[any]
+// @Failure      500   {object}  response.Response[any]
+// @Router       /api/v1/media/confirm [post]
+func (h *MediaHandler) ConfirmUpload(c *gin.Context) {
+	var req ConfirmUploadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Warn("handler.media.confirm_bind_failed", "error", err.Error())
+		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
+		return
+	}
+
+	media, err := h.service.ConfirmUpload(
+		c.Request.Context(),
+		req.ObjectKey,
+		req.Alt,
+		strings.TrimSpace(req.DraftID),
+		req.Width,
+		req.Height,
+		req.Filesize,
+		req.MimeType,
+	)
+	if err != nil {
+		logger.Error("handler.media.confirm_failed", "error", err.Error())
+		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, err.Error())
+		return
+	}
+
+	response.Created(c, media)
+}
+
 // UploadMedia godoc
-// @Summary      Upload media file
+// @Summary      Upload media file (legacy)
 // @Description  Upload a media file via multipart/form-data, convert non-WebP images to WebP, upload to MinIO, and create a media record
 // @Tags         Media
 // @Accept       multipart/form-data

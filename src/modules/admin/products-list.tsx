@@ -7,6 +7,12 @@ import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import ImagePickerSingle from '@/components/admin/image-picker-single'
 import ImagePickerMultiple from '@/components/admin/image-picker-multiple'
 import ProductVariantBuilder from '@/components/admin/product-variant-builder'
+import SlugInput from '@/components/admin/slug-input'
+import DynamicKeyValueEditor, {
+  detailInfoToObject,
+  objectToDetailInfo,
+  type DetailInfoItem,
+} from '@/components/admin/dynamic-key-value-editor'
 import type {
   BuilderColor,
   BuilderSize,
@@ -17,8 +23,6 @@ import {
   formatPrice,
   parseFloatNumber,
   parseInteger,
-  parseJsonObject,
-  stringifyJson,
 } from '@/modules/admin/helpers'
 import { cn } from '@/lib/utils'
 
@@ -36,7 +40,7 @@ interface ProductFormState {
   width: string
   height: string
   description: string
-  detailInfoText: string
+  detailInfo: DetailInfoItem[]
   colors: BuilderColor[]
   sizes: BuilderSize[]
   galleryImageIds: string[]
@@ -57,7 +61,7 @@ const emptyForm: ProductFormState = {
   width: '',
   height: '',
   description: '',
-  detailInfoText: '',
+  detailInfo: [],
   colors: [],
   sizes: [],
   galleryImageIds: [],
@@ -157,7 +161,7 @@ export default function ProductsListModule() {
       width: String(product.width || 0),
       height: String(product.height || 0),
       description: product.description || '',
-      detailInfoText: stringifyJson(product.detail_info),
+      detailInfo: objectToDetailInfo(product.detail_info ?? null),
       colors,
       sizes,
       galleryImageIds: (product.gallery || []).map((item) => String(item.image_id)),
@@ -235,7 +239,7 @@ export default function ProductsListModule() {
         width: parseInteger(form.width),
         height: parseInteger(form.height),
         description: form.description.trim(),
-        detail_info: parseJsonObject(form.detailInfoText),
+        detail_info: detailInfoToObject(form.detailInfo),
         available_colors: availableColors,
         available_sizes: availableSizes,
         gallery: form.galleryImageIds
@@ -329,10 +333,11 @@ export default function ProductsListModule() {
             <span>Name</span>
             <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-primary-900">
-            <span>Slug</span>
-            <input value={form.slug} onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))} required className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
-          </label>
+          <SlugInput
+            name={form.name}
+            slug={form.slug}
+            onChange={(slug) => setForm((current) => ({ ...current, slug }))}
+          />
 
           <label className="flex flex-col gap-2 text-sm text-primary-900">
             <span>Category</span>
@@ -424,10 +429,14 @@ export default function ProductsListModule() {
             <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={4} className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
           </label>
 
-          <label className="lg:col-span-2 flex flex-col gap-2 text-sm text-primary-900">
-            <span>Detail Info JSON</span>
-            <textarea value={form.detailInfoText} onChange={(event) => setForm((current) => ({ ...current, detailInfoText: event.target.value }))} rows={6} placeholder='{"material": "cotton"}' className="rounded-lg border border-neutral-300 px-3 py-2 font-mono text-sm outline-none focus:border-primary-500" />
-          </label>
+          <div className="lg:col-span-2 flex flex-col gap-2 text-sm text-primary-900">
+            <span>Detail Info</span>
+            <DynamicKeyValueEditor
+              items={form.detailInfo}
+              onChange={(items) => setForm((current) => ({ ...current, detailInfo: items }))}
+              disabled={saving}
+            />
+          </div>
 
           <div className="lg:col-span-2 flex flex-col gap-2 text-sm text-primary-900">
             <span>Colors, Sizes & Variants</span>
