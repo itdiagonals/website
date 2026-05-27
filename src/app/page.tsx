@@ -2,11 +2,15 @@ import ThemeDesc from '../components/theme-desc';
 import RowGallery from '../components/row-gallery';
 import ThemeHero from '../modules/theme-hero';
 import WelcomeAnimation from '../components/welcome-animation';
+import NewArrivalHero from '../modules/new-arrival-hero';
+// import ElLiguePremiere from '../modules/ElLiguePremiere';
 
 export default async function HomePage() {
   return (
     <>
       <WelcomeAnimation currentSeason='Cross Player Season' />
+      <NewArrivalHero />
+      {/* <ElLiguePremiere/> */}
       <ThemeDesc
         type="current-season"
         title="CROSS PLAYER MULTINANCE"
@@ -23,7 +27,7 @@ export default async function HomePage() {
       <RowGallery type="interactive" />
 
       <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer1.png", href: "/cross-player" }} />
-        <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer.png" }} />
+      <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer.png" }} />
     </>
   );
 }
