@@ -9,6 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-dorivaluinrwtrial);
+  --font-handi: var(--font-handi), "Handi", cursive;
 
   /* colors */
   --color-neutral-100: #f4f4f4;
