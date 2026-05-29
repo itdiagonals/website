@@ -195,7 +195,7 @@ export const seasons: Season[] = [
     description: "Our flagship collection inspired by classic football aesthetics. Bold colors and premium materials for the ultimate fan experience. The El Ligue Premiere collection captures the spirit of the game with its iconic diagonal stripe design and rich color palette. Each piece is crafted with attention to detail, featuring breathable fabrics and modern fits that pay homage to football's heritage while embracing contemporary style.",
     coverImageId: 20,
     coverImage: { id: 20, url: "/seasons/el-ligue-premiere.jpg", alt: "El Ligue Premiere" },
-    isActive: false,
+    isActive: true,
     lookbookImages: [
       { id: 21, url: "/products/season-1.png", alt: "Look 1" },
       { id: 22, url: "/products/season-3.png", alt: "Look 2" },
@@ -211,7 +211,7 @@ export const seasons: Season[] = [
     description: "Lightweight summer essentials for on and off the pitch",
     coverImageId: 23,
     coverImage: { id: 23, url: "/seasons/summer-drop.jpg", alt: "Summer Drop 2024" },
-    isActive: true,
+    isActive: false,
     lookbookImages: [
       { id: 24, url: "/seasons/summer-1.jpg", alt: "Look 1" },
     ],
@@ -239,7 +239,7 @@ export const seasons: Season[] = [
     description: "Retro-inspired designs celebrating football history",
     coverImageId: 26,
     coverImage: { id: 26, url: "/seasons/heritage-line.jpg", alt: "Heritage Line" },
-    isActive: true,
+    isActive: false,
     lookbookImages: [
       { id: 27, url: "/seasons/heritage-1.jpg", alt: "Look 1" },
       { id: 28, url: "/seasons/heritage-2.jpg", alt: "Look 2" },
@@ -480,7 +480,7 @@ export const products: Product[] = [
     id: 6,
     name: "Training Bib Set",
     slug: "training-bib-set",
-    seasonId: 1,
+    seasonId: 2,
     season: seasons[0],
     categoryId: 5,
     category: categories[4],

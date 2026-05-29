@@ -1,4 +1,5 @@
 import { OrderDetailModule } from "@/modules/checkout/order-detail-module";
+import Navbar from "@/src/components/ui/navbar";
 
 interface OrderPageProps {
   params: {
@@ -7,5 +8,10 @@ interface OrderPageProps {
 }
 
 export default function OrderPage({ params }: OrderPageProps) {
-  return <OrderDetailModule orderId={params.id} />;
+  return (
+    <>
+      <Navbar variant="light" />
+      <OrderDetailModule orderId={params.id} />
+    </>
+  );
 }

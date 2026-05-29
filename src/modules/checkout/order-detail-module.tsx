@@ -1,4 +1,3 @@
-import { Header } from "@/src/components/header-demo";
 import { BillDetail, BillItem } from "@/components/checkout/bill-detail";
 import { OrderTrackingStepper, TrackingStep } from "@/components/checkout/order-tracking-stepper";
 import { PurchaseSidebar } from "@/components/checkout/purchase-sidebar";
@@ -69,7 +68,6 @@ export function OrderDetailModule({ orderId }: OrderDetailModuleProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
-      <Header />
       <main className="flex-grow">
         <div className="px-4 sm:px-6 md:px-[24px] max-w-[1440px] mx-auto w-full">
           <h1 className="text-h6 font-bold text-black mt-[14px] mb-[14px]">On Going</h1>

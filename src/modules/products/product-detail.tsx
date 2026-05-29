@@ -19,7 +19,7 @@ export default function ProductDetailModule({
 
   const activeSeason = seasons.find((s) => s.isActive);
   const similarProducts = products.filter(
-    (p) => p.seasonId === product.seasonId && p.id !== product.id
+    (p) => p.seasonId === product.seasonId && p.id !== product.id || p.categoryId === product.categoryId && p.id !== product.id || p.seasonId === activeSeason?.id && p.id !== product.id
   );
 
   const galleryImages = [

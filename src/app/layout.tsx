@@ -2,8 +2,6 @@ import React from 'react'
 import './globals.css'
 import localFont from 'next/font/local'
 import { Inter } from 'next/font/google'
-import Navbar from '../components/ui/navbar'
-
 export const metadata = {
   description: 'A blank template using Payload in a Next.js app.',
   title: 'Payload Blank Template',
@@ -68,7 +66,6 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${handi.variable} ${inter.variable} antialiased`}>
-        <Navbar />
         <main>{children}</main>
       </body>
     </html>

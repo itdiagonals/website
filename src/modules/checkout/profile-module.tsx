@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Header } from "@/src/components/header-demo";
 import {
   ProfileCard,
   UserProfile,
@@ -299,7 +298,6 @@ export function ProfileModule() {
   return (
     <>
       <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
-        <Header />
         <main className="flex-grow pt-[72px] pb-[72px]">
           <div className="px-4 sm:px-6 md:px-[24px] max-w-[1440px] mx-auto w-full flex flex-col gap-[56px] sm:gap-[72px]">
             <div className="flex flex-col gap-[22px] items-start w-full">

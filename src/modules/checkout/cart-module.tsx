@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { CartItemCard, CartItem } from "@/components/checkout/cart-item-card";
 import { OrderSummary } from "@/components/checkout/order-summary";
-import { Header } from "@/src/components/header-demo";
 import { cn } from "@/lib/utils";
 
 interface CartModuleProps {
@@ -46,7 +45,6 @@ export function CartModule({ initialItems }: CartModuleProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
-      <Header />
       <main className="flex-grow pb-20">
         <div className="px-4 sm:px-6 md:px-[24px] max-w-[1440px] mx-auto w-full">
           <h1 className="text-h6 font-bold text-black mt-[14px] mb-[14px]">

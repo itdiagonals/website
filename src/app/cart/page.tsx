@@ -1,4 +1,5 @@
 import { CartModule } from "@/modules/checkout/cart-module";
+import Navbar from "@/src/components/ui/navbar";
 
 export default function CartPage() {
   const mockItems = [
@@ -28,5 +29,10 @@ export default function CartPage() {
     }
   ];
 
-  return <CartModule initialItems={mockItems} />;
+  return (
+    <>
+      <Navbar variant="light" />
+      <CartModule initialItems={mockItems} />
+    </>
+  );
 }

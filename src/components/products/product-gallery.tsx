@@ -54,6 +54,7 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
     <div className="flex flex-col gap-[27px] w-full md:w-[567px] md:shrink-0">
       <button
         onClick={() => openLightbox(selectedIndex)}
+        aria-label="Open image gallery"
         className="relative bg-neutral-300 w-full aspect-[3/4] md:h-[586px] md:aspect-auto overflow-hidden cursor-zoom-in"
       >
         <Image
@@ -73,6 +74,7 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
                 setSelectedIndex(idx);
                 openLightbox(idx);
               }}
+              aria-label={`View image ${idx + 1}`}
               className={`relative w-[80px] h-[70px] md:w-[95px] md:h-[87px] overflow-hidden rounded-[5px] shrink-0 border-2 transition cursor-pointer ${
                 idx === selectedIndex
                   ? "border-primary-500"

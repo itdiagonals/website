@@ -60,6 +60,8 @@ export default function ProductInfo({ product }: ProductInfoProps) {
                   <button
                     key={color.id}
                     onClick={() => setSelectedColorId(color.id)}
+                    aria-label={`Select color ${color.name}`}
+                    aria-pressed={selectedColorId === color.id}
                     className={`flex items-center p-[8.93px] rounded-[5px] border-[0.893px] transition cursor-pointer ${
                       selectedColorId === color.id
                         ? "border-primary-500"
