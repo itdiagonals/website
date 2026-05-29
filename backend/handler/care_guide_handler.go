@@ -26,18 +26,31 @@ func NewCareGuideHandler(service *service.CareGuideService) *CareGuideHandler {
 // @Tags         CareGuides
 // @Accept       json
 // @Produce      json
+// @Param        page   query     int  false  "Page number"
+// @Param        limit  query     int  false  "Page size"
 // @Success      200  {object}  response.ListResponse[domain.CareGuide]
 // @Failure      500  {object}  response.Response[any]
 // @Router       /api/v1/care-guides [get]
 func (h *CareGuideHandler) GetAllCareGuides(c *gin.Context) {
 	logger.Info("handler.care_guides.get_all")
-	careGuides, err := h.service.GetAllCareGuides(c.Request.Context())
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit < 1 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	careGuides, total, err := h.service.GetAllCareGuides(c.Request.Context(), page, limit)
 	if err != nil {
 		logger.Error("handler.care_guides.get_all_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
 	}
-	response.List(c, careGuides, 1, len(careGuides), len(careGuides))
+	response.List(c, careGuides, page, limit, int(total))
 }
 
 // GetCareGuideByID godoc

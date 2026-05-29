@@ -1,11 +1,53 @@
 'use client'
 
-import React from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { type FormEvent, useEffect, useState } from 'react'
+
 import Label from '@/components/ui/label'
 import Input from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
 
 export default function NewPasswordForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const email = searchParams.get('email') || ''
+  const code = searchParams.get('code') || ''
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void api.auth.getCsrf().catch(() => undefined)
+  }, [])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError(null)
+
+    if (!email || !code) {
+      setError('Email atau OTP tidak ditemukan. Ulangi flow reset password.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Password dan konfirmasi password harus sama.')
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      await api.auth.resetPassword({ email, code, new_password: password })
+      router.replace('/auth/sign-in?reset=1')
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Gagal mengganti password.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <section className="relative flex min-h-screen w-full items-center justify-center overflow-hidden">
       <div
@@ -27,15 +69,30 @@ export default function NewPasswordForm() {
 
             <p className="text-b3 text-neutral-1000">Create New Password</p>
 
-            <form className="flex w-full flex-col gap-[7px]">
+            <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[7px]">
               <div className="flex flex-col gap-[7px]">
                 <Label text="Password" htmlFor="password" />
-                <Input id="password" name="password" type="password" placeholder="Enter new password" required />
+                <Input id="password" name="password" type="password" placeholder="Enter new password" required value={password} onChange={(event) => setPassword(event.target.value)} />
               </div>
 
+              <div className="flex flex-col gap-[7px]">
+                <Label text="Confirm Password" htmlFor="confirm-password" />
+                <Input
+                  id="confirm-password"
+                  name="confirm-password"
+                  type="password"
+                  placeholder="Confirm new password"
+                  required
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
               <div className="mt-4">
-                <Button type="submit" variant="primary" size="default">
-                  Enter
+                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                  {submitting ? 'Saving...' : 'Enter'}
                 </Button>
               </div>
             </form>

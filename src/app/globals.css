@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #cac5c5;
@@ -8,7 +9,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-dorivaluinrwtrial);
+  --font-sans: InterFallback, var(--font-dorivaluinrwtrial), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-handi: var(--font-handi), "Handi", cursive;
 
   /* colors */
@@ -55,7 +56,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-dorivaluinrwtrial);
+  font-family: InterFallback, var(--font-dorivaluinrwtrial), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 @font-face {
@@ -70,13 +71,23 @@ body {
   src: url("/fonts/DorivalUITrial-Regular.otf") format("opentype");
 }
 
+/* Inter fallback for broken glyphs in Dorival */
+@font-face {
+  font-family: "InterFallback";
+  src: url("/fonts/Inter-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0021-002B, U+002F, U+003A-0040, U+005B-0060, U+007B-007E;
+}
+
 /* Design System Typography Tokens */
 .font-heading {
-  font-family: var(--font-dorivaluitrial);
+  font-family: InterFallback, var(--font-dorivaluitrial), sans-serif;
 }
 
 .font-body {
-  font-family: var(--font-dorivaluinrwtrial);
+  font-family: InterFallback, var(--font-dorivaluinrwtrial), sans-serif;
 }
 
 .text-h1 {

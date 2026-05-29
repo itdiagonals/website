@@ -77,6 +77,7 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
+	router.Use(middleware.CORS())
 	router.Use(middleware.WriteCSRFToken())
 
 	trustedProxies := getTrustedProxies()
@@ -84,7 +85,7 @@ func main() {
 		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
-	routes.SetupRoutes(router, config.DB, redisClient, otpService)
+	routes.SetupRoutes(router, config.DB, redisClient, otpService, emailQueue, fromAddress)
 	router.Static("/uploads", "./uploads")
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

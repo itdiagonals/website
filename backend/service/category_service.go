@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"gorm.io/gorm"
 )
@@ -19,8 +20,8 @@ func NewCategoryService(repo repository.CategoryRepository, mediaRepo repository
 	return &CategoryService{repo: repo, mediaRepo: mediaRepo}
 }
 
-func (s *CategoryService) GetAllCategories(ctx context.Context) ([]domain.Category, error) {
-	return s.repo.FindAll(ctx)
+func (s *CategoryService) GetAllCategories(ctx context.Context, page, limit int) ([]domain.Category, int64, error) {
+	return s.repo.FindAll(ctx, page, limit)
 }
 
 func (s *CategoryService) GetCategoryByID(ctx context.Context, id int) (*domain.Category, error) {
@@ -31,14 +32,22 @@ func (s *CategoryService) GetCategoryBySlug(ctx context.Context, slug string) (*
 	return s.repo.FindBySlug(ctx, slug)
 }
 
-func (s *CategoryService) CreateCategory(ctx context.Context, category *domain.Category) error {
+func (s *CategoryService) CreateCategory(ctx context.Context, category *domain.Category, draftID string) error {
 	if category.Name == "" || category.Slug == "" {
 		return fmt.Errorf("name and slug are required")
 	}
 	if err := s.validateCoverImage(ctx, category.CoverImageID); err != nil {
 		return err
 	}
-	return s.repo.Create(ctx, category)
+	if err := s.repo.Create(ctx, category); err != nil {
+		return err
+	}
+	if draftID != "" && s.mediaRepo != nil {
+		if err := s.mediaRepo.ClearDraftID(ctx, draftID); err != nil {
+			logger.Error("service.categories.finalize_draft_failed", "draft_id", draftID, "error", err.Error())
+		}
+	}
+	return nil
 }
 
 func (s *CategoryService) UpdateCategory(ctx context.Context, category *domain.Category) error {

@@ -2,6 +2,7 @@ import Image from "next/image";
 import ProductRow from "../../components/product-row";
 import ThemeDesc from "../../components/theme-desc";
 import ThemeHero from "@/src/modules/theme-hero";
+import Navbar from "../../components/ui/navbar";
 const PRODUCT_CATEGORIES = [
   "Product Type",
   "Product Type",
@@ -10,25 +11,27 @@ const PRODUCT_CATEGORIES = [
   "Product Type",
 ];
 const productData = [
-  { id: 1, name: "Product Name", price: "Rp. 123,500", image: "/blacktee.png" },
-  { id: 2, name: "Product Name", price: "Rp. 123,500", image: "/bluetee.png" },
-  { id: 3, name: "Product Name", price: "Rp. 123,500", image: "/greentee.png" },
-  { id: 4, name: "Product Name", price: "Rp. 123,500", image: "/blacktee.png" },
-  { id: 5, name: "Product Name", price: "Rp. 123,500", image: "/blacktee.png" },
-  { id: 6, name: "Product Name", price: "Rp. 123,500", image: "/bluetee.png" },
-  { id: 7, name: "Product Name", price: "Rp. 123,500", image: "/greentee.png" },
-  { id: 8, name: "Product Name", price: "Rp. 123,500", image: "/blacktee.png" },
-  { id: 9, name: "Product Name", price: "Rp. 123,500", image: "/blacktee.png" },
-  { id: 10, name: "Product Name", price: "Rp. 123,500", image: "/bluetee.png" },
-  { id: 11, name: "Product Name", price: "Rp. 123,500", image: "/greentee.png" },
-  { id: 12, name: "Product Name", price: "Rp. 123,500", image: "/blacktee.png" },
+  { id: 1, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
+  { id: 2, name: "Product Name", price: "Rp 123,500", image: "/bluetee.png" },
+  { id: 3, name: "Product Name", price: "Rp 123,500", image: "/greentee.png" },
+  { id: 4, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
+  { id: 5, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
+  { id: 6, name: "Product Name", price: "Rp 123,500", image: "/bluetee.png" },
+  { id: 7, name: "Product Name", price: "Rp 123,500", image: "/greentee.png" },
+  { id: 8, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
+  { id: 9, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
+  { id: 10, name: "Product Name", price: "Rp 123,500", image: "/bluetee.png" },
+  { id: 11, name: "Product Name", price: "Rp 123,500", image: "/greentee.png" },
+  { id: 12, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
 ];
 
 const firstHalf = productData.slice(0, 4);
 const secondHalf = productData.slice(4);
 export default function Products() {
   return (
-    <section className="bg-neutral-100 py-17 flex flex-col items-center gap-17">
+    <>
+      <Navbar variant="light" />
+      <section className="bg-neutral-100 py-17 flex flex-col items-center gap-17">
 
       <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer1.png", href: "/cross-player" }} />
       <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer.png" }} />
@@ -71,5 +74,6 @@ export default function Products() {
 
       </div>
     </section >
+    </>
   );
 }

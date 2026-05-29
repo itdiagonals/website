@@ -7,7 +7,7 @@ import (
 )
 
 type CareGuideRepository interface {
-	FindAll(ctx context.Context) ([]domain.CareGuide, error)
+	FindAll(ctx context.Context, page, limit int) ([]domain.CareGuide, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.CareGuide, error)
 	Create(ctx context.Context, careGuide *domain.CareGuide) error
 	Update(ctx context.Context, careGuide *domain.CareGuide) error
@@ -22,12 +22,18 @@ func NewCareGuideRepository(db *gorm.DB) CareGuideRepository {
 	return &careGuideRepository{db: db}
 }
 
-func (r *careGuideRepository) FindAll(ctx context.Context) ([]domain.CareGuide, error) {
+func (r *careGuideRepository) FindAll(ctx context.Context, page, limit int) ([]domain.CareGuide, int64, error) {
 	var careGuides []domain.CareGuide
-	if err := r.db.WithContext(ctx).Find(&careGuides).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := r.db.WithContext(ctx).Model(&domain.CareGuide{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return careGuides, nil
+
+	if err := r.db.WithContext(ctx).Offset((page - 1) * limit).Limit(limit).Find(&careGuides).Error; err != nil {
+		return nil, 0, err
+	}
+	return careGuides, total, nil
 }
 
 func (r *careGuideRepository) FindByID(ctx context.Context, id int) (*domain.CareGuide, error) {

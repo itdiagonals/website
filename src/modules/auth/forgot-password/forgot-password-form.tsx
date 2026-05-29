@@ -1,11 +1,39 @@
 'use client'
 
-import React from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { type FormEvent, useEffect, useState } from 'react'
+
 import Label from '@/components/ui/label'
 import Input from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
 
 export default function ForgotPasswordForm() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void api.auth.getCsrf().catch(() => undefined)
+  }, [])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSubmitting(true)
+    setError(null)
+
+    try {
+      await api.otp.request({ email, purpose: 'password_reset' })
+      router.push(`/auth/forgot-password/otp?email=${encodeURIComponent(email)}`)
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Gagal mengirim OTP.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <section className="relative flex min-h-screen w-full items-center justify-center overflow-hidden">
       <div
@@ -27,15 +55,17 @@ export default function ForgotPasswordForm() {
 
             <p className="text-b3 text-neutral-1000">Forgot Password</p>
 
-            <form className="flex w-full flex-col gap-[7px]">
+            <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[7px]">
               <div className="flex flex-col gap-[7px]">
                 <Label text="Email" htmlFor="email" />
-                <Input id="email" name="email" type="email" placeholder="Enter your email" required />
+                <Input id="email" name="email" type="email" placeholder="Enter your email" required value={email} onChange={(event) => setEmail(event.target.value)} />
               </div>
 
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
               <div className="mt-4">
-                <Button type="submit" variant="primary" size="default">
-                  Send Code
+                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                  {submitting ? 'Sending...' : 'Send Code'}
                 </Button>
               </div>
             </form>
@@ -44,9 +74,9 @@ export default function ForgotPasswordForm() {
 
         <p className="text-b3 text-center text-white">
           Remember your password, {' '}
-          <a href="/auth/sign-in" className="underline hover:text-neutral-200">
+          <Link href="/auth/sign-in" className="underline hover:text-neutral-200">
             Sign In
-          </a>
+          </Link>
         </p>
       </div>
     </section>

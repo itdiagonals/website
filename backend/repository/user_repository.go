@@ -7,7 +7,7 @@ import (
 )
 
 type UserRepository interface {
-	FindAll(ctx context.Context) ([]domain.User, error)
+	FindAll(ctx context.Context, page, limit int) ([]domain.User, int64, error)
 	FindByID(ctx context.Context, id string) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
@@ -25,12 +25,18 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) FindAll(ctx context.Context) ([]domain.User, error) {
+func (r *userRepository) FindAll(ctx context.Context, page, limit int) ([]domain.User, int64, error) {
 	var users []domain.User
-	if err := r.db.WithContext(ctx).Find(&users).Error; err != nil {
-		return nil, err
+	var total int64
+
+	if err := r.db.WithContext(ctx).Model(&domain.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return users, nil
+
+	if err := r.db.WithContext(ctx).Offset((page - 1) * limit).Limit(limit).Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
 }
 
 func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User, error) {

@@ -1,10 +1,20 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
 
 export default function OtpForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const email = searchParams.get('email') || ''
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const [submitting, setSubmitting] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const handleChange = (index: number, value: string) => {
@@ -18,16 +28,41 @@ export default function OtpForm() {
     }
   }
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus()
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setError(null)
     const code = otp.join('')
-    console.log('OTP submitted:', code)
+    if (code.length !== 6 || !email) {
+      setError('Email atau kode OTP belum lengkap.')
+      return
+    }
+
+    setSubmitting(true)
+    router.push(`/auth/forgot-password/new-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`)
+  }
+
+  async function handleResend() {
+    if (!email) {
+      setError('Email tidak ditemukan. Ulangi dari halaman forgot password.')
+      return
+    }
+
+    setResending(true)
+    setError(null)
+
+    try {
+      await api.otp.request({ email, purpose: 'password_reset' })
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Gagal mengirim ulang OTP.')
+    } finally {
+      setResending(false)
+    }
   }
 
   return (
@@ -50,7 +85,7 @@ export default function OtpForm() {
             </div>
 
             <p className="text-b3 text-center text-neutral-1000">
-              Enter the 6-digit code sent to your email
+              Enter the 6-digit code sent to {email || 'your email'}
             </p>
 
             <form onSubmit={handleSubmit} className="flex w-full flex-col gap-[7px]">
@@ -62,17 +97,19 @@ export default function OtpForm() {
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="h-12 w-10 rounded-[6px] border border-zinc-200 bg-white text-center text-b2 text-neutral-1000 outline-none transition-colors focus:border-primary-300 sm:h-14 sm:w-12"
-                  />
+                     value={digit}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      className="h-12 w-10 rounded-[6px] border border-zinc-200 bg-white text-center text-b2 text-neutral-1000 outline-none transition-colors focus:border-primary-300 sm:h-14 sm:w-12"
+                    />
                 ))}
               </div>
 
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
               <div className="mt-4">
-                <Button type="submit" variant="primary" size="default">
-                  Verify
+                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                  {submitting ? 'Continuing...' : 'Verify'}
                 </Button>
               </div>
             </form>
@@ -81,10 +118,13 @@ export default function OtpForm() {
 
         <p className="text-b3 text-center text-white">
           Didnt receive code?{' '}
-          <button type="button" className="underline hover:text-neutral-200">
-            Resend
+          <button type="button" onClick={handleResend} className="underline hover:text-neutral-200" disabled={resending}>
+            {resending ? 'Sending...' : 'Resend'}
           </button>
         </p>
+        <Link href="/auth/forgot-password" className="text-b3 text-white underline hover:text-neutral-200">
+          Change email
+        </Link>
       </div>
     </section>
   )

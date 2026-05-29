@@ -9,7 +9,7 @@ import (
 )
 
 type ProductRepository interface {
-	FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error)
+	FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Product, error)
 	FindDetailByID(ctx context.Context, id int) (*domain.ProductDetail, error)
 	FindDetailBySlug(ctx context.Context, slug string) (*domain.ProductDetail, error)
@@ -27,21 +27,26 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 	return &productRepository{db: db}
 }
 
-func (repository *productRepository) FindAll(ctx context.Context, categorySlug string) ([]domain.Product, error) {
+func (repository *productRepository) FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
 	var products []domain.Product
 
-	query := repository.db.WithContext(ctx).Table("products")
+	query := repository.db.WithContext(ctx).Model(&domain.Product{})
 	if categorySlug != "" {
 		query = query.
 			Joins("JOIN categories ON categories.id = products.category_id").
 			Where("categories.slug = ?", categorySlug)
 	}
 
-	if err := query.Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, COALESCE((SELECT SUM(variants.stock) FROM products_variants variants WHERE variants._parent_id = products.id), products.stock, 0) AS stock, products.weight, products.length, products.width, products.height, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
-		return nil, err
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return products, nil
+	if err := query.Offset((page - 1) * limit).Limit(limit).Select("products.id, products.name, products.slug, products.category_id, products.season_id, products.care_guide_id, products.gender, products.base_price, COALESCE((SELECT SUM(variants.stock) FROM products_variants variants WHERE variants._parent_id = products.id), products.stock, 0) AS stock, products.weight, products.length, products.width, products.height, products.description, products.cover_image_id").Scan(&products).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
 }
 
 func (repository *productRepository) FindByID(ctx context.Context, id int) (*domain.Product, error) {
@@ -132,6 +137,8 @@ func (repository *productRepository) findDetail(ctx context.Context, condition s
 		SeasonID              int    `gorm:"column:season_id"`
 		SeasonName            string `gorm:"column:season_name"`
 		SeasonSlug            string `gorm:"column:season_slug"`
+		SeasonIsActive        bool   `gorm:"column:season_is_active"`
+		SeasonSubtitle        string `gorm:"column:season_subtitle"`
 		CareGuideID           int    `gorm:"column:care_guide_id"`
 		CareGuideTitle        string `gorm:"column:care_guide_title"`
 		CareGuideInstructions []byte `gorm:"column:care_guide_instructions"`
@@ -139,7 +146,7 @@ func (repository *productRepository) findDetail(ctx context.Context, condition s
 
 	err := repository.db.WithContext(ctx).
 		Table("products").
-		Select("products.id, products.name, products.slug, products.gender, products.base_price, COALESCE((SELECT SUM(variants.stock) FROM products_variants variants WHERE variants._parent_id = products.id), products.stock, 0) AS stock, products.weight, products.length, products.width, products.height, products.description, products.detail_info, products.cover_image_id, media.url AS cover_image_url, media.alt AS cover_image_alt, categories.id AS category_id, categories.name AS category_name, categories.slug AS category_slug, seasons.id AS season_id, seasons.name AS season_name, seasons.slug AS season_slug, care_guides.id AS care_guide_id, care_guides.title AS care_guide_title, care_guides.instructions AS care_guide_instructions").
+		Select("products.id, products.name, products.slug, products.gender, products.base_price, COALESCE((SELECT SUM(variants.stock) FROM products_variants variants WHERE variants._parent_id = products.id), products.stock, 0) AS stock, products.weight, products.length, products.width, products.height, products.description, products.detail_info, products.cover_image_id, media.url AS cover_image_url, media.alt AS cover_image_alt, categories.id AS category_id, categories.name AS category_name, categories.slug AS category_slug, seasons.id AS season_id, seasons.name AS season_name, seasons.slug AS season_slug, seasons.is_active AS season_is_active, seasons.subtitle AS season_subtitle, care_guides.id AS care_guide_id, care_guides.title AS care_guide_title, care_guides.instructions AS care_guide_instructions").
 		Joins("LEFT JOIN media ON media.id = products.cover_image_id").
 		Joins("LEFT JOIN categories ON categories.id = products.category_id").
 		Joins("LEFT JOIN seasons ON seasons.id = products.season_id").
@@ -167,10 +174,12 @@ func (repository *productRepository) findDetail(ctx context.Context, condition s
 		Name: result.CategoryName,
 		Slug: result.CategorySlug,
 	}
-	detail.Season = domain.ProductReference{
-		ID:   result.SeasonID,
-		Name: result.SeasonName,
-		Slug: result.SeasonSlug,
+	detail.Season = domain.SeasonReference{
+		ID:       result.SeasonID,
+		Name:     result.SeasonName,
+		Slug:     result.SeasonSlug,
+		IsActive: result.SeasonIsActive,
+		Subtitle: result.SeasonSubtitle,
 	}
 	if result.CareGuideID != 0 {
 		var instructions any

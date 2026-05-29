@@ -16,8 +16,8 @@ func NewCareGuideService(repo repository.CareGuideRepository) *CareGuideService 
 	return &CareGuideService{repo: repo}
 }
 
-func (s *CareGuideService) GetAllCareGuides(ctx context.Context) ([]domain.CareGuide, error) {
-	return s.repo.FindAll(ctx)
+func (s *CareGuideService) GetAllCareGuides(ctx context.Context, page, limit int) ([]domain.CareGuide, int64, error) {
+	return s.repo.FindAll(ctx, page, limit)
 }
 
 func (s *CareGuideService) GetCareGuideByID(ctx context.Context, id int) (*domain.CareGuide, error) {

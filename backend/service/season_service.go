@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"gorm.io/gorm"
 )
@@ -19,8 +20,8 @@ func NewSeasonService(repo repository.SeasonRepository, mediaRepo repository.Med
 	return &SeasonService{repo: repo, mediaRepo: mediaRepo}
 }
 
-func (s *SeasonService) GetAllSeasons(ctx context.Context) ([]domain.Season, error) {
-	return s.repo.FindAll(ctx)
+func (s *SeasonService) GetAllSeasons(ctx context.Context, page, limit int) ([]domain.Season, int64, error) {
+	return s.repo.FindAll(ctx, page, limit)
 }
 
 func (s *SeasonService) GetSeasonByID(ctx context.Context, id int) (*domain.Season, error) {
@@ -31,7 +32,7 @@ func (s *SeasonService) GetSeasonBySlug(ctx context.Context, slug string) (*doma
 	return s.repo.FindBySlug(ctx, slug)
 }
 
-func (s *SeasonService) CreateSeason(ctx context.Context, season *domain.Season) error {
+func (s *SeasonService) CreateSeason(ctx context.Context, season *domain.Season, draftID string) error {
 	if season.Name == "" || season.Slug == "" {
 		return fmt.Errorf("name and slug are required")
 	}
@@ -41,7 +42,15 @@ func (s *SeasonService) CreateSeason(ctx context.Context, season *domain.Season)
 	if err := s.validateLookbookImages(ctx, season.LookbookImages); err != nil {
 		return err
 	}
-	return s.repo.Create(ctx, season)
+	if err := s.repo.Create(ctx, season); err != nil {
+		return err
+	}
+	if draftID != "" && s.mediaRepo != nil {
+		if err := s.mediaRepo.ClearDraftID(ctx, draftID); err != nil {
+			logger.Error("service.seasons.finalize_draft_failed", "draft_id", draftID, "error", err.Error())
+		}
+	}
+	return nil
 }
 
 func (s *SeasonService) UpdateSeason(ctx context.Context, season *domain.Season) error {

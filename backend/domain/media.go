@@ -11,6 +11,7 @@ type Media struct {
 	Filesize  int64     `json:"filesize" gorm:"column:filesize"`
 	Width     int       `json:"width" gorm:"column:width"`
 	Height    int       `json:"height" gorm:"column:height"`
+	DraftID   *string   `json:"draft_id,omitempty" gorm:"column:draft_id;index"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 }

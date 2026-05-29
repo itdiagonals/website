@@ -54,8 +54,8 @@ services:
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 minioadmin minioadmin &&
-      mc mb -p local/payload-media || true &&
-      mc anonymous set private local/payload-media || true
+      mc mb -p local/diagonals-media || true &&
+      mc anonymous set private local/diagonals-media || true
       "
     restart: "no"
 

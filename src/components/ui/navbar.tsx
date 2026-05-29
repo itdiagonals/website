@@ -2,12 +2,18 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search, ShoppingCart, User, ChevronDown } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, ShoppingCart, User, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
-function SearchBar() {
+export type NavbarVariant = 'dark' | 'light' | 'transparent';
+
+interface NavbarProps {
+  variant?: NavbarVariant;
+}
+
+function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVariant; isMobile?: boolean; onClose?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
@@ -28,23 +34,45 @@ function SearchBar() {
     } else {
       router.push('/products');
     }
+    if (onClose) onClose();
   };
+
+  const isLight = variant === 'light';
 
   return (
     <form
       onSubmit={handleSearchSubmit}
-      className="relative flex items-center bg-transparent border border-neutral-300/30 rounded-none w-56 md:w-64 h-9 overflow-hidden transition-all duration-300 focus-within:border-white focus-within:w-72"
+      className={cn(
+        "relative flex items-center border rounded-none overflow-hidden transition-all duration-500 ease-in-out",
+        isMobile
+          ? "w-full h-10"
+          : "hidden md:flex w-56 md:w-64 h-9",
+        isLight
+          ? "bg-transparent border-neutral-400/50 focus-within:border-primary-500"
+          : "bg-transparent border-neutral-300/30 focus-within:border-white"
+      )}
     >
       <input
         type="text"
         placeholder="Search..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full h-full pl-3 pr-9 bg-transparent text-white text-sm outline-none placeholder:text-neutral-400"
+        className={cn(
+          "w-full h-full pl-3 pr-9 bg-transparent text-sm outline-none transition-colors duration-500 ease-in-out",
+          isLight
+            ? "text-primary-500 placeholder:text-neutral-500"
+            : "text-white placeholder:text-neutral-400"
+        )}
       />
       <button
         type="submit"
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200"
+        aria-label="Search products"
+        className={cn(
+          "absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer transition-colors duration-300",
+          isLight
+            ? "text-neutral-600 hover:text-primary-500"
+            : "text-neutral-300 hover:text-white"
+        )}
       >
         <Search className="w-4 h-4" />
       </button>
@@ -52,16 +80,13 @@ function SearchBar() {
   );
 }
 
-export default function Navbar() {
-  const pathname = usePathname();
+export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
-
-  const isAdminPage = pathname?.startsWith('/admin');
-  const isAuthPage = pathname?.startsWith('/auth');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 40) {
+      if (window.scrollY > 30) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
@@ -76,78 +101,160 @@ export default function Navbar() {
     };
   }, []);
 
-  if (isAdminPage || isAuthPage) {
-    return null;
-  }
+  const scrolledClasses =
+    'fixed top-0 left-0 w-full bg-primary-500 border-neutral-800/40 shadow-xl backdrop-blur-md';
+
+  const defaultClasses: Record<NavbarVariant, string> = {
+    dark: 'relative bg-primary-500 border-neutral-800/40',
+    light: 'relative bg-neutral-100 border-neutral-200',
+    transparent: 'relative bg-transparent border-transparent',
+  };
+
+  const linkDefault: Record<NavbarVariant, string> = {
+    dark: 'text-white hover:text-white',
+    light: 'text-primary-500 hover:text-primary-900',
+    transparent: 'text-neutral-200 hover:text-white',
+  };
+
+  const iconDefault: Record<NavbarVariant, string> = {
+    dark: 'text-white hover:text-white',
+    light: 'text-primary-500 hover:text-primary-900',
+    transparent: 'text-neutral-200 hover:text-white',
+  };
+
+  const scrolledLink = 'text-white hover:text-white';
+  const scrolledIcon = 'text-white hover:text-white';
+
+  const showBlackLogo = !isScrolled && variant === 'light';
 
   return (
-    <header
-      className={cn(
-        'fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-out py-5 md:py-6',
-        isScrolled
-          ? 'bg-primary-500 border-b border-neutral-800/40 shadow-xl backdrop-blur-md py-3.5 md:py-4'
-          : 'bg-transparent border-b border-transparent'
-      )}
-    >
-      <div className="max-w-360 mx-auto px-6 md:px-12 lg:px-20 flex items-center justify-between">
-        {/* Brand Logo */}
-        <Link href="/" className="group flex items-center gap-2">
-          <Image
-            src="/logo/diagonals-white.svg"
-            alt="Diagonals Logo"
-            width={120}
-            height={40}
-            className="transition-transform duration-300 group-hover:scale-105"
-          />
-        </Link>
-
-        {/* Center Menu Links (Omitted About Us) */}
-        <nav className="hidden md:flex items-center gap-8 lg:gap-12">
-          <Link
-            href="/new-arrivals"
-            className="text-neutral-200 hover:text-white text-base font-semibold tracking-wide transition-colors duration-200"
-          >
-            New Arrivals
+    <>
+      <header
+        className={cn(
+          'z-50 py-5 md:py-6 transition-all duration-700 ease-in-out will-change-[background-color,border-color,backdrop-filter,box-shadow]',
+          isScrolled ? scrolledClasses : defaultClasses[variant]
+        )}
+      >
+        <div className="max-w-360 mx-auto px-6 md:px-12 lg:px-20 flex items-center justify-between">
+          <Link href="/" className="group flex items-center gap-2 relative w-[120px] h-[40px]">
+            <Image
+              src="/logo/diagonals-white.svg"
+              alt="Diagonals Logo"
+              fill
+              className={cn(
+                "object-contain transition-opacity duration-700 ease-in-out",
+                showBlackLogo ? "opacity-0" : "opacity-100"
+              )}
+            />
+            <Image
+              src="/logo/diagonals-black.svg"
+              alt="Diagonals Logo"
+              fill
+              className={cn(
+                "object-contain transition-opacity duration-700 ease-in-out",
+                showBlackLogo ? "opacity-100" : "opacity-0"
+              )}
+            />
           </Link>
-          <div className="relative group">
+
+          <nav className="hidden md:flex items-center gap-8 lg:gap-12">
             <Link
-              href="/products"
-              className="text-neutral-200 hover:text-white text-base font-semibold tracking-wide flex items-center gap-1 transition-colors duration-200"
+              href="/new-arrivals"
+              className={cn(
+                'text-base font-semibold tracking-wide transition-colors duration-500 ease-in-out',
+                isScrolled ? scrolledLink : linkDefault[variant]
+              )}
             >
-              All Product
-              <ChevronDown className="w-4 h-4 transition-transform duration-300 group-hover:rotate-180" />
+              New Arrivals
+            </Link>
+            <div className="relative group">
+              <Link
+                href="/products"
+                className={cn(
+                  'text-base font-semibold tracking-wide flex items-center gap-1 transition-colors duration-500 ease-in-out',
+                  isScrolled ? scrolledLink : linkDefault[variant]
+                )}
+              >
+                All Product
+                <ChevronDown className="w-4 h-4 transition-transform duration-300 group-hover:rotate-180" />
+              </Link>
+            </div>
+          </nav>
+
+          <div className="flex items-center gap-4 md:gap-6">
+            <Suspense fallback={
+              <div className="hidden md:flex relative items-center border border-neutral-300/30 rounded-none w-56 md:w-64 h-9">
+                <span className="text-xs text-neutral-400 pl-3">Loading search...</span>
+              </div>
+            }>
+              <div className="hidden md:block">
+                <SearchBar variant={variant} />
+              </div>
+            </Suspense>
+
+            <button
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              aria-label="Toggle search"
+              className={cn(
+                'md:hidden transition-all duration-500 ease-in-out hover:scale-110',
+                isScrolled ? scrolledIcon : iconDefault[variant]
+              )}
+            >
+              {showMobileSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+            </button>
+
+            <Link
+              href="/cart"
+              aria-label="View shopping cart"
+              className={cn(
+                'transition-all duration-500 ease-in-out hover:scale-110 relative',
+                isScrolled ? scrolledIcon : iconDefault[variant]
+              )}
+            >
+              <ShoppingCart className="w-5 h-5 md:w-5.5 md:h-5.5" />
+            </Link>
+
+            <Link
+              href="/profile"
+              aria-label="View profile"
+              className={cn(
+                'transition-all duration-500 ease-in-out hover:scale-110',
+                isScrolled ? scrolledIcon : iconDefault[variant]
+              )}
+            >
+              <User className="w-5 h-5 md:w-5.5 md:h-5.5" />
             </Link>
           </div>
-        </nav>
+        </div>
 
-        {/* Right Controls */}
-        <div className="flex items-center gap-4 md:gap-6">
-          {/* Search bar inside Suspense boundary */}
+        <div
+          className={cn(
+            'md:hidden overflow-hidden transition-all duration-500 ease-in-out',
+            showMobileSearch ? 'max-h-20 opacity-100 mt-4 px-6' : 'max-h-0 opacity-0'
+          )}
+        >
           <Suspense fallback={
-            <div className="relative flex items-center border border-neutral-300/30 rounded-none w-56 md:w-64 h-9">
+            <div className="relative flex items-center border border-neutral-300/30 rounded-none w-full h-10">
               <span className="text-xs text-neutral-400 pl-3">Loading search...</span>
             </div>
           }>
-            <SearchBar />
+            <SearchBar
+              variant={variant}
+              isMobile
+              onClose={() => setShowMobileSearch(false)}
+            />
           </Suspense>
-
-          {/* Cart Icon Link */}
-          <Link
-            href="/cart"
-            className="text-neutral-200 hover:text-white transition-all duration-200 hover:scale-110 relative"
-          >
-            <ShoppingCart className="w-5 h-5 md:w-5.5 md:h-5.5" />
-          </Link>
-
-          {/* User Profile Link */}
-          <Link
-            href="/profile"
-            className="text-neutral-200 hover:text-white transition-all duration-200 hover:scale-110"
-          >
-            <User className="w-5 h-5 md:w-5.5 md:h-5.5" />
-          </Link>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {variant === 'light' && (
+        <div
+          className={cn(
+            "transition-[height] duration-0",
+            isScrolled ? "h-[72px] md:h-[88px]" : "h-0"
+          )}
+        />
+      )}
+    </>
   );
 }
