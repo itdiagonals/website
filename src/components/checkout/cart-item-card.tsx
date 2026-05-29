@@ -74,7 +74,7 @@ export function CartItemCard({
             <p className="text-b1 text-black break-words">{item.color}</p>
             <p className="text-b1 text-black">{item.size}</p>
             <p className="text-b1 font-medium text-secondary-500">
-              Rp. {item.price.toLocaleString("id-ID")}
+              Rp {item.price.toLocaleString("id-ID")}
             </p>
           </div>
 
@@ -86,7 +86,7 @@ export function CartItemCard({
             <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-[12px]">
               <span className="text-b1 font-medium text-black">Subtotal :</span>
               <span className="font-bold text-[20px] sm:text-[22px] leading-[30px] sm:leading-[33px] text-primary-400">
-                Rp. {subtotal.toLocaleString("id-ID")}
+                Rp {subtotal.toLocaleString("id-ID")}
               </span>
             </div>
           </div>

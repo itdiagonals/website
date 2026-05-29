@@ -21,6 +21,14 @@ type ProductReference struct {
 	Slug string `json:"slug" gorm:"column:slug"`
 }
 
+type SeasonReference struct {
+	ID       int    `json:"id" gorm:"column:id"`
+	Name     string `json:"name" gorm:"column:name"`
+	Slug     string `json:"slug" gorm:"column:slug"`
+	IsActive bool   `json:"is_active" gorm:"column:is_active"`
+	Subtitle string `json:"subtitle" gorm:"column:subtitle"`
+}
+
 type ProductMediaItem struct {
 	ID  int    `json:"id" gorm:"column:id"`
 	URL string `json:"url" gorm:"column:url"`
@@ -47,7 +55,7 @@ type ProductDetail struct {
 	Description     string                `json:"description" gorm:"column:description"`
 	DetailInfo      any                   `json:"detail_info" gorm:"-" swaggertype:"object"`
 	Category        ProductReference      `json:"category" gorm:"-"`
-	Season          ProductReference      `json:"season" gorm:"-"`
+	Season          SeasonReference       `json:"season" gorm:"-"`
 	CareGuide       *ProductCareGuide     `json:"care_guide,omitempty" gorm:"-"`
 	CoverImageID    int                   `json:"-" gorm:"column:cover_image_id"`
 	CoverImageURL   string                `json:"cover_image_url" gorm:"column:cover_image_url"`

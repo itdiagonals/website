@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 interface Product {
   id: number;
@@ -39,13 +40,8 @@ export default function ProductRow({ products }: ProductRowProps) {
                 {product.price}
               </span>
             </div>
-            <div className="w-[27px] h-[27px] border border-neutral-900 flex justify-center hover:bg-neutral-200 transition duration-600">
-              <Image
-                src="/chevron-right.svg"
-                alt="Detail"
-                width={16}
-                height={16}
-              />
+            <div className="w-[27px] h-[27px] border border-neutral-900 flex items-center justify-center hover:bg-neutral-200 transition duration-600">
+              <ChevronRight size={16} strokeWidth={2} className="text-black" />
             </div>
           </div>
         </Link>

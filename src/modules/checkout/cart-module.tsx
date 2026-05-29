@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CartItemCard, CartItem } from "@/components/checkout/cart-item-card";
 import { OrderSummary } from "@/components/checkout/order-summary";
-import { Header } from "@/components/checkout/header";
+import { Header } from "@/src/components/header-demo";
 import { cn } from "@/lib/utils";
 
 interface CartModuleProps {

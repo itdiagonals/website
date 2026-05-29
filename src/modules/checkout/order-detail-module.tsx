@@ -1,4 +1,4 @@
-import { Header } from "@/components/checkout/header";
+import { Header } from "@/src/components/header-demo";
 import { BillDetail, BillItem } from "@/components/checkout/bill-detail";
 import { OrderTrackingStepper, TrackingStep } from "@/components/checkout/order-tracking-stepper";
 import { PurchaseSidebar } from "@/components/checkout/purchase-sidebar";

@@ -44,11 +44,11 @@ export function OrderSummary({
             <div className="flex flex-col gap-[7px] items-start text-b1 w-full">
               <div className="flex items-center justify-between w-full gap-4">
                 <span>Item Subtotal</span>
-                <span className="text-right">Rp. {itemSubtotal.toLocaleString("id-ID")}</span>
+                <span className="text-right">Rp {itemSubtotal.toLocaleString("id-ID")}</span>
               </div>
               <div className="flex items-center justify-between w-full gap-4">
                 <span>Promo</span>
-                <span className="text-right">- Rp. {promoDiscount.toLocaleString("id-ID")}</span>
+                <span className="text-right">- Rp {promoDiscount.toLocaleString("id-ID")}</span>
               </div>
             </div>
           </div>
@@ -57,7 +57,7 @@ export function OrderSummary({
 
           <div className="flex items-center justify-between text-b1 font-medium text-primary-400 w-full gap-4">
             <span>Total Price</span>
-            <span className="text-right">Rp. {totalPrice.toLocaleString("id-ID")}</span>
+            <span className="text-right">Rp {totalPrice.toLocaleString("id-ID")}</span>
           </div>
         </div>
       </div>

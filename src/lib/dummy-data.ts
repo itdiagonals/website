@@ -189,16 +189,16 @@ export const categories: Category[] = [
 export const seasons: Season[] = [
   {
     id: 1,
-    name: "El Ligue Premiere",
+    name: "El Ligue Premiere Gacor Terbaru 2024",
     slug: "el-ligue-premiere",
     subtitle: "Navy & Gold",
-    description: "Our flagship collection inspired by classic football aesthetics",
+    description: "Our flagship collection inspired by classic football aesthetics. Bold colors and premium materials for the ultimate fan experience. The El Ligue Premiere collection captures the spirit of the game with its iconic diagonal stripe design and rich color palette. Each piece is crafted with attention to detail, featuring breathable fabrics and modern fits that pay homage to football's heritage while embracing contemporary style.",
     coverImageId: 20,
     coverImage: { id: 20, url: "/seasons/el-ligue-premiere.jpg", alt: "El Ligue Premiere" },
-    isActive: true,
+    isActive: false,
     lookbookImages: [
-      { id: 21, url: "/seasons/el-ligue-1.jpg", alt: "Look 1" },
-      { id: 22, url: "/seasons/el-ligue-2.jpg", alt: "Look 2" },
+      { id: 21, url: "/products/season-1.png", alt: "Look 1" },
+      { id: 22, url: "/products/season-3.png", alt: "Look 2" },
     ],
     createdAt: "2024-08-01T10:00:00Z",
     updatedAt: "2024-09-01T10:00:00Z",
@@ -321,15 +321,15 @@ export const products: Product[] = [
     stock: 45,
     description: "Official home jersey from the El Ligue Premiere collection. Premium breathable fabric with moisture-wicking technology.",
     coverImageId: 1,
-    coverImage: { id: 1, url: "/products/jersey-1.jpg", alt: "El Ligue Home Jersey" },
+    coverImage: { id: 1, url: "/products/products-1.png", alt: "El Ligue Home Jersey" },
     detailInfo: { material: "100% Polyester", fit: "Regular", technology: "Dri-FIT" },
     careGuideId: 1,
     careGuide: careGuides[0],
     availableColors: [defaultColors[0], defaultColors[2]],
     availableSizes: [defaultSizes[1], defaultSizes[2], defaultSizes[3]],
     gallery: [
-      { id: 1, imageUrl: "/products/jersey-1.jpg", sortOrder: 1 },
-      { id: 2, imageUrl: "/products/jersey-1-back.jpg", sortOrder: 2 },
+      { id: 1, imageUrl: "/products/products-1.png", sortOrder: 1 },
+      { id: 2, imageUrl: "/products/products-1.png", sortOrder: 2 },
     ],
     variants: [
       { id: 1, color: "Navy", size: "M", sku: "DG-ELH-NVY-M", stock: 12, priceAdjustment: 0 },
@@ -357,14 +357,14 @@ export const products: Product[] = [
     stock: 32,
     description: "Stylish away jersey featuring the signature diagonal stripe pattern. Lightweight and durable.",
     coverImageId: 2,
-    coverImage: { id: 2, url: "/products/jersey-2.jpg", alt: "El Ligue Away Jersey" },
+    coverImage: { id: 2, url: "/products/products-2.png", alt: "El Ligue Away Jersey" },
     detailInfo: { material: "92% Polyester, 8% Spandex", fit: "Slim", technology: "AeroSwift" },
     careGuideId: 1,
     careGuide: careGuides[0],
     availableColors: [defaultColors[1], defaultColors[0]],
     availableSizes: defaultSizes,
     gallery: [
-      { id: 3, imageUrl: "/products/jersey-2.jpg", sortOrder: 1 },
+      { id: 3, imageUrl: "/products/products-2.png", sortOrder: 1 },
     ],
     variants: [
       { id: 5, color: "White", size: "S", sku: "DG-ELA-WHT-S", stock: 5, priceAdjustment: 0 },
@@ -392,14 +392,14 @@ export const products: Product[] = [
     stock: 60,
     description: "Breathable training shorts with elastic waistband and side pockets.",
     coverImageId: 3,
-    coverImage: { id: 3, url: "/products/shorts-1.jpg", alt: "Summer Training Shorts" },
+    coverImage: { id: 3, url: "/products/products-1.png", alt: "Summer Training Shorts" },
     detailInfo: { material: "88% Polyester, 12% Elastane", inseam: "7 inch" },
     careGuideId: 2,
     careGuide: careGuides[1],
     availableColors: [defaultColors[1], defaultColors[2], defaultColors[4]],
     availableSizes: [defaultSizes[1], defaultSizes[2], defaultSizes[3]],
     gallery: [
-      { id: 4, imageUrl: "/products/shorts-1.jpg", sortOrder: 1 },
+      { id: 4, imageUrl: "/products/products-1.png", sortOrder: 1 },
     ],
     variants: [
       { id: 9, color: "White", size: "M", sku: "DG-STS-WHT-M", stock: 20, priceAdjustment: 0 },
@@ -426,14 +426,14 @@ export const products: Product[] = [
     stock: 120,
     description: "Set of 3 pairs of cushioned performance socks with arch support.",
     coverImageId: 4,
-    coverImage: { id: 4, url: "/products/socks-1.jpg", alt: "Performance Socks Pack" },
+    coverImage: { id: 4, url: "/products/products-1.png", alt: "Performance Socks Pack" },
     detailInfo: { material: "Cotton blend", cushion: "Medium", arch: "Supported" },
     careGuideId: 3,
     careGuide: careGuides[2],
     availableColors: [defaultColors[1], defaultColors[2], defaultColors[0]],
     availableSizes: [defaultSizes[0], defaultSizes[1], defaultSizes[2]],
     gallery: [
-      { id: 5, imageUrl: "/products/socks-1.jpg", sortOrder: 1 },
+      { id: 5, imageUrl: "/products/products-1.png", sortOrder: 1 },
     ],
     variants: [
       { id: 12, color: "White", size: "S", sku: "DG-PSP-WHT-S", stock: 40, priceAdjustment: 0 },
@@ -460,14 +460,14 @@ export const products: Product[] = [
     stock: 25,
     description: "Classic knitted scarf with heritage crest embroidery.",
     coverImageId: 5,
-    coverImage: { id: 5, url: "/products/scarf-1.jpg", alt: "Heritage Scarf" },
+    coverImage: { id: 5, url: "/products/products-1.png", alt: "Heritage Scarf" },
     detailInfo: { material: "100% Acrylic", dimensions: "180x30cm" },
     careGuideId: 4,
     careGuide: careGuides[3],
     availableColors: [defaultColors[0], defaultColors[3]],
     availableSizes: [],
     gallery: [
-      { id: 6, imageUrl: "/products/scarf-1.jpg", sortOrder: 1 },
+      { id: 6, imageUrl: "/products/products-1.png", sortOrder: 1 },
     ],
     variants: [
       { id: 15, color: "Navy", size: "-", sku: "DG-HSC-NVY", stock: 10, priceAdjustment: 0 },
@@ -493,14 +493,14 @@ export const products: Product[] = [
     stock: 18,
     description: "Set of 6 reversible training bibs in team colors.",
     coverImageId: 6,
-    coverImage: { id: 6, url: "/products/bib-1.jpg", alt: "Training Bib Set" },
+    coverImage: { id: 6, url: "/products/products-1.png", alt: "Training Bib Set" },
     detailInfo: { quantity: "6 pieces", reversible: true },
     careGuideId: 4,
     careGuide: careGuides[3],
     availableColors: [defaultColors[0], defaultColors[3], defaultColors[4]],
     availableSizes: [],
     gallery: [
-      { id: 7, imageUrl: "/products/bib-1.jpg", sortOrder: 1 },
+      { id: 7, imageUrl: "/products/products-1.png", sortOrder: 1 },
     ],
     variants: [
       { id: 17, color: "Navy", size: "-", sku: "DG-TBS-NVY", stock: 6, priceAdjustment: 0 },
@@ -527,14 +527,14 @@ export const products: Product[] = [
     stock: 0,
     description: "Insulated training jacket with water-resistant outer shell.",
     coverImageId: 7,
-    coverImage: { id: 7, url: "/products/jacket-1.jpg", alt: "Winter Training Jacket" },
+    coverImage: { id: 7, url: "/products/products-1.png", alt: "Winter Training Jacket" },
     detailInfo: { material: "Nylon shell, fleece lining", waterproof: "DWR coating" },
     careGuideId: 4,
     careGuide: careGuides[3],
     availableColors: [defaultColors[2], defaultColors[0]],
     availableSizes: [defaultSizes[2], defaultSizes[3], defaultSizes[4]],
     gallery: [
-      { id: 8, imageUrl: "/products/jacket-1.jpg", sortOrder: 1 },
+      { id: 8, imageUrl: "/products/products-1.png", sortOrder: 1 },
     ],
     variants: [
       { id: 20, color: "Black", size: "L", sku: "DG-WTJ-BLK-L", stock: 0, priceAdjustment: 0 },
@@ -560,14 +560,14 @@ export const products: Product[] = [
     stock: 40,
     description: "Spacious kit bag with separate shoe compartment and wet/dry storage.",
     coverImageId: 8,
-    coverImage: { id: 8, url: "/products/bag-1.jpg", alt: "Match Day Kit Bag" },
+    coverImage: { id: 8, url: "/products/products-1.png", alt: "Match Day Kit Bag" },
     detailInfo: { capacity: "40L", compartments: "3", material: "600D Polyester" },
     careGuideId: 5,
     careGuide: careGuides[4],
     availableColors: [defaultColors[2], defaultColors[0]],
     availableSizes: [],
     gallery: [
-      { id: 9, imageUrl: "/products/bag-1.jpg", sortOrder: 1 },
+      { id: 9, imageUrl: "/products/products-1.png", sortOrder: 1 },
     ],
     variants: [
       { id: 22, color: "Black", size: "-", sku: "DG-MKB-BLK", stock: 20, priceAdjustment: 0 },
@@ -792,12 +792,7 @@ export const transactions: Transaction[] = [
 ];
 
 export function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return "Rp " + amount.toLocaleString("id-ID");
 }
 
 export function formatDate(dateString: string): string {

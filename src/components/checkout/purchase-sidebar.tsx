@@ -65,7 +65,7 @@ export function PurchaseSidebar({ items, showTitle = true, className }: Purchase
                   <p className="leading-[21.276px] break-words">{item.color}</p>
                   <p className="leading-[21.276px]">{item.size}</p>
                   <p className="leading-[21.276px]">
-                    Rp. {item.price.toLocaleString("id-ID")}
+                    Rp {item.price.toLocaleString("id-ID")}
                   </p>
                 </div>
               </div>

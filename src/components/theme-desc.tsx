@@ -35,11 +35,10 @@ export default function ThemeDesc({ type, title, desc, href }: ThemeDescProps) {
 								{desc}
 							</div>
 							<Link href={href} className="w-fit">
-								<Button
-									variant="white"
-									size="fit"
-									className="!w-47.75 border-solid border-[0.8px] box-border p-[7.9px] text-[17.44px] text-primary-500 rounded-none cursor-pointer hover:bg-neutral-100 hover:scale-105 font-bold transition duration-200"
-								>
+							<Button
+								variant="white"
+								className="!w-47.75 border-solid border-[0.8px] box-border p-[7.9px] text-[17.44px] text-primary-500 rounded-none cursor-pointer hover:bg-neutral-100 hover:scale-105 font-bold transition duration-200"
+							>
 									Explore Now
 								</Button>
 							</Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Header } from "@/components/checkout/header";
+import { Header } from "@/src/components/header-demo";
 import {
   ProfileCard,
   UserProfile,

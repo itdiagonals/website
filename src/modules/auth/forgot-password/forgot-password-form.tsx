@@ -64,7 +64,7 @@ export default function ForgotPasswordForm() {
               {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="mt-4">
-                <Button type="submit" variant="primary" size="default" disabled={submitting}>
+                <Button type="submit" variant="default" size="default" disabled={submitting}>
                   {submitting ? 'Sending...' : 'Send Code'}
                 </Button>
               </div>

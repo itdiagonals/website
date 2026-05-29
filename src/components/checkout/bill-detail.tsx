@@ -51,7 +51,7 @@ export function BillDetail({
           {items.map((item) => (
             <span key={item.label}>
               {item.isDiscount && "- "}
-              Rp. {item.value.toLocaleString("id-ID")}
+              Rp {item.value.toLocaleString("id-ID")}
             </span>
           ))}
         </div>
@@ -62,7 +62,7 @@ export function BillDetail({
       <div className="flex items-center justify-between gap-4">
         <div className="text-b2 text-primary-400">Price Total</div>
         <div className="text-[20px] sm:text-h7 leading-[30px] sm:leading-[33px] font-bold text-primary-500 text-right">
-          Rp. {totalPrice.toLocaleString("id-ID")}
+          Rp {totalPrice.toLocaleString("id-ID")}
         </div>
       </div>
     </div>
