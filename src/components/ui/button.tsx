@@ -2,17 +2,16 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'flex items-center justify-center md:text-lg text-base px-12 py-2 transition-transform duration-200 ease-in-out ',
+  'flex items-center justify-center md:text-lg text-base py-2 transition-transform duration-200 ease-in-out ',
   {
     variants: {
       variant: {
-        default: 'bg-primary-700 text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
+        default: 'bg-neutral-100/50 text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
         white: 'bg-white text-primary-700 hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
-        primary: 'bg-primary-300 text-white hover:bg-primary-400 has-[>svg]:gap-2 cursor-pointer font-medium rounded-[6px] text-b3',
+        outline: 'bg-transparent text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
       },
       size: {
-        default: 'w-full',
-        fit: 'w-fit',
+        default: 'w-[190px]',
         icon: 'p-[10px]',
       },
     },
