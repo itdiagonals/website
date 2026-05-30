@@ -29,20 +29,28 @@ export default function SignInForm() {
     try {
       await api.auth.login({ email, password })
 
-      const redirectTarget = searchParams.get('redirect') || '/admin'
-      if (!redirectTarget.startsWith('/admin')) {
-        router.replace(redirectTarget)
-        return
+      try {
+        await api.users.getAll(1, 1)
+        const redirectTarget = searchParams.get('redirect')
+        if (redirectTarget && redirectTarget.startsWith('/admin')) {
+          router.replace(redirectTarget)
+        } else {
+          router.replace('/admin/dashboard')
+        }
+      } catch (adminCheckError) {
+        if (adminCheckError instanceof ApiError && adminCheckError.status === 403) {
+          const redirectTarget = searchParams.get('redirect')
+          if (redirectTarget && !redirectTarget.startsWith('/admin')) {
+            router.replace(redirectTarget)
+          } else {
+            router.replace('/')
+          }
+        } else {
+          router.replace('/')
+        }
       }
-
-      await api.users.getAll()
-      router.replace(redirectTarget)
     } catch (caughtError) {
-      if (caughtError instanceof ApiError && caughtError.status === 403) {
-        setError('Login berhasil, tetapi akun ini tidak memiliki akses admin.')
-      } else {
-        setError(caughtError instanceof Error ? caughtError.message : 'Login gagal.')
-      }
+      setError(caughtError instanceof Error ? caughtError.message : 'Login gagal.')
     } finally {
       setSubmitting(false)
     }

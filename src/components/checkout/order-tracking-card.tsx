@@ -2,8 +2,11 @@ import Image from "next/image";
 import { Package, PackageOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { useRouter } from "next/navigation";
+
 export interface OrderItem {
   id: string;
+  orderId: string;
   name: string;
   gender: string;
   color: string;
@@ -21,12 +24,14 @@ interface OrderTrackingCardProps {
 }
 
 export function OrderTrackingCard({ item, variant = "ongoing", className }: OrderTrackingCardProps) {
+  const router = useRouter();
   const isFinished = variant === "finished";
 
   return (
-    <div
+    <button
+      onClick={() => router.push(`/orders/${item.orderId}`)}
       className={cn(
-        "bg-white border border-primary-100 rounded-[10px] w-full overflow-hidden p-4 sm:px-[34px] sm:py-[24px]",
+        "w-full text-left bg-white border border-primary-100 rounded-[10px] overflow-hidden p-4 sm:px-[34px] sm:py-[24px] cursor-pointer hover:border-primary-300 transition-colors duration-200",
         className
       )}
     >
@@ -73,6 +78,6 @@ export function OrderTrackingCard({ item, variant = "ongoing", className }: Orde
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

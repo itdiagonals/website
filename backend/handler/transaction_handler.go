@@ -71,6 +71,7 @@ type TransactionHistoryDetail struct {
 	CourierService    string                           `json:"courier_service"`
 	TrackingNumber    string                           `json:"tracking_number,omitempty"`
 	SnapToken         string                           `json:"snap_token"`
+	Notes             string                           `json:"notes"`
 	CreatedAt         time.Time                        `json:"created_at"`
 	UpdatedAt         time.Time                        `json:"updated_at"`
 	ShippingAddress   TransactionHistoryAddressSummary `json:"shipping_address"`
@@ -258,6 +259,7 @@ func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) 
 		CourierService:    result.CourierService,
 		TrackingNumber:    result.TrackingNumber,
 		SnapToken:         result.SnapToken,
+		Notes:             result.Notes,
 		CreatedAt:         result.CreatedAt,
 		UpdatedAt:         result.UpdatedAt,
 		ShippingAddress: TransactionHistoryAddressSummary{

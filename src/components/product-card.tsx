@@ -7,6 +7,7 @@ interface Product {
   name: string;
   price: string;
   image: string;
+  slug?: string;
 }
 
 interface ProductCardProps {
@@ -16,7 +17,7 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
-      href={`/product/${product.id}`}
+      href={`/products/${product.slug ?? product.id}`}
       className="flex flex-col gap-8 cursor-pointer group"
     >
       <div

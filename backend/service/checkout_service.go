@@ -33,6 +33,7 @@ type CheckoutRequest struct {
 	CourierName         string
 	CourierService      string
 	SelectedCartItemIDs []uint
+	Notes               string
 }
 
 type ShippingRatesRequest struct {
@@ -201,6 +202,7 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID string,
 		Status:            "pending",
 		ShippingStatus:    "pending",
 		SnapToken:         snapResponse.Token,
+		Notes:             req.Notes,
 		User:              *user,
 		ShippingAddress:   *address,
 	}

@@ -38,7 +38,7 @@ definitions:
           $ref: '#/definitions/domain.CartItem'
         type: array
       user_id:
-        type: integer
+        type: string
     type: object
   domain.CartItem:
     properties:
@@ -101,6 +101,8 @@ definitions:
     properties:
       cover_image_id:
         type: integer
+      draft_id:
+        type: string
       name:
         type: string
       slug:
@@ -173,6 +175,8 @@ definitions:
         type: string
       detail_info:
         type: object
+      draft_id:
+        type: string
       gallery:
         items:
           $ref: '#/definitions/domain.CreateProductGalleryItemRequest'
@@ -232,6 +236,8 @@ definitions:
       cover_image_id:
         type: integer
       description:
+        type: string
+      draft_id:
         type: string
       is_active:
         type: boolean
@@ -308,7 +314,7 @@ definitions:
       updated_at:
         type: string
       user_id:
-        type: integer
+        type: string
       village:
         type: string
     type: object
@@ -317,6 +323,8 @@ definitions:
       alt:
         type: string
       created_at:
+        type: string
+      draft_id:
         type: string
       filename:
         type: string
@@ -334,6 +342,34 @@ definitions:
         type: string
       width:
         type: integer
+    type: object
+  domain.OTPPurpose:
+    enum:
+    - account_verification
+    - password_reset
+    type: string
+    x-enum-varnames:
+    - OTPPurposeAccountVerification
+    - OTPPurposePasswordReset
+  domain.OTPRequestInput:
+    properties:
+      email:
+        type: string
+      purpose:
+        $ref: '#/definitions/domain.OTPPurpose'
+    required:
+    - email
+    - purpose
+    type: object
+  domain.OTPVerifyInput:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+    required:
+    - code
+    - email
     type: object
   domain.Product:
     properties:
@@ -634,7 +670,9 @@ definitions:
       email:
         type: string
       id:
-        type: integer
+        type: string
+      is_verified:
+        type: boolean
       name:
         type: string
       phone:
@@ -779,9 +817,11 @@ definitions:
       created_at:
         type: string
       customer_id:
-        type: integer
+        type: string
       id:
         type: integer
+      notes:
+        type: string
       order_id:
         type: string
       shipping_address:
@@ -811,6 +851,8 @@ definitions:
         type: string
       courier_service:
         type: string
+      notes:
+        type: string
       selected_cart_item_ids:
         items:
           type: integer
@@ -826,6 +868,26 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/handler.CheckoutData'
+    type: object
+  handler.ConfirmUploadRequest:
+    properties:
+      alt:
+        type: string
+      draft_id:
+        type: string
+      filesize:
+        type: integer
+      height:
+        type: integer
+      mime_type:
+        type: string
+      object_key:
+        type: string
+      width:
+        type: integer
+    required:
+    - alt
+    - object_key
     type: object
   handler.CustomerAddressListResponse:
     properties:
@@ -843,6 +905,20 @@ definitions:
     properties:
       message:
         type: string
+    type: object
+  handler.InviteCheckResponse:
+    properties:
+      email:
+        type: string
+      user_exists:
+        type: boolean
+    type: object
+  handler.InviteRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
     type: object
   handler.LoginRequest:
     properties:
@@ -879,6 +955,25 @@ definitions:
     - status_code
     - transaction_status
     type: object
+  handler.PresignedURLRequest:
+    properties:
+      content_type:
+        type: string
+      filename:
+        type: string
+    required:
+    - content_type
+    - filename
+    type: object
+  handler.PresignedURLResponse:
+    properties:
+      object_key:
+        type: string
+      public_url:
+        type: string
+      signed_url:
+        type: string
+    type: object
   handler.RegisterRequest:
     properties:
       email:
@@ -899,6 +994,20 @@ definitions:
         type: integer
     required:
     - cart_item_id
+    type: object
+  handler.ResetPasswordRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - code
+    - email
+    - new_password
     type: object
   handler.ShippingRatesData:
     properties:
@@ -984,13 +1093,15 @@ definitions:
       created_at:
         type: string
       customer_id:
-        type: integer
+        type: string
       id:
         type: integer
       items:
         items:
           $ref: '#/definitions/handler.TransactionHistoryDetailItem'
         type: array
+      notes:
+        type: string
       order_id:
         type: string
       shipping_address:
@@ -1167,6 +1278,10 @@ definitions:
           $ref: '#/definitions/domain.Wilayah'
         type: array
     type: object
+  map_string_string:
+    additionalProperties:
+      type: string
+    type: object
   response.ListMeta:
     properties:
       limit:
@@ -1278,6 +1393,19 @@ definitions:
       success:
         type: boolean
     type: object
+  response.Response-array_domain_Product:
+    properties:
+      code:
+        type: string
+      data:
+        items:
+          $ref: '#/definitions/domain.Product'
+        type: array
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
   response.Response-domain_CareGuide:
     properties:
       code:
@@ -1339,6 +1467,39 @@ definitions:
         type: string
       data:
         $ref: '#/definitions/domain.User'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-handler_InviteCheckResponse:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/handler.InviteCheckResponse'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-handler_PresignedURLResponse:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/handler.PresignedURLResponse'
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.Response-map_string_string:
+    properties:
+      code:
+        type: string
+      data:
+        $ref: '#/definitions/map_string_string'
       message:
         type: string
       success:
@@ -1678,6 +1839,44 @@ paths:
       summary: Register customer account
       tags:
       - Auth
+  /api/v1/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Verify OTP code and set a new password for the account
+      parameters:
+      - description: Reset password payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: Invalid or missing CSRF token
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Reset password with OTP
+      tags:
+      - Auth
   /api/v1/auth/sessions:
     get:
       description: List all active sessions for the authenticated user across devices
@@ -1707,6 +1906,15 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all care guides
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -2004,6 +2212,15 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all product categories
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -2265,6 +2482,15 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all media files
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -2405,6 +2631,68 @@ paths:
       summary: Update media
       tags:
       - Media
+  /api/v1/media/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a direct upload by moving object from temp to final path
+        and creating a media record
+      parameters:
+      - description: Confirm upload request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ConfirmUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Response-domain_Media'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Confirm upload
+      tags:
+      - Media
+  /api/v1/media/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: Generate a presigned URL for direct client upload to object storage
+        temp folder
+      parameters:
+      - description: Presigned URL request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PresignedURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-handler_PresignedURLResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get presigned upload URL
+      tags:
+      - Media
   /api/v1/media/upload:
     post:
       consumes:
@@ -2437,7 +2725,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.Response-any'
-      summary: Upload media file
+      summary: Upload media file (legacy)
       tags:
       - Media
   /api/v1/payments/biteship/notification:
@@ -2536,6 +2824,14 @@ paths:
         in: query
         name: category
         type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -2680,6 +2976,39 @@ paths:
       summary: Update product
       tags:
       - Products
+  /api/v1/products/{id}/similar:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve products in the same category excluding the given product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-array_domain_Product'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get similar products
+      tags:
+      - Products
   /api/v1/products/slug/{slug}:
     get:
       consumes:
@@ -2714,6 +3043,15 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all product seasons
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -3015,6 +3353,15 @@ paths:
       consumes:
       - application/json
       description: Retrieve a list of all admin users
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -3072,7 +3419,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -3098,7 +3445,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -3130,7 +3477,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: User payload
         in: body
         name: user
@@ -3157,6 +3504,122 @@ paths:
           schema:
             $ref: '#/definitions/response.Response-any'
       summary: Update user
+      tags:
+      - Users
+  /api/v1/users/invite:
+    post:
+      consumes:
+      - application/json
+      description: Invite a user to become an admin. If the user already exists, they
+        are promoted immediately. Otherwise, an invite email is sent.
+      parameters:
+      - description: Invite request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.InviteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Invite admin
+      tags:
+      - Users
+  /api/v1/users/invite-check:
+    get:
+      consumes:
+      - application/json
+      description: Check if an invite token is valid and whether the user already
+        exists.
+      parameters:
+      - description: Invite token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-handler_InviteCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Check invite token
+      tags:
+      - Users
+  /api/v1/users/invite-redeem:
+    post:
+      consumes:
+      - application/json
+      description: Redeem an invite token to promote the associated user to admin.
+      parameters:
+      - description: Invite token payload
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Redeem invite token
+      tags:
+      - Users
+  /api/v1/users/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response-domain_User'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response-any'
+      summary: Get current user
       tags:
       - Users
   /api/v1/wilayah/search:
@@ -3200,6 +3663,78 @@ paths:
       summary: Search wilayah master data
       tags:
       - Wilayah
+  /otp/request:
+    post:
+      consumes:
+      - application/json
+      description: Request an OTP code to be sent to the specified email address
+      parameters:
+      - description: OTP Request Input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.OTPRequestInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request OTP
+      tags:
+      - otp
+  /otp/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify an OTP code for the specified email address
+      parameters:
+      - description: OTP Verify Input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.OTPVerifyInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify OTP
+      tags:
+      - otp
 securityDefinitions:
   BearerAuth:
     in: header

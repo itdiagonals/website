@@ -82,6 +82,7 @@ func (service *shippingBookingService) BookShipmentForOrder(ctx context.Context,
 		DestinationAreaID:       destinationAreaID,
 		OrderNote:               "Paid order from Diagonals",
 		Items:                   orderItems,
+		DeliveryType:            "now",
 	})
 	if err != nil {
 		return err

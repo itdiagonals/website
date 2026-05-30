@@ -131,46 +131,52 @@ export default function ProductsListModule() {
     setError(null)
   }
 
-  function openEditForm(product: Product) {
+  async function openEditForm(product: Product) {
     setEditingId(product.id)
-    const colors: BuilderColor[] = (product.available_colors || []).map((c, i) => ({
-      id: `color-${i}`,
-      name: c.color_name,
-      hex: c.hex_code,
-    }))
-    const sizes: BuilderSize[] = (product.available_sizes || []).map((s, i) => ({
-      id: `size-${i}`,
-      value: s.size,
-    }))
-    const variants: BuilderVariant[] = (product.variants || []).map((v) => ({
-      colorName: v.color_name,
-      size: v.size,
-      stock: v.stock,
-    }))
-    setForm({
-      name: product.name,
-      slug: product.slug,
-      categoryId: product.category_id ? String(product.category_id) : '',
-      seasonId: product.season_id ? String(product.season_id) : '',
-      careGuideId: product.care_guide_id ? String(product.care_guide_id) : '',
-      coverImageId: product.cover_image_id ? String(product.cover_image_id) : '',
-      gender: product.gender || 'unisex',
-      basePrice: String(product.base_price || 0),
-      weight: String(product.weight || 0),
-      length: String(product.length || 0),
-      width: String(product.width || 0),
-      height: String(product.height || 0),
-      description: product.description || '',
-      detailInfo: objectToDetailInfo(product.detail_info ?? null),
-      colors,
-      sizes,
-      galleryImageIds: (product.gallery || []).map((item) => String(item.image_id)),
-      variants,
-    })
-    setDraftId(undefined)
     setEditorOpen(true)
     setError(null)
     void api.media.getAll().then(setMedia).catch(() => undefined)
+
+    try {
+      const detail = await api.products.getById(product.id)
+      const colors: BuilderColor[] = (detail.available_colors || []).map((c, i) => ({
+        id: `color-${i}`,
+        name: c.color_name,
+        hex: c.hex_code,
+      }))
+      const sizes: BuilderSize[] = (detail.available_sizes || []).map((s, i) => ({
+        id: `size-${i}`,
+        value: s.size,
+      }))
+      const variants: BuilderVariant[] = (detail.variants || []).map((v) => ({
+        colorName: v.color_name,
+        size: v.size,
+        stock: v.stock,
+      }))
+      setForm({
+        name: detail.name,
+        slug: detail.slug,
+        categoryId: detail.category_id ? String(detail.category_id) : '',
+        seasonId: detail.season_id ? String(detail.season_id) : '',
+        careGuideId: detail.care_guide_id ? String(detail.care_guide_id) : '',
+        coverImageId: detail.cover_image_id ? String(detail.cover_image_id) : '',
+        gender: detail.gender || 'unisex',
+        basePrice: String(detail.base_price || 0),
+        weight: String(detail.weight || 0),
+        length: String(detail.length || 0),
+        width: String(detail.width || 0),
+        height: String(detail.height || 0),
+        description: detail.description || '',
+        detailInfo: objectToDetailInfo(detail.detail_info ?? null),
+        colors,
+        sizes,
+        galleryImageIds: (detail.gallery || []).map((item) => String(item.image_id)),
+        variants,
+      })
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to load product details.')
+      setEditorOpen(false)
+    }
   }
 
   function closeEditor() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   ProfileCard,
   UserProfile,
@@ -11,6 +11,13 @@ import {
   OrderItem,
 } from "@/components/checkout/order-tracking-card";
 import { AddressMapPicker } from "@/components/checkout/address-map-picker";
+import {
+  api,
+  type CustomerAddress,
+  type Product,
+  type TransactionHistoryDetailItem,
+  type TransactionHistoryListItem,
+} from "@/lib/api";
 
 type AddressFormState = {
   id: string;
@@ -102,46 +109,59 @@ const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
   isPrimary: form.isPrimary,
 });
 
+function mapBackendAddressToProfile(address: CustomerAddress): UserProfileAddress {
+  return {
+    id: String(address.id),
+    title: address.title,
+    recipientName: address.recipient_name,
+    phoneNumber: address.phone_number,
+    province: address.province,
+    city: address.city,
+    district: address.district,
+    village: address.village,
+    postalCode: address.postal_code,
+    fullAddress: address.full_address,
+    latitude: address.latitude ?? null,
+    longitude: address.longitude ?? null,
+    placeId: address.place_id,
+    mapProvider: address.map_provider,
+    locationSource: address.location_source,
+    destinationAreaId: address.destination_area_id,
+    destinationAreaLabel: address.destination_area_label,
+    isPrimary: address.is_primary,
+  };
+}
+
+function mapProfileAddressToPayload(address: UserProfileAddress) {
+  return {
+    title: address.title,
+    recipient_name: address.recipientName,
+    phone_number: address.phoneNumber,
+    province: address.province,
+    city: address.city,
+    district: address.district,
+    village: address.village,
+    postal_code: address.postalCode,
+    full_address: address.fullAddress,
+    latitude: address.latitude,
+    longitude: address.longitude,
+    place_id: address.placeId,
+    map_provider: address.mapProvider,
+    location_source: address.locationSource,
+    destination_area_id: address.destinationAreaId,
+    destination_area_label: address.destinationAreaLabel,
+    is_primary: address.isPrimary,
+  };
+}
+
 export function ProfileModule() {
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Rafael Benitez",
-    email: "RafaelJorge@my.id",
-    phone: "+62 812-3456-7890",
-    addresses: [
-      {
-        id: "addr-1",
-        title: "Home",
-        recipientName: "Rafael Benitez",
-        phoneNumber: "+62 812-3456-7890",
-        province: "DI Yogyakarta",
-        city: "Sleman",
-        district: "Depok",
-        village: "Caturtunggal",
-        postalCode: "55281",
-        fullAddress: "JL. Jeruk 2 A9",
-        latitude: -7.7746842,
-        longitude: 110.4085123,
-        destinationAreaLabel: "Caturtunggal, Depok, Sleman",
-        isPrimary: true,
-      },
-      {
-        id: "addr-2",
-        title: "Office",
-        recipientName: "Rafael Benitez",
-        phoneNumber: "+62 812-3456-7890",
-        province: "DI Yogyakarta",
-        city: "Kota Yogyakarta",
-        district: "Gondokusuman",
-        village: "Baciro",
-        postalCode: "55225",
-        fullAddress: "Jl. Mawar 10, Lt 2",
-        latitude: -7.782115,
-        longitude: 110.391546,
-        destinationAreaLabel: "Baciro, Gondokusuman, Kota Yogyakarta",
-        isPrimary: false,
-      },
-    ],
+    name: "Customer",
+    email: "",
+    phone: "",
+    addresses: [],
   });
+
   const [dialog, setDialog] = useState<
     "profile" | "address-list" | "address-form" | null
   >(null);
@@ -151,6 +171,130 @@ export function ProfileModule() {
   const [addressForm, setAddressForm] =
     useState<AddressFormState>(createEmptyAddressForm());
   const [addressError, setAddressError] = useState("");
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [ongoingOrders, setOngoingOrders] = useState<OrderItem[]>([]);
+  const [finishedOrders, setFinishedOrders] = useState<OrderItem[]>([]);
+
+  const fetchProfile = async () => {
+    try {
+      const user = await api.users.me();
+      setProfile((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const fetchAddresses = async () => {
+    try {
+      const addresses = await api.addresses.getAll();
+      setProfile((prev) => ({
+        ...prev,
+        addresses: addresses.map(mapBackendAddressToProfile),
+      }));
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  function toDisplayStatus(shippingStatus: string): OrderItem["status"] {
+    const s = shippingStatus.toLowerCase();
+    if (s === "delivered" || s === "finished" || s === "completed" || s === "diterima") {
+      return "Order Finished";
+    }
+    if (s === "shipped" || s === "in_transit" || s === "sent" || s === "dikirim") {
+      return "Order Sent";
+    }
+    if (s === "packaged" || s === "packed" || s === "diproses") {
+      return "Order Packaged";
+    }
+    return "Order Accepted";
+  }
+
+  function isFinishedStatus(shippingStatus: string) {
+    const s = shippingStatus.toLowerCase();
+    return s === "delivered" || s === "finished" || s === "completed" || s === "diterima";
+  }
+
+  async function fetchOrders() {
+    try {
+      const list = await api.transactions.getAll(1, 50);
+      const detailResults = await Promise.all(
+        list.map(async (tx: TransactionHistoryListItem) => {
+          try {
+            const detail = await api.transactions.getByOrderId(tx.order_id);
+            return { tx, detail };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const productCache = new Map<number, Product>();
+      const ongoing: OrderItem[] = [];
+      const finished: OrderItem[] = [];
+
+      for (const result of detailResults) {
+        if (!result) continue;
+        const { tx, detail } = result;
+
+        for (const item of detail.items) {
+          let product: Product | undefined = productCache.get(item.product_id);
+          if (!product) {
+            try {
+              product = await api.products.getById(item.product_id);
+              productCache.set(item.product_id, product);
+            } catch {
+              product = undefined;
+            }
+          }
+
+          const displayStatus = toDisplayStatus(tx.shipping_status);
+          const orderItem: OrderItem = {
+            id: `${tx.order_id}-${item.id}`,
+            orderId: tx.order_id,
+            name: product?.name || "Unknown Product",
+            gender: "",
+            color: item.selected_color_name,
+            size: item.selected_size,
+            price: Math.round(item.price),
+            image: product?.cover_image?.url || "",
+            status: displayStatus,
+            timestamp: `Order ${tx.order_id}\n${new Date(tx.created_at).toLocaleDateString("id-ID")}`,
+          };
+
+          if (isFinishedStatus(tx.shipping_status)) {
+            finished.push(orderItem);
+          } else {
+            ongoing.push(orderItem);
+          }
+        }
+      }
+
+      setOngoingOrders(ongoing);
+      setFinishedOrders(finished);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }
+
+  useEffect(() => {
+    void fetchProfile();
+    void fetchAddresses();
+    void fetchOrders();
+  }, []);
 
   const primaryAddress = useMemo(
     () => profile.addresses?.find((address) => address.isPrimary),
@@ -181,17 +325,22 @@ export function ProfileModule() {
     setDialog("address-form");
   };
 
-  const submitProfile = (event: FormEvent<HTMLFormElement>) => {
+  const submitProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setProfile((prev) => ({
-      ...prev,
-      name: profileNameInput.trim() || prev.name,
-      phone: profilePhoneInput.trim(),
-    }));
-    setDialog(null);
+    try {
+      await api.users.updateMe({
+        name: profileNameInput.trim(),
+        phone: profilePhoneInput.trim(),
+      });
+      await fetchProfile();
+      setDialog(null);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      alert("Gagal memperbarui profil. Silakan coba lagi.");
+    }
   };
 
-  const submitAddress = (event: FormEvent<HTMLFormElement>) => {
+  const submitAddress = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (addressForm.latitude.trim() === "" || addressForm.longitude.trim() === "") {
@@ -212,88 +361,41 @@ export function ProfileModule() {
 
     const nextAddress = toAddressRecord(addressForm);
 
-    setProfile((prev) => {
-      const previousAddresses = prev.addresses ?? [];
-      const filtered = previousAddresses.filter(
-        (address) => address.id !== nextAddress.id
-      );
-      const normalized = nextAddress.isPrimary
-        ? filtered.map((address) => ({ ...address, isPrimary: false }))
-        : filtered;
-      const nextAddresses = [...normalized, nextAddress];
-
-      if (!nextAddresses.some((address) => address.isPrimary) && nextAddresses[0]) {
-        nextAddresses[0] = { ...nextAddresses[0], isPrimary: true };
+    try {
+      const isExistingBackendAddress = addressMode === "edit" && nextAddress.id && !nextAddress.id.startsWith("addr-");
+      if (isExistingBackendAddress) {
+        const numericId = Number(nextAddress.id);
+        if (!isNaN(numericId)) {
+          await api.addresses.update(numericId, mapProfileAddressToPayload(nextAddress));
+        }
+      } else {
+        await api.addresses.create(mapProfileAddressToPayload(nextAddress));
       }
-
-      return {
-        ...prev,
-        addresses: nextAddresses,
-      };
-    });
-
-    setDialog("address-list");
+      await fetchAddresses();
+      setDialog("address-list");
+    } catch (error) {
+      console.error("Failed to save address:", error);
+      setAddressError("Gagal menyimpan alamat. Silakan coba lagi.");
+    }
   };
 
-  const setPrimaryAddress = (id: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      addresses: (prev.addresses ?? []).map((address) => ({
-        ...address,
-        isPrimary: address.id === id,
-      })),
-    }));
+  const setPrimaryAddress = async (id: string) => {
+    const address = profile.addresses?.find((a) => a.id === id);
+    if (!address) return;
+
+    const numericId = Number(id);
+    if (isNaN(numericId)) return;
+
+    try {
+      await api.addresses.update(numericId, {
+        ...mapProfileAddressToPayload({ ...address, isPrimary: true }),
+        is_primary: true,
+      });
+      await fetchAddresses();
+    } catch (error) {
+      console.error("Failed to set primary address:", error);
+    }
   };
-
-  const ongoingOrders: OrderItem[] = [
-    {
-      id: "o1",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/blacktee.png",
-      status: "Order Packaged",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-    {
-      id: "o2",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/bluetee.png",
-      status: "Order Packaged",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-  ];
-
-  const finishedOrders: OrderItem[] = [
-    {
-      id: "o3",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/greentee.png",
-      status: "Order Finished",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-    {
-      id: "o4",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/blacktee.png",
-      status: "Order Finished",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-  ];
 
   return (
     <>
@@ -312,20 +414,35 @@ export function ProfileModule() {
                 }
                 onAddAddress={openAddressList}
               />
+              {(loadingProfile || loadingAddresses) && (
+                <p className="text-b2 text-neutral-500">Loading...</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-[22px] items-start w-full">
               <h2 className="text-h6 font-bold text-black">Order Tracking</h2>
-              {ongoingOrders.map((order) => (
-                <OrderTrackingCard key={order.id} item={order} variant="ongoing" />
-              ))}
+              {loadingOrders ? (
+                <p className="text-b2 text-neutral-500">Loading orders...</p>
+              ) : ongoingOrders.length === 0 ? (
+                <p className="text-b2 text-neutral-500">No ongoing orders.</p>
+              ) : (
+                ongoingOrders.map((order) => (
+                  <OrderTrackingCard key={order.id} item={order} variant="ongoing" />
+                ))
+              )}
             </div>
 
             <div className="flex flex-col gap-[22px] items-start w-full">
               <h2 className="text-h6 font-bold text-black">Order Finished</h2>
-              {finishedOrders.map((order) => (
-                <OrderTrackingCard key={order.id} item={order} variant="finished" />
-              ))}
+              {loadingOrders ? (
+                <p className="text-b2 text-neutral-500">Loading orders...</p>
+              ) : finishedOrders.length === 0 ? (
+                <p className="text-b2 text-neutral-500">No finished orders.</p>
+              ) : (
+                finishedOrders.map((order) => (
+                  <OrderTrackingCard key={order.id} item={order} variant="finished" />
+                ))
+              )}
             </div>
           </div>
         </main>

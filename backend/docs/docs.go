@@ -440,6 +440,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/reset-password": {
+            "post": {
+                "description": "Verify OTP code and set a new password for the account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset password with OTP",
+                "parameters": [
+                    {
+                        "description": "Reset password payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid or missing CSRF token",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/sessions": {
             "get": {
                 "security": [
@@ -490,6 +548,20 @@ const docTemplate = `{
                     "CareGuides"
                 ],
                 "summary": "Get all care guides",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -944,6 +1016,20 @@ const docTemplate = `{
                     "Categories"
                 ],
                 "summary": "Get all categories",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1339,6 +1425,20 @@ const docTemplate = `{
                     "Media"
                 ],
                 "summary": "Get all media",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1399,6 +1499,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/media/confirm": {
+            "post": {
+                "description": "Confirm a direct upload by moving object from temp to final path and creating a media record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Confirm upload",
+                "parameters": [
+                    {
+                        "description": "Confirm upload request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.ConfirmUploadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/presigned-url": {
+            "post": {
+                "description": "Generate a presigned URL for direct client upload to object storage temp folder",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Get presigned upload URL",
+                "parameters": [
+                    {
+                        "description": "Presigned URL request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.PresignedURLRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-handler_PresignedURLResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/media/upload": {
             "post": {
                 "description": "Upload a media file via multipart/form-data, convert non-WebP images to WebP, upload to MinIO, and create a media record",
@@ -1411,7 +1603,7 @@ const docTemplate = `{
                 "tags": [
                     "Media"
                 ],
-                "summary": "Upload media file",
+                "summary": "Upload media file (legacy)",
                 "parameters": [
                     {
                         "type": "file",
@@ -1737,6 +1929,18 @@ const docTemplate = `{
                         "description": "Category slug",
                         "name": "category",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1995,6 +2199,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/products/{id}/similar": {
+            "get": {
+                "description": "Retrieve products in the same category excluding the given product",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get similar products",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-array_domain_Product"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/seasons": {
             "get": {
                 "description": "Retrieve a list of all product seasons",
@@ -2008,6 +2262,20 @@ const docTemplate = `{
                     "Seasons"
                 ],
                 "summary": "Get all seasons",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2464,6 +2732,20 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Get all users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2530,6 +2812,180 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/users/invite": {
+            "post": {
+                "description": "Invite a user to become an admin. If the user already exists, they are promoted immediately. Otherwise, an invite email is sent.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Invite admin",
+                "parameters": [
+                    {
+                        "description": "Invite request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.InviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/invite-check": {
+            "get": {
+                "description": "Check if an invite token is valid and whether the user already exists.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Check invite token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-handler_InviteCheckResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/invite-redeem": {
+            "post": {
+                "description": "Redeem an invite token to promote the associated user to admin.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Redeem invite token",
+                "parameters": [
+                    {
+                        "description": "Invite token payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-map_string_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "description": "Retrieve the currently authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-domain_User"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response-any"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/{id}": {
             "get": {
                 "description": "Retrieve a single user by their ID",
@@ -2545,7 +3001,7 @@ const docTemplate = `{
                 "summary": "Get user by ID",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
                         "name": "id",
                         "in": "path",
@@ -2593,7 +3049,7 @@ const docTemplate = `{
                 "summary": "Update user",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
                         "name": "id",
                         "in": "path",
@@ -2650,7 +3106,7 @@ const docTemplate = `{
                 "summary": "Delete user",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
                         "name": "id",
                         "in": "path",
@@ -2736,6 +3192,116 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/otp/request": {
+            "post": {
+                "description": "Request an OTP code to be sent to the specified email address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otp"
+                ],
+                "summary": "Request OTP",
+                "parameters": [
+                    {
+                        "description": "OTP Request Input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.OTPRequestInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/otp/verify": {
+            "post": {
+                "description": "Verify an OTP code for the specified email address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otp"
+                ],
+                "summary": "Verify OTP",
+                "parameters": [
+                    {
+                        "description": "OTP Verify Input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.OTPVerifyInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2798,7 +3364,7 @@ const docTemplate = `{
                     }
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
@@ -2898,6 +3464,9 @@ const docTemplate = `{
             "properties": {
                 "cover_image_id": {
                     "type": "integer"
+                },
+                "draft_id": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -3008,6 +3577,9 @@ const docTemplate = `{
                 "detail_info": {
                     "type": "object"
                 },
+                "draft_id": {
+                    "type": "string"
+                },
                 "gallery": {
                     "type": "array",
                     "items": {
@@ -3095,6 +3667,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "draft_id": {
                     "type": "string"
                 },
                 "is_active": {
@@ -3205,7 +3780,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "village": {
                     "type": "string"
@@ -3219,6 +3794,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
+                    "type": "string"
+                },
+                "draft_id": {
                     "type": "string"
                 },
                 "filename": {
@@ -3244,6 +3822,47 @@ const docTemplate = `{
                 },
                 "width": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.OTPPurpose": {
+            "type": "string",
+            "enum": [
+                "account_verification",
+                "password_reset"
+            ],
+            "x-enum-varnames": [
+                "OTPPurposeAccountVerification",
+                "OTPPurposePasswordReset"
+            ]
+        },
+        "domain.OTPRequestInput": {
+            "type": "object",
+            "required": [
+                "email",
+                "purpose"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "purpose": {
+                    "$ref": "#/definitions/domain.OTPPurpose"
+                }
+            }
+        },
+        "domain.OTPVerifyInput": {
+            "type": "object",
+            "required": [
+                "code",
+                "email"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
                 }
             }
         },
@@ -3698,7 +4317,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
+                },
+                "is_verified": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -3914,10 +4536,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "customer_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
+                },
+                "notes": {
+                    "type": "string"
                 },
                 "order_id": {
                     "type": "string"
@@ -3969,6 +4594,9 @@ const docTemplate = `{
                 "courier_service": {
                     "type": "string"
                 },
+                "notes": {
+                    "type": "string"
+                },
                 "selected_cart_item_ids": {
                     "type": "array",
                     "minItems": 1,
@@ -3983,6 +4611,36 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/handler.CheckoutData"
+                }
+            }
+        },
+        "handler.ConfirmUploadRequest": {
+            "type": "object",
+            "required": [
+                "alt",
+                "object_key"
+            ],
+            "properties": {
+                "alt": {
+                    "type": "string"
+                },
+                "draft_id": {
+                    "type": "string"
+                },
+                "filesize": {
+                    "type": "integer"
+                },
+                "height": {
+                    "type": "integer"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "object_key": {
+                    "type": "string"
+                },
+                "width": {
+                    "type": "integer"
                 }
             }
         },
@@ -4009,6 +4667,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.InviteCheckResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "user_exists": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handler.InviteRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
                     "type": "string"
                 }
             }
@@ -4064,6 +4744,35 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.PresignedURLRequest": {
+            "type": "object",
+            "required": [
+                "content_type",
+                "filename"
+            ],
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.PresignedURLResponse": {
+            "type": "object",
+            "properties": {
+                "object_key": {
+                    "type": "string"
+                },
+                "public_url": {
+                    "type": "string"
+                },
+                "signed_url": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.RegisterRequest": {
             "type": "object",
             "required": [
@@ -4092,6 +4801,26 @@ const docTemplate = `{
             "properties": {
                 "cart_item_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "handler.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "email",
+                "new_password"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
                 }
             }
         },
@@ -4222,7 +4951,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "customer_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -4232,6 +4961,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/handler.TransactionHistoryDetailItem"
                     }
+                },
+                "notes": {
+                    "type": "string"
                 },
                 "order_id": {
                     "type": "string"
@@ -4498,6 +5230,12 @@ const docTemplate = `{
                 }
             }
         },
+        "map_string_string": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "string"
+            }
+        },
         "response.ListMeta": {
             "type": "object",
             "properties": {
@@ -4668,6 +5406,26 @@ const docTemplate = `{
                 }
             }
         },
+        "response.Response-array_domain_Product": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Product"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "response.Response-domain_CareGuide": {
             "type": "object",
             "properties": {
@@ -4761,6 +5519,57 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/domain.User"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-handler_InviteCheckResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/handler.InviteCheckResponse"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-handler_PresignedURLResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/handler.PresignedURLResponse"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "response.Response-map_string_string": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "data": {
+                    "$ref": "#/definitions/map_string_string"
                 },
                 "message": {
                     "type": "string"

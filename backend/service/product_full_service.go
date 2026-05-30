@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -17,6 +20,7 @@ type ProductFullService struct {
 	categoryRepo  repository.CategoryRepository
 	seasonRepo    repository.SeasonRepository
 	careGuideRepo repository.CareGuideRepository
+	redis         *redis.Client
 }
 
 func NewProductFullService(
@@ -25,6 +29,7 @@ func NewProductFullService(
 	categoryRepo repository.CategoryRepository,
 	seasonRepo repository.SeasonRepository,
 	careGuideRepo repository.CareGuideRepository,
+	redisClient *redis.Client,
 ) *ProductFullService {
 	return &ProductFullService{
 		repo:          repo,
@@ -32,6 +37,7 @@ func NewProductFullService(
 		categoryRepo:  categoryRepo,
 		seasonRepo:    seasonRepo,
 		careGuideRepo: careGuideRepo,
+		redis:         redisClient,
 	}
 }
 
@@ -45,6 +51,32 @@ func (s *ProductFullService) GetProductByID(ctx context.Context, id int) (*domai
 
 func (s *ProductFullService) GetProductBySlug(ctx context.Context, slug string) (*domain.Product, error) {
 	return s.repo.FindBySlug(ctx, slug)
+}
+
+func (s *ProductFullService) GetSimilarProducts(ctx context.Context, productID, seasonID, categoryID, limit int) ([]domain.Product, error) {
+	cacheKey := fmt.Sprintf("products:similar:%d:%d:%d:%d", productID, seasonID, categoryID, limit)
+
+	if s.redis != nil {
+		cached, err := s.redis.Get(ctx, cacheKey).Result()
+		if err == nil && cached != "" {
+			var products []domain.Product
+			if err := json.Unmarshal([]byte(cached), &products); err == nil {
+				return products, nil
+			}
+		}
+	}
+
+	products, err := s.repo.FindSimilar(ctx, seasonID, categoryID, productID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.redis != nil {
+		data, _ := json.Marshal(products)
+		_ = s.redis.Set(ctx, cacheKey, data, 5*time.Minute).Err()
+	}
+
+	return products, nil
 }
 
 func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.Product, draftID string) error {

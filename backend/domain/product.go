@@ -20,7 +20,7 @@ type Product struct {
 	Description     string               `json:"description" gorm:"column:description"`
 	CoverImageID    int                  `json:"cover_image_id" gorm:"column:cover_image_id"`
 	CoverImage      *Media               `json:"cover_image,omitempty" gorm:"foreignKey:CoverImageID;references:ID"`
-	DetailInfo      any                  `json:"detail_info,omitempty" gorm:"-" swaggertype:"object"`
+	DetailInfo      any                  `json:"detail_info,omitempty" gorm:"column:detail_info;type:jsonb;serializer:json" swaggertype:"object"`
 	CareGuideID     int                  `json:"care_guide_id" gorm:"column:care_guide_id"`
 	CareGuide       *CareGuide           `json:"care_guide,omitempty" gorm:"foreignKey:CareGuideID;references:ID"`
 	AvailableColors []ProductColor       `json:"available_colors,omitempty" gorm:"foreignKey:ParentID;references:ID"`

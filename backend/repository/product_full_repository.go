@@ -13,6 +13,7 @@ type ProductFullRepository interface {
 	FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Product, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Product, error)
+	FindSimilar(ctx context.Context, seasonID, categoryID, excludeID, limit int) ([]domain.Product, error)
 	Create(ctx context.Context, product *domain.Product) error
 	Update(ctx context.Context, product *domain.Product) error
 	Delete(ctx context.Context, id int) error
@@ -78,6 +79,25 @@ func (r *productFullRepository) FindBySlug(ctx context.Context, slug string) (*d
 		return nil, err
 	}
 	return &product, nil
+}
+
+func (r *productFullRepository) FindSimilar(ctx context.Context, seasonID, categoryID, excludeID, limit int) ([]domain.Product, error) {
+	var products []domain.Product
+	orderClause := fmt.Sprintf(
+		"CASE WHEN season_id = %d THEN 1 WHEN category_id = %d THEN 2 ELSE 3 END, updated_at DESC",
+		seasonID, categoryID,
+	)
+	if err := r.db.WithContext(ctx).
+		Preload("Season").
+		Preload("Category").
+		Preload("CoverImage").
+		Where("id != ?", excludeID).
+		Order(orderClause).
+		Limit(limit).
+		Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
 }
 
 func (r *productFullRepository) Create(ctx context.Context, product *domain.Product) error {

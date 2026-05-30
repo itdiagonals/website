@@ -24,6 +24,13 @@ func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Cl
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
+	me := api.Group("/users")
+	me.Use(middleware.RequireAuth(authSessionRepository, userRepository))
+	{
+		me.GET("/me", h.GetMe)
+		me.PUT("/me", h.UpdateMe)
+	}
+
 	admin := api.Group("/users")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{

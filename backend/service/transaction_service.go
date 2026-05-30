@@ -85,6 +85,7 @@ type TransactionHistoryDetail struct {
 	CourierService    string                           `json:"courier_service"`
 	TrackingNumber    string                           `json:"tracking_number,omitempty"`
 	SnapToken         string                           `json:"snap_token"`
+	Notes             string                           `json:"notes"`
 	CreatedAt         time.Time                        `json:"created_at"`
 	UpdatedAt         time.Time                        `json:"updated_at"`
 	ShippingAddress   TransactionHistoryAddressSummary `json:"shipping_address"`
@@ -211,6 +212,7 @@ func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.
 		CourierService:    transaction.CourierService,
 		TrackingNumber:    transaction.TrackingNumber,
 		SnapToken:         transaction.SnapToken,
+		Notes:             transaction.Notes,
 		CreatedAt:         transaction.CreatedAt,
 		UpdatedAt:         transaction.UpdatedAt,
 		ShippingAddress: TransactionHistoryAddressSummary{

@@ -108,6 +108,51 @@ func (h *ProductFullHandler) GetProductBySlug(c *gin.Context) {
 	response.OK(c, product)
 }
 
+// GetSimilarProducts godoc
+// @Summary      Get similar products
+// @Description  Retrieve products in the same category excluding the given product
+// @Tags         Products
+// @Accept       json
+// @Produce      json
+// @Param        id     path      int  true  "Product ID"
+// @Param        limit  query     int  false "Limit"
+// @Success      200    {object}  response.Response[[]domain.Product]
+// @Failure      400    {object}  response.Response[any]
+// @Failure      500    {object}  response.Response[any]
+// @Router       /api/v1/products/{id}/similar [get]
+func (h *ProductFullHandler) GetSimilarProducts(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		logger.Warn("handler.products.invalid_id", "param", c.Param("id"))
+		response.Error(c, http.StatusBadRequest, apperror.CodeBadRequest, "invalid product id")
+		return
+	}
+
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "4"))
+	if limit < 1 {
+		limit = 4
+	}
+	if limit > 20 {
+		limit = 20
+	}
+
+	product, err := h.service.GetProductByID(c.Request.Context(), id)
+	if err != nil {
+		logger.Error("handler.products.get_similar_not_found", "id", id, "error", err.Error())
+		response.FromError(c, err)
+		return
+	}
+
+	logger.Info("handler.products.get_similar", "id", id, "season_id", product.SeasonID, "category_id", product.CategoryID, "limit", limit)
+	products, err := h.service.GetSimilarProducts(c.Request.Context(), id, product.SeasonID, product.CategoryID, limit)
+	if err != nil {
+		logger.Error("handler.products.get_similar_failed", "id", id, "error", err.Error())
+		response.FromError(c, err)
+		return
+	}
+	response.OK(c, products)
+}
+
 // CreateProduct godoc
 // @Summary      Create product
 // @Description  Create a new product with variants, colors, sizes, and gallery

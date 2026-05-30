@@ -56,6 +56,7 @@ type CreateShippingOrderRequest struct {
 	DestinationAreaID       string              `json:"destination_area_id,omitempty"`
 	OrderNote               string              `json:"order_note,omitempty"`
 	Items                   []ShippingOrderItem `json:"items"`
+	DeliveryType            string              `json:"delivery_type,omitempty"`
 }
 
 type CreateShippingOrderResponse struct {

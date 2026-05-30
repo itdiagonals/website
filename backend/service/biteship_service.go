@@ -237,6 +237,11 @@ func (service *biteshipService) CreateOrder(ctx context.Context, req CreateShipp
 		return nil, ErrInvalidShippingRequest
 	}
 
+	deliveryType := strings.TrimSpace(req.DeliveryType)
+	if deliveryType == "" {
+		deliveryType = "now"
+	}
+
 	requestBody := map[string]any{
 		"reference_id":              referenceID,
 		"origin_contact_name":       service.config.OriginName,
@@ -250,7 +255,7 @@ func (service *biteshipService) CreateOrder(ctx context.Context, req CreateShipp
 		"destination_postal_code":   destinationPostalCode,
 		"courier_company":           courierCompany,
 		"courier_type":              courierType,
-		"delivery_type":             "now",
+		"delivery_type":             deliveryType,
 		"items":                     items,
 	}
 

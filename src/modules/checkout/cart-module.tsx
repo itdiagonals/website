@@ -1,25 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CartItemCard, CartItem } from "@/components/checkout/cart-item-card";
 import { OrderSummary } from "@/components/checkout/order-summary";
 import { cn } from "@/lib/utils";
+import { api, clearApiCache, type CartItem as ApiCartItem } from "@/lib/api";
 
-interface CartModuleProps {
-  initialItems: CartItem[];
+function mapApiCartItems(backendItems: ApiCartItem[]): CartItem[] {
+  return backendItems.map((item) => ({
+    id: String(item.id),
+    productId: item.product_id,
+    name: item.product_name,
+    gender: item.gender,
+    color: item.selected_color_name,
+    size: item.selected_size,
+    price: item.base_price,
+    quantity: item.quantity,
+    image: item.image_url,
+    checked: true,
+  }));
 }
 
-export function CartModule({ initialItems }: CartModuleProps) {
-  const [items, setItems] = useState<CartItem[]>(initialItems);
+export function CartModule() {
+  const router = useRouter();
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
+  const refreshCart = async () => {
+    try {
+      const cart = await api.cart.get();
+      setItems(mapApiCartItems(cart.items));
+    } catch (error) {
+      console.error("Failed to fetch cart:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshCart();
+  }, []);
+
+  const handleUpdateQuantity = async (id: string, quantity: number) => {
+    const prevItem = items.find((i) => i.id === id);
+    const prevQuantity = prevItem?.quantity ?? quantity;
+
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, quantity } : item))
     );
+
+    try {
+      await api.cart.updateQuantity({
+        cart_item_id: Number(id),
+        quantity,
+      });
+      clearApiCache();
+      await refreshCart();
+    } catch (error) {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, quantity: prevQuantity } : item
+        )
+      );
+      console.error("Failed to update quantity:", error);
+      alert("Gagal memperbarui jumlah. Silakan coba lagi.");
+    }
   };
 
-  const handleRemove = (id: string) => {
+  const handleRemove = async (id: string) => {
+    const prevItems = [...items];
+
     setItems((prev) => prev.filter((item) => item.id !== id));
+
+    try {
+      await api.cart.remove({ cart_item_id: Number(id) });
+      clearApiCache();
+      await refreshCart();
+    } catch (error) {
+      setItems(prevItems);
+      console.error("Failed to remove item:", error);
+      alert("Gagal menghapus item. Silakan coba lagi.");
+    }
   };
 
   const handleToggleCheck = (id: string) => {
@@ -31,7 +93,12 @@ export function CartModule({ initialItems }: CartModuleProps) {
   };
 
   const handleCheckout = () => {
-    console.log("Proceeding to checkout with items:", items.filter(i => i.checked));
+    const checkedItems = items.filter((i) => i.checked);
+    if (checkedItems.length === 0) {
+      alert("Pilih minimal 1 item untuk checkout.");
+      return;
+    }
+    router.push("/checkout");
   };
 
   const checkedItems = items.filter((item) => item.checked);
@@ -42,6 +109,16 @@ export function CartModule({ initialItems }: CartModuleProps) {
   );
 
   const promoDiscount = totalItems > 0 ? 10000 : 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
+        <main className="flex-grow flex items-center justify-center">
+          <p className="text-b2 text-neutral-500">Loading cart...</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f3f3f3]">

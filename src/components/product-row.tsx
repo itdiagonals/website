@@ -7,6 +7,7 @@ interface Product {
   name: string;
   price: string;
   image: string;
+  slug?: string;
 }
 
 interface ProductRowProps {
@@ -18,7 +19,7 @@ export default function ProductRow({ products }: ProductRowProps) {
     <div className="grid grid-cols-4 gap-6 px-6">
       {products.map((product) => (
         <Link
-          href={`/product/${product.id}`}
+          href={`/products/${product.slug ?? product.id}`}
           key={product.id}
           className="flex flex-col gap-8 cursor-pointer"
         >
