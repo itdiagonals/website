@@ -1,6 +1,6 @@
 import Image from "next/image";
 import ProductCard from "@/src/components/product-card";
-import Hero from "@/src/modules/new-arrival-hero";
+import Hero from "@/src/modules/hero";
 import { PRODUCT_CATEGORIES, productData } from "../dummydata";
 
 export default function NewArrival() {

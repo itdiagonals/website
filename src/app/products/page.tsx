@@ -1,15 +1,16 @@
-import Image from "next/image";
-import ProductRow from "../../components/product-row";
-import ThemeDesc from "../../components/theme-desc";
-import ThemeHero from "@/src/modules/theme-hero";
-import Navbar from "../../components/ui/navbar";
+import Image from 'next/image';
+import Link from 'next/link';
+import ProductRow from '../../components/product-row';
+import ThemeHero from '@/src/modules/theme-hero';
+
 const PRODUCT_CATEGORIES = [
-  "Product Type",
-  "Product Type",
-  "Product Type",
-  "Product Type",
-  "Product Type",
+  'Product Type',
+  'Product Type',
+  'Product Type',
+  'Product Type',
+  'Product Type',
 ];
+
 const productData = [
   { id: 1, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
   { id: 2, name: "Product Name", price: "Rp 123,500", image: "/bluetee.png" },
@@ -25,20 +26,36 @@ const productData = [
   { id: 12, name: "Product Name", price: "Rp 123,500", image: "/blacktee.png" },
 ];
 
-const firstHalf = productData.slice(0, 4);
-const secondHalf = productData.slice(4);
-export default function Products() {
-  return (
-    <>
-      <Navbar variant="light" />
-      <section className="bg-neutral-100 py-17 flex flex-col items-center gap-17">
+interface PageProps {
+  searchParams: Promise<{ search?: string }>;
+}
 
-      <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer1.png", href: "/cross-player" }} />
-      <ThemeHero theme={{ title: "Cross Player", image: "/CrossPlayer.png" }} />
-      <div className="container flex items-center justify-center gap-10">
+export default async function Products({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const searchQuery = resolvedSearchParams.search || '';
+
+  // Filter products by search query
+  const filteredProducts = searchQuery
+    ? productData.filter((product) =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : productData;
+
+  const firstHalf = filteredProducts.slice(0, 4);
+  const secondHalf = filteredProducts.slice(4);
+
+  return (
+    <section className="bg-neutral-100 py-28 flex flex-col items-center gap-12">
+      {/* Decorative Theme Banner at the Top */}
+      <div className="w-full max-w-[1440px] px-6 md:px-12 lg:px-20 mb-4">
+        <ThemeHero theme={{ title: 'Cross Player', image: '/CrossPlayer1.png', href: 'cross-player' }} />
+      </div>
+
+      {/* Category Selection Filter Pills */}
+      <div className="container flex items-center justify-center flex-wrap gap-y-4 gap-x-10">
         {PRODUCT_CATEGORIES.map((category, index) => (
           <div key={index} className="flex items-center gap-10">
-            <button className="flex items-center gap-3 cursor-pointer hover:opacity-70 transition duration-600">
+            <button className="flex items-center gap-3 cursor-pointer hover:opacity-70 transition duration-300">
               <span className="text-primary-400 text-lg font-medium">
                 {category}
               </span>
@@ -51,29 +68,51 @@ export default function Products() {
               />
             </button>
             {index < PRODUCT_CATEGORIES.length - 1 && (
-              <div className="w-px h-6 bg-primary-400 shrink-0"></div>
+              <div className="w-px h-6 bg-primary-400/40 shrink-0 hidden md:block"></div>
             )}
           </div>
         ))}
       </div>
-      <div className="flex flex-col gap-20 w-full">
 
-        {/* INI ROW 1 */}
-        <ProductRow products={firstHalf} />
+      {/* Dynamic Search Results Status Bar */}
+      {searchQuery && (
+        <div className="w-full max-w-[1440px] px-6 md:px-12 lg:px-20 text-center flex flex-col items-center gap-3 bg-neutral-200/50 py-6 rounded-lg border border-neutral-300/30">
+          <p className="text-lg md:text-xl text-primary-500 font-medium">
+            Search results for: <span className="font-bold text-black">"{searchQuery}"</span>
+            <span className="text-neutral-500 text-sm ml-2">({filteredProducts.length} items found)</span>
+          </p>
+          <Link
+            href="/products"
+            className="text-sm font-bold text-primary-400 hover:text-black underline transition-colors duration-200 cursor-pointer"
+          >
+            Clear Search and View All Products
+          </Link>
+        </div>
+      )}
 
-        {/*INI THEME ANTARA PRODUK*/}
-        {/* <ThemeDesc
-          type="current-season"
-          title="CROSS PLAYER MULTINANCE"
-          desc="Lorem ipsum dolor sit amet consectetur. Amet id et massa sem feugiat nec. Elementum pellentesque id lacus massa quis. Metus proin dignissim tincidunt gravida. Magnis quis faucibus viverra tempor cursus et eget velit non. Id volutpat diam convallis suspendisse in adipiscing at. Posuere nam felis mauris amet."
-          href="/current-season"
-        /> */}
+      {/* Products Row Grid Layout */}
+      <div className="flex flex-col gap-16 w-full">
+        {filteredProducts.length > 0 ? (
+          <>
+            {/* FIRST ROW GRID */}
+            <ProductRow products={firstHalf} />
 
-        {/* ROW 2 DAN 3 ya */}
-        <ProductRow products={secondHalf} />
-
+            {/* SECOND GRID (ONLY RENDER IF WE HAVE REMAINING ITEMS) */}
+            {secondHalf.length > 0 && <ProductRow products={secondHalf} />}
+          </>
+        ) : (
+          <div className="w-full text-center py-20 flex flex-col items-center gap-6">
+            <span className="text-5xl">🔍</span>
+            <p className="text-2xl font-bold text-neutral-600">No products found matching "{searchQuery}"</p>
+            <p className="text-neutral-400 -mt-2">Try searching with other keywords, or browse all products.</p>
+            <Link href="/products">
+              <button className="px-8 py-3 bg-primary-500 hover:bg-neutral-800 text-white font-bold rounded-none hover:scale-105 transition-all duration-300 cursor-pointer">
+                Browse All Products
+              </button>
+            </Link>
+          </div>
+        )}
       </div>
-    </section >
-    </>
+    </section>
   );
 }
