@@ -129,8 +129,7 @@ export default async function Products({ searchParams }: PageProps) {
           </>
         ) : (
           <div className="w-full text-center py-20 flex flex-col items-center gap-6">
-            <span className="text-5xl">🔍</span>
-            <p className="text-2xl font-bold text-neutral-600">No products found matching &ldquo;{searchQuery}&rdquo;</p>
+            <p className="text-2xl font-bold text-neutral-600">No products found matching</p>
             <p className="text-neutral-400 -mt-2">Try searching with other keywords, or browse all products.</p>
             <Link href="/products">
               <button className="px-8 py-3 bg-primary-500 hover:bg-neutral-800 text-white font-bold rounded-none hover:scale-105 transition-all duration-300 cursor-pointer">
