@@ -2,7 +2,7 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /src
 
-RUN apk add --no-cache ca-certificates tzdata libwebp-dev
+RUN apk add --no-cache ca-certificates tzdata libwebp-dev build-base
 
 COPY go.mod go.sum ./
 RUN go mod download
