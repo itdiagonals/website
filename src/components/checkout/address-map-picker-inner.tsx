@@ -282,7 +282,7 @@ export default function AddressMapPickerInner({
   return (
     <div className="flex flex-col gap-4">
       <div ref={searchContainerRef} className="relative flex flex-col gap-2">
-        <label className="text-b2 text-black">Search Location</label>
+        <label className="text-b2 text-black">Cari Lokasi</label>
         <input
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}

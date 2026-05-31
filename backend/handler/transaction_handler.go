@@ -53,9 +53,18 @@ type TransactionTrackingData struct {
 	TrackingNumber  string                          `json:"tracking_number,omitempty"`
 	ShippingStatus  string                          `json:"shipping_status"`
 	RawStatus       string                          `json:"raw_status,omitempty"`
+	TrackingLink    string                          `json:"tracking_link,omitempty"`
 	CourierName     string                          `json:"courier_name"`
 	CourierService  string                          `json:"courier_service"`
 	Events          []service.ShippingTrackingEvent `json:"events,omitempty"`
+}
+
+type TransactionHistorySenderInfo struct {
+	Name       string `json:"name"`
+	Phone      string `json:"phone"`
+	Email      string `json:"email"`
+	Address    string `json:"address"`
+	PostalCode string `json:"postal_code"`
 }
 
 type TransactionHistoryDetail struct {
@@ -75,6 +84,7 @@ type TransactionHistoryDetail struct {
 	CreatedAt         time.Time                        `json:"created_at"`
 	UpdatedAt         time.Time                        `json:"updated_at"`
 	ShippingAddress   TransactionHistoryAddressSummary `json:"shipping_address"`
+	Sender            TransactionHistorySenderInfo     `json:"sender,omitempty"`
 	Items             []TransactionHistoryDetailItem   `json:"items"`
 }
 
@@ -332,6 +342,7 @@ func (handler *TransactionHandler) GetMyTransactionTracking(context *gin.Context
 		TrackingNumber:  result.TrackingNumber,
 		ShippingStatus:  result.ShippingStatus,
 		RawStatus:       result.RawStatus,
+		TrackingLink:    result.TrackingLink,
 		CourierName:     result.CourierName,
 		CourierService:  result.CourierService,
 		Events:          result.Events,

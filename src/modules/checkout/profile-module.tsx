@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ProfileCard,
   UserProfile,
@@ -15,11 +15,11 @@ import {
   api,
   type CustomerAddress,
   type Product,
-  type TransactionHistoryDetailItem,
   type TransactionHistoryListItem,
 } from "@/lib/api";
+import { getOrderCardPresentation } from "./order-status";
 
-type AddressFormState = {
+export type AddressFormState = {
   id: string;
   title: string;
   recipientName: string;
@@ -40,7 +40,7 @@ type AddressFormState = {
   isPrimary: boolean;
 };
 
-const createEmptyAddressForm = (): AddressFormState => ({
+export const createEmptyAddressForm = (): AddressFormState => ({
   id: "",
   title: "",
   recipientName: "",
@@ -88,7 +88,7 @@ const toAddressForm = (address: UserProfileAddress): AddressFormState => ({
   isPrimary: address.isPrimary,
 });
 
-const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
+export const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
   id: form.id || crypto.randomUUID(),
   title: form.title,
   recipientName: form.recipientName,
@@ -109,7 +109,7 @@ const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
   isPrimary: form.isPrimary,
 });
 
-function mapBackendAddressToProfile(address: CustomerAddress): UserProfileAddress {
+export function mapBackendAddressToProfile(address: CustomerAddress): UserProfileAddress {
   return {
     id: String(address.id),
     title: address.title,
@@ -132,7 +132,7 @@ function mapBackendAddressToProfile(address: CustomerAddress): UserProfileAddres
   };
 }
 
-function mapProfileAddressToPayload(address: UserProfileAddress) {
+export function mapProfileAddressToPayload(address: UserProfileAddress) {
   return {
     title: address.title,
     recipient_name: address.recipientName,
@@ -207,26 +207,11 @@ export function ProfileModule() {
     }
   };
 
-  function toDisplayStatus(shippingStatus: string): OrderItem["status"] {
-    const s = shippingStatus.toLowerCase();
-    if (s === "delivered" || s === "finished" || s === "completed" || s === "diterima") {
-      return "Order Finished";
-    }
-    if (s === "shipped" || s === "in_transit" || s === "sent" || s === "dikirim") {
-      return "Order Sent";
-    }
-    if (s === "packaged" || s === "packed" || s === "diproses") {
-      return "Order Packaged";
-    }
-    return "Order Accepted";
+  function isClosedOrder(paymentStatus: string, shippingStatus: string) {
+    return getOrderCardPresentation(paymentStatus, shippingStatus).bucket === "closed";
   }
 
-  function isFinishedStatus(shippingStatus: string) {
-    const s = shippingStatus.toLowerCase();
-    return s === "delivered" || s === "finished" || s === "completed" || s === "diterima";
-  }
-
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
     try {
       const list = await api.transactions.getAll(1, 50);
       const detailResults = await Promise.all(
@@ -259,7 +244,9 @@ export function ProfileModule() {
             }
           }
 
-          const displayStatus = toDisplayStatus(tx.shipping_status);
+          const paymentStatus = detail.status || tx.status;
+          const shippingStatus = detail.shipping_status || tx.shipping_status;
+          const presentation = getOrderCardPresentation(paymentStatus, shippingStatus);
           const orderItem: OrderItem = {
             id: `${tx.order_id}-${item.id}`,
             orderId: tx.order_id,
@@ -269,11 +256,12 @@ export function ProfileModule() {
             size: item.selected_size,
             price: Math.round(item.price),
             image: product?.cover_image?.url || "",
-            status: displayStatus,
-            timestamp: `Order ${tx.order_id}\n${new Date(tx.created_at).toLocaleDateString("id-ID")}`,
+            status: presentation.label,
+            tone: presentation.tone,
+            timestamp: `${presentation.detail}\n${new Date(detail.updated_at || tx.created_at).toLocaleDateString("id-ID")}`,
           };
 
-          if (isFinishedStatus(tx.shipping_status)) {
+          if (isClosedOrder(paymentStatus, shippingStatus)) {
             finished.push(orderItem);
           } else {
             ongoing.push(orderItem);
@@ -288,13 +276,13 @@ export function ProfileModule() {
     } finally {
       setLoadingOrders(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void fetchProfile();
     void fetchAddresses();
     void fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   const primaryAddress = useMemo(
     () => profile.addresses?.find((address) => address.isPrimary),
@@ -355,7 +343,7 @@ export function ProfileModule() {
       addressForm.district.trim() === "" ||
       addressForm.village.trim() === ""
     ) {
-      setAddressError("Selected location is incomplete. Please choose a more specific point or search result.");
+      setAddressError("Please fill in all required address fields.");
       return;
     }
 
@@ -433,7 +421,7 @@ export function ProfileModule() {
             </div>
 
             <div className="flex flex-col gap-[22px] items-start w-full">
-              <h2 className="text-h6 font-bold text-black">Order Finished</h2>
+              <h2 className="text-h6 font-bold text-black">Order History</h2>
               {loadingOrders ? (
                 <p className="text-b2 text-neutral-500">Loading orders...</p>
               ) : finishedOrders.length === 0 ? (
@@ -657,7 +645,18 @@ export function ProfileModule() {
                       setAddressError("");
                       setAddressForm((prev) => ({
                         ...prev,
-                        ...next,
+                        latitude: next.latitude ?? prev.latitude,
+                        longitude: next.longitude ?? prev.longitude,
+                        placeId: next.placeId ?? prev.placeId,
+                        mapProvider: next.mapProvider ?? prev.mapProvider,
+                        destinationAreaId: next.destinationAreaId ?? prev.destinationAreaId,
+                        destinationAreaLabel: next.destinationAreaLabel ?? prev.destinationAreaLabel,
+                        province: prev.province || next.province || "",
+                        city: prev.city || next.city || "",
+                        district: prev.district || next.district || "",
+                        village: prev.village || next.village || "",
+                        postalCode: prev.postalCode || next.postalCode || "",
+                        fullAddress: prev.fullAddress || next.fullAddress || "",
                         locationSource: next.latitude && next.longitude ? "map_picker" : prev.locationSource,
                       }));
                     }}
@@ -680,48 +679,78 @@ export function ProfileModule() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      Postal Code
+                      Kode Pos *
                       <input
                         value={addressForm.postalCode}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            postalCode: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      Province
+                      Provinsi *
                       <input
                         value={addressForm.province}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            province: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      City
+                      Kota *
                       <input
                         value={addressForm.city}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            city: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      District
+                      Kecamatan *
                       <input
                         value={addressForm.district}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            district: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                   </div>
 
                   <label className="flex flex-col gap-2 text-b2 text-black">
-                    Village
+                    Kelurahan *
                     <input
                       value={addressForm.village}
-                      readOnly
-                      className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                      onChange={(event) =>
+                        setAddressForm((prev) => ({
+                          ...prev,
+                          village: event.target.value,
+                        }))
+                      }
+                      className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                      required
                     />
                   </label>
 

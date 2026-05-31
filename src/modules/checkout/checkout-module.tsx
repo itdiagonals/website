@@ -1,20 +1,89 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { api, CartItem } from "@/lib/api";
+import { api, ApiError, CartItem, CustomerAddress, TransactionHistoryDetail } from "@/lib/api";
 import { AddressSelector } from "@/components/checkout/address-selector";
 import { ShippingRateCard } from "@/components/checkout/shipping-rate-card";
-import { PaymentSummary } from "@/components/checkout/payment-summary";
+import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
+import { CheckoutOrderSummary } from "@/components/checkout/checkout-order-summary";
+import { AddAddressDialog } from "@/components/checkout/add-address-dialog";
 import { cn } from "@/lib/utils";
 
-type Step = "address" | "shipping" | "payment";
+type Step = "address" | "shipping" | "review" | "payment";
+
+type SnapPayOptions = {
+  onSuccess: (result: unknown) => void;
+  onPending: (result: unknown) => void;
+  onError: (result: unknown) => void;
+  onClose: () => void;
+};
+
+type SnapRuntime = {
+  pay: (token: string, options: SnapPayOptions) => void;
+};
+
+const PAYMENT_WINDOW_MINUTES = 60;
+
+function getMidtransSnap(): SnapRuntime | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const candidate = (window as typeof window & { snap?: SnapRuntime }).snap;
+  return candidate && typeof candidate.pay === "function" ? candidate : null;
+}
+
+function formatRemainingTime(milliseconds: number) {
+  if (milliseconds <= 0) {
+    return "00:00";
+  }
+
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getPaymentDeadline(createdAt?: string) {
+  if (!createdAt) {
+    return null;
+  }
+
+  const createdAtTime = new Date(createdAt).getTime();
+  if (Number.isNaN(createdAtTime)) {
+    return null;
+  }
+
+  return createdAtTime + PAYMENT_WINDOW_MINUTES * 60 * 1000;
+}
+
+function formatPaymentDeadline(createdAt?: string) {
+  const deadline = getPaymentDeadline(createdAt);
+  if (!deadline) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(deadline));
+}
 
 export function CheckoutModule() {
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("address");
-  const [addresses, setAddresses] = useState<import("@/lib/api").CustomerAddress[]>([]);
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<number | undefined>();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [shippingRates, setShippingRates] = useState<import("@/lib/api").ShippingRate[]>([]);
@@ -22,13 +91,19 @@ export function CheckoutModule() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transaction, setTransaction] = useState<TransactionHistoryDetail | null>(null);
+  const [showAddAddress, setShowAddAddress] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+  const [timeRemainingMs, setTimeRemainingMs] = useState<number | null>(null);
+  const [autoOpenRequested, setAutoOpenRequested] = useState(false);
+  const paymentAttemptedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         const [addrRes, cartRes] = await Promise.all([
-          api.addresses.getAll().catch(() => [] as import("@/lib/api").CustomerAddress[]),
+          api.addresses.getAll().catch(() => [] as CustomerAddress[]),
           api.cart.get().catch(() => ({ items: [] as CartItem[] })),
         ]);
         setAddresses(addrRes);
@@ -39,6 +114,13 @@ export function CheckoutModule() {
           setSelectedAddressId(primary.id);
         } else if (addrRes.length > 0) {
           setSelectedAddressId(addrRes[0].id);
+        }
+
+        if (typeof window !== 'undefined') {
+          const savedNotes = window.sessionStorage.getItem('checkout_notes');
+          if (savedNotes) {
+            setNotes(savedNotes);
+          }
         }
       } catch {
         setError("Gagal memuat data. Silakan refresh halaman.");
@@ -52,10 +134,32 @@ export function CheckoutModule() {
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
   const checkedCartItems = cartItems.filter((i) => i.quantity > 0);
-  const itemSubtotal = checkedCartItems.reduce(
-    (acc, item) => acc + item.base_price * item.quantity,
-    0
-  );
+  const paymentDeadlineLabel = formatPaymentDeadline(transaction?.created_at);
+  const isPaymentExpired = timeRemainingMs !== null && timeRemainingMs <= 0;
+
+  useEffect(() => {
+    if (!transaction || step !== "payment") {
+      setTimeRemainingMs(null);
+      return;
+    }
+
+    const deadline = getPaymentDeadline(transaction.created_at);
+    if (!deadline) {
+      setTimeRemainingMs(null);
+      return;
+    }
+
+    const updateRemainingTime = () => {
+      setTimeRemainingMs(Math.max(deadline - Date.now(), 0));
+    };
+
+    updateRemainingTime();
+    const intervalId = window.setInterval(updateRemainingTime, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [step, transaction]);
 
   const handleFetchRates = useCallback(async () => {
     if (!selectedAddressId || checkedCartItems.length === 0) return;
@@ -70,21 +174,26 @@ export function CheckoutModule() {
       setShippingRates(res.rates);
       setSelectedRate(null);
       setStep("shipping");
-    } catch (err) {
+    } catch {
       setError("Gagal mengambil ongkir. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
   }, [selectedAddressId, checkedCartItems]);
 
-  const handleCheckout = useCallback(async () => {
+  const handleContinueToReview = useCallback(() => {
+    if (!selectedRate) return;
+    setStep("review");
+  }, [selectedRate]);
+
+  const handlePlaceOrder = useCallback(async () => {
     if (!selectedAddressId || !selectedRate || checkedCartItems.length === 0) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const transaction = await api.checkout.create({
+      const txn = await api.checkout.create({
         address_id: selectedAddressId,
         courier_name: selectedRate.courier_code,
         courier_service: selectedRate.service_code,
@@ -92,48 +201,101 @@ export function CheckoutModule() {
         notes: notes.trim() || undefined,
       });
 
-      if (transaction.snap_token) {
-        if (typeof window !== "undefined" && (window as unknown as Record<string, unknown>).snap) {
-          const snap = (window as unknown as Record<string, unknown>).snap as {
-            pay: (
-              token: string,
-              options: {
-                onSuccess: (result: unknown) => void;
-                onPending: (result: unknown) => void;
-                onError: (result: unknown) => void;
-                onClose: () => void;
-              }
-            ) => void;
-          };
-
-          snap.pay(transaction.snap_token, {
-            onSuccess: () => {
-              router.push(`/orders/${transaction.order_id}?status=success`);
-            },
-            onPending: () => {
-              router.push(`/orders/${transaction.order_id}?status=pending`);
-            },
-            onError: () => {
-              setError("Pembayaran gagal. Silakan coba lagi.");
-              setLoading(false);
-            },
-            onClose: () => {
-              setLoading(false);
-            },
-          });
-        } else {
-          router.push(`/checkout/result?order_id=${transaction.order_id}&status=pending`);
-        }
-      } else {
-        router.push(`/orders/${transaction.order_id}`);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem('checkout_notes');
       }
+
+      setTransaction(txn);
+      setStep("payment");
+      setPaymentMessage("Order berhasil dibuat. Membuka halaman pembayaran Midtrans...");
+      setAutoOpenRequested(true);
     } catch (err) {
-      setError("Checkout gagal. Silakan coba lagi.");
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Gagal membuat pesanan. Silakan coba lagi.");
+      }
+    } finally {
       setLoading(false);
     }
-  }, [selectedAddressId, selectedRate, checkedCartItems, notes, router]);
+  }, [selectedAddressId, selectedRate, checkedCartItems, notes]);
 
-  if (loading && step === "address" && addresses.length === 0) {
+  const openPayment = useCallback((txn: TransactionHistoryDetail, mode: "auto" | "manual") => {
+    if (!txn.snap_token) {
+      router.push(`/orders/${txn.order_id}`);
+      return;
+    }
+
+    if (getPaymentDeadline(txn.created_at) !== null && getPaymentDeadline(txn.created_at)! <= Date.now()) {
+      setPaymentMessage("Waktu pembayaran 1 jam telah habis. Silakan buat pesanan baru dari keranjang.");
+      return;
+    }
+
+    const snap = getMidtransSnap();
+    if (!snap) {
+      setPaymentMessage(
+        mode === "auto"
+          ? "Popup pembayaran belum siap. Klik 'Buka Pembayaran' untuk melanjutkan secara manual."
+          : "Midtrans belum siap dimuat. Coba lagi dalam beberapa detik."
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setPaymentMessage(
+      mode === "auto"
+        ? "Popup pembayaran sedang dibuka. Selesaikan pembayaran Anda dalam 1 jam."
+        : "Popup pembayaran dibuka kembali. Selesaikan pembayaran Anda sebelum waktu habis."
+    );
+
+    snap.pay(txn.snap_token, {
+      onSuccess: () => {
+        router.push(`/orders/${txn.order_id}?status=success`);
+      },
+      onPending: () => {
+        setPaymentMessage("Pembayaran belum selesai. Order tetap tersimpan dan stok ditahan sampai 1 jam.");
+        setLoading(false);
+      },
+      onError: () => {
+        setError("Pembayaran gagal. Silakan coba lagi.");
+        setLoading(false);
+      },
+      onClose: () => {
+        setPaymentMessage("Popup pembayaran ditutup. Anda bisa membuka lagi pembayaran selama waktu 1 jam masih tersedia.");
+        setLoading(false);
+      },
+    });
+  }, [router]);
+
+  const handlePay = useCallback(() => {
+    if (!transaction) {
+      return;
+    }
+
+    openPayment(transaction, "manual");
+  }, [openPayment, transaction]);
+
+  useEffect(() => {
+    if (!transaction || step !== "payment" || !autoOpenRequested) {
+      return;
+    }
+    if (paymentAttemptedRef.current === transaction.order_id) {
+      return;
+    }
+
+    paymentAttemptedRef.current = transaction.order_id;
+    setAutoOpenRequested(false);
+    openPayment(transaction, "auto");
+  }, [autoOpenRequested, openPayment, step, transaction]);
+
+  const handleAddAddressSuccess = (newAddress: CustomerAddress) => {
+    setAddresses((prev) => [...prev, newAddress]);
+    setSelectedAddressId(newAddress.id);
+    setShowAddAddress(false);
+  };
+
+  if (loading && step === "address" && addresses.length === 0 && !showAddAddress) {
     return (
       <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
         <main className="flex-grow flex items-center justify-center">
@@ -149,35 +311,7 @@ export function CheckoutModule() {
         <div className="px-4 sm:px-6 md:px-[24px] max-w-[1440px] mx-auto w-full">
           <h1 className="text-h6 font-bold text-black mt-[14px] mb-[14px]">Checkout</h1>
 
-          <div className="flex items-center gap-2 mb-6">
-            {(["address", "shipping", "payment"] as Step[]).map((s, idx) => (
-              <div key={s} className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold",
-                    step === s
-                      ? "bg-primary-500 text-white"
-                      : idx < ["address", "shipping", "payment"].indexOf(step)
-                        ? "bg-primary-400 text-white"
-                        : "bg-neutral-200 text-neutral-500"
-                  )}
-                >
-                  {idx + 1}
-                </div>
-                <span
-                  className={cn(
-                    "text-b2 font-medium hidden sm:block",
-                    step === s ? "text-black" : "text-neutral-500"
-                  )}
-                >
-                  {s === "address" && "Alamat"}
-                  {s === "shipping" && "Pengiriman"}
-                  {s === "payment" && "Pembayaran"}
-                </span>
-                {idx < 2 && <div className="w-8 h-px bg-neutral-300 hidden sm:block" />}
-              </div>
-            ))}
-          </div>
+          <CheckoutStepper step={step} />
 
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-[10px] text-b2 text-red-600">
@@ -185,7 +319,7 @@ export function CheckoutModule() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-8 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-8 items-start mt-6">
             <div className="w-full min-w-0 space-y-6">
               {step === "address" && (
                 <div>
@@ -195,22 +329,21 @@ export function CheckoutModule() {
                     selectedId={selectedAddressId}
                     onSelect={setSelectedAddressId}
                   />
-                  <button
-                    onClick={handleFetchRates}
-                    disabled={!selectedAddressId || loading}
-                    className="w-full mt-4 py-3.5 px-4 bg-primary-500 text-white font-semibold text-b1 rounded-[10px]
-                      hover:bg-primary-400 active:scale-[0.98] transition-all duration-200
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Memuat..." : "Lanjut ke Pengiriman"}
-                  </button>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      onClick={() => setShowAddAddress(true)}
+                      className="px-4 py-2 rounded-[8px] border border-primary-300 text-b2 text-primary-500 hover:bg-primary-100/20 transition-colors"
+                    >
+                      + Tambah Alamat Baru
+                    </button>
+                  </div>
                 </div>
               )}
 
               {step === "shipping" && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-b1 font-semibold text-black">Pilih Kurir</h2>
+                    <h2 className="text-b1 font-semibold text-black">Pilih Metode Pengiriman</h2>
                     <button
                       onClick={() => setStep("address")}
                       className="text-b2 text-primary-400 hover:underline"
@@ -238,10 +371,7 @@ export function CheckoutModule() {
                             selectedRate?.courier_code === rate.courier_code &&
                             selectedRate?.service_code === rate.service_code
                           }
-                          onSelect={() => {
-                            setSelectedRate(rate);
-                            setStep("payment");
-                          }}
+                          onSelect={() => setSelectedRate(rate)}
                         />
                       ))}
                     </div>
@@ -249,16 +379,16 @@ export function CheckoutModule() {
                 </div>
               )}
 
-              {step === "payment" && (
+              {step === "review" && (
                 <div className="space-y-6">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-b1 font-semibold text-black">Detail Pengiriman</h2>
+                      <h2 className="text-b1 font-semibold text-black">Review Pesanan</h2>
                       <button
                         onClick={() => setStep("shipping")}
                         className="text-b2 text-primary-400 hover:underline"
                       >
-                        Ubah Kurir
+                        Ubah Pengiriman
                       </button>
                     </div>
 
@@ -342,49 +472,95 @@ export function CheckoutModule() {
                   </div>
                 </div>
               )}
+
+              {step === "payment" && transaction && (
+                <div className="space-y-6">
+                  <div className="p-5 bg-white border border-primary-100 rounded-[10px] space-y-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h2 className="text-b1 font-semibold text-black">Pembayaran</h2>
+                        <p className="text-b2 text-neutral-600 mt-2">
+                          Pesanan <span className="font-medium text-black">#{transaction.order_id}</span> sudah dibuat dan stok Anda sudah di-reserve.
+                        </p>
+                      </div>
+                      <div className={cn(
+                        "inline-flex w-fit rounded-full px-3 py-1 text-b3 font-semibold",
+                        isPaymentExpired ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"
+                      )}>
+                        {isPaymentExpired ? "Waktu pembayaran habis" : `Sisa waktu ${formatRemainingTime(timeRemainingMs ?? 0)}`}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-[10px] border border-neutral-200 bg-[#f7f7f7] p-4">
+                        <p className="text-b3 uppercase tracking-[0.08em] text-neutral-500">Batas pembayaran</p>
+                        <p className="mt-1 text-b1 font-semibold text-black">
+                          {paymentDeadlineLabel || "1 jam sejak order dibuat"}
+                        </p>
+                        <p className="mt-1 text-b3 text-neutral-500">
+                          Setelah ini, reservation stok otomatis dilepas.
+                        </p>
+                      </div>
+                      <div className="rounded-[10px] border border-neutral-200 bg-[#f7f7f7] p-4">
+                        <p className="text-b3 uppercase tracking-[0.08em] text-neutral-500">Status saat ini</p>
+                        <p className="mt-1 text-b1 font-semibold text-black">
+                          {isPaymentExpired ? "Expired" : transaction.status === "paid" ? "Paid" : "Waiting for payment"}
+                        </p>
+                        <p className="mt-1 text-b3 text-neutral-500">
+                          Jika popup tertutup atau diblokir browser, buka lagi dari tombol di kanan.
+                        </p>
+                      </div>
+                    </div>
+
+                    {paymentMessage && (
+                      <div className="rounded-[10px] border border-primary-100 bg-primary-100/20 px-4 py-3 text-b2 text-neutral-700">
+                        {paymentMessage}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={handlePay}
+                        disabled={loading || isPaymentExpired}
+                        className="px-4 py-3 rounded-[10px] bg-primary-500 text-white text-b2 font-semibold hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPaymentExpired ? "Waktu Pembayaran Habis" : "Buka Pembayaran"}
+                      </button>
+                      <button
+                        onClick={() => router.push(`/orders/${transaction.order_id}`)}
+                        className="px-4 py-3 rounded-[10px] border border-primary-100 text-b2 font-semibold text-black hover:bg-neutral-100"
+                      >
+                        Lihat Detail Order
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="w-full min-w-0 xl:max-w-[420px] xl:justify-self-end">
-              {step === "payment" && selectedRate && (
-                <PaymentSummary
-                  itemSubtotal={itemSubtotal}
-                  shippingCost={selectedRate.price}
-                  total={itemSubtotal + selectedRate.price}
-                  itemCount={checkedCartItems.length}
-                  onPay={handleCheckout}
-                  loading={loading}
-                />
-              )}
-
-              {step === "shipping" && (
-                <div className="bg-white border border-primary-100 rounded-[10px] p-5 sticky top-4">
-                  <h3 className="text-h6 font-bold text-black mb-4">Ringkasan Sementara</h3>
-                  <div className="flex justify-between items-center text-b2 text-neutral-700">
-                    <span>Subtotal Produk</span>
-                    <span>Rp {itemSubtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <p className="mt-4 text-b2 text-neutral-500">
-                    Pilih kurir di sebelah kiri untuk melihat total.
-                  </p>
-                </div>
-              )}
-
-              {step === "address" && (
-                <div className="bg-white border border-primary-100 rounded-[10px] p-5 sticky top-4">
-                  <h3 className="text-h6 font-bold text-black mb-4">Ringkasan Keranjang</h3>
-                  <div className="flex justify-between items-center text-b2 text-neutral-700">
-                    <span>Subtotal Produk</span>
-                    <span>Rp {itemSubtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <p className="mt-4 text-b2 text-neutral-500">
-                    Pilih alamat pengiriman untuk melanjutkan.
-                  </p>
-                </div>
-              )}
+              <CheckoutOrderSummary
+                cartItems={cartItems}
+                selectedAddress={selectedAddress}
+                selectedRate={selectedRate}
+                step={step}
+                onNext={step === "address" ? handleFetchRates : step === "shipping" ? handleContinueToReview : undefined}
+                onPlaceOrder={handlePlaceOrder}
+                onPay={handlePay}
+                loading={loading}
+                paymentButtonLabel={step === "payment" ? (isPaymentExpired ? "Waktu Habis" : "Buka Pembayaran") : undefined}
+                paymentDisabled={step === "payment" && isPaymentExpired}
+              />
             </div>
           </div>
         </div>
       </main>
+
+      <AddAddressDialog
+        open={showAddAddress}
+        onClose={() => setShowAddAddress(false)}
+        onSuccess={handleAddAddressSuccess}
+      />
     </div>
   );
 }

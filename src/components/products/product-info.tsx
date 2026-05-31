@@ -10,6 +10,8 @@ interface ProductInfoProps {
   selectedSizeId: number | null;
   onColorSelect: (id: number | null) => void;
   onSizeSelect: (id: number | null) => void;
+  stockLabel?: string;
+  notice?: string | null;
 }
 
 export default function ProductInfo({
@@ -18,6 +20,8 @@ export default function ProductInfo({
   selectedSizeId,
   onColorSelect,
   onSizeSelect,
+  stockLabel,
+  notice,
 }: ProductInfoProps) {
   const selectedColor = product.availableColors.find(
     (c) => c.id === selectedColorId
@@ -101,6 +105,19 @@ export default function ProductInfo({
         <p className="font-body text-b2 text-primary-300 w-full">
           {product.description}
         </p>
+
+        <div className="flex flex-col gap-3">
+          {stockLabel && (
+            <div className="inline-flex w-fit rounded-full bg-neutral-200 px-3 py-1 text-b3 text-neutral-700">
+              {stockLabel}
+            </div>
+          )}
+          {notice && (
+            <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-b2 text-red-700">
+              {notice}
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-col gap-[25px] w-full">
           <div className="flex flex-col gap-[4px] w-full">

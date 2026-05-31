@@ -52,14 +52,12 @@ export function PurchaseSidebar({ items, showTitle = true, className }: Purchase
 
               <div className="flex flex-col gap-3 text-black min-w-0 justify-center">
                 <p
-                  className="font-medium text-[18px] md:text-[16px] leading-[21.276px] break-words"
-                  style={{ fontFamily: "Poppins, sans-serif" }}
+                  className="font text-[18px] md:text-[16px] leading-[21.276px] break-words"
                 >
                   {item.name}
                 </p>
                 <div
                   className="text-[16px] md:text-[14px] leading-[0]"
-                  style={{ fontFamily: "Poppins, sans-serif" }}
                 >
                   <p className="leading-[21.276px]">{item.gender}</p>
                   <p className="leading-[21.276px] break-words">{item.color}</p>

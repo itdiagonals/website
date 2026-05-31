@@ -698,6 +698,14 @@ export interface TransactionHistoryAddressSummary {
   is_primary: boolean
 }
 
+export interface TransactionHistorySenderInfo {
+  name: string
+  phone: string
+  email: string
+  address: string
+  postal_code: string
+}
+
 export interface TransactionHistoryDetail {
   id: number
   order_id: string
@@ -711,15 +719,18 @@ export interface TransactionHistoryDetail {
   courier_service: string
   tracking_number?: string
   snap_token: string
+  notes?: string
   created_at: string
   updated_at: string
   shipping_address: TransactionHistoryAddressSummary
+  sender?: TransactionHistorySenderInfo
   items: TransactionHistoryDetailItem[]
 }
 
 export interface ShippingTrackingEvent {
   status?: string
   note?: string
+  description?: string
   updated_at?: string
   [key: string]: unknown
 }
@@ -730,6 +741,7 @@ export interface TransactionTrackingData {
   tracking_number?: string
   shipping_status: string
   raw_status?: string
+  tracking_link?: string
   courier_name: string
   courier_service: string
   events?: ShippingTrackingEvent[]
@@ -779,7 +791,7 @@ export interface AddAddressPayload {
   is_primary?: boolean
 }
 
-export interface UpdateAddressPayload extends AddAddressPayload {}
+export type UpdateAddressPayload = AddAddressPayload
 
 export interface PresignedURLResponse {
   signed_url: string
@@ -802,6 +814,10 @@ export const api = {
     getCsrf: () => ensureCsrfToken(true),
     register: async (data: { name: string; email: string; password: string }) => {
       const response = await request<AuthStatusResponse>('/auth/register', { method: 'POST', body: data }, { unwrapData: false })
+      return response
+    },
+    verifyRegistration: async (data: { email: string; code: string }) => {
+      const response = await request<AuthStatusResponse>('/auth/verify-registration', { method: 'POST', body: data }, { unwrapData: false })
       startSilentRefresh()
       return response
     },
@@ -954,7 +970,7 @@ export const api = {
   transactions: {
     getAll: (page = 1, limit = 50) => request<TransactionHistoryListResponse>(`/transactions?page=${page}&limit=${limit}`, undefined, { retryOnUnauthorized: true, unwrapData: false }).then((response) => response.data),
     getByOrderId: (orderId: string) => request<TransactionHistoryDetail>(`/transactions/${orderId}`, undefined, { retryOnUnauthorized: true }),
-    getTracking: (orderId: string) => request<TransactionTrackingData>(`/transactions/${orderId}/tracking`, undefined, { retryOnUnauthorized: true }),
+    getTracking: (orderId: string, refresh = false) => request<TransactionTrackingData>(`/transactions/${orderId}/tracking${refresh ? '?refresh=true' : ''}`, undefined, { retryOnUnauthorized: true }),
   },
 
   addresses: {
@@ -964,6 +980,8 @@ export const api = {
   },
 
   admin: {
+    packShipment: (data: { order_id: string }) =>
+      request<{ message: string }>('/admin/shipments/pack', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     bookShipment: (data: { order_id: string }) =>
       request<{ message: string }>('/admin/shipments/book', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     transactions: (page = 1, limit = 50, status?: string) => {
@@ -973,5 +991,6 @@ export const api = {
       if (status) params.set('status', status)
       return request<TransactionHistoryListResponse>(`/admin/transactions?${params.toString()}`, undefined, { retryOnUnauthorized: true, unwrapData: false })
     },
+    getByOrderId: (orderId: string) => request<TransactionHistoryDetail>(`/admin/transactions/${orderId}`, undefined, { retryOnUnauthorized: true }),
   },
 }

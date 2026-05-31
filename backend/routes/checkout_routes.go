@@ -17,9 +17,9 @@ func registerCheckoutRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redi
 	cartRepository := repository.NewCartRepository(db, redisClient)
 	productRepository := repository.NewProductRepository(db)
 	transactionRepository := repository.NewTransactionRepository(db)
-	stockReservationRepository := repository.NewStockReservationRepository(db)
+	stockReservationService := service.NewRedisStockReservationService(redisClient, productRepository)
 	shippingService := service.NewBiteshipService()
-	checkoutService := service.NewCheckoutService(userRepository, customerAddressRepository, cartRepository, productRepository, transactionRepository, stockReservationRepository, shippingService)
+	checkoutService := service.NewCheckoutService(userRepository, customerAddressRepository, cartRepository, productRepository, transactionRepository, stockReservationService, shippingService)
 	checkoutHandler := handler.NewCheckoutHandler(checkoutService)
 
 	protected := api.Group("")

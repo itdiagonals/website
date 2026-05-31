@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/itdiagonals/website/backend/config"
 	"github.com/itdiagonals/website/backend/repository"
+	"gorm.io/gorm"
 )
 
 type AdminTransactionHandler struct {
@@ -100,4 +103,83 @@ func (h *AdminTransactionHandler) ListTransactions(c *gin.Context) {
 			TotalPages: totalPages,
 		},
 	})
+}
+
+func (h *AdminTransactionHandler) GetTransactionDetail(c *gin.Context) {
+	orderID := strings.TrimSpace(c.Param("order_id"))
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid order id"})
+		return
+	}
+
+	tx, err := h.transactionRepository.FindByOrderIDWithDetails(c.Request.Context(), orderID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Message: "transaction not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "failed to fetch transaction"})
+		return
+	}
+
+	responseItems := make([]TransactionHistoryDetailItem, 0, len(tx.Items))
+	for _, item := range tx.Items {
+		responseItems = append(responseItems, TransactionHistoryDetailItem{
+			ID:                item.ID,
+			ProductID:         item.ProductID,
+			SelectedSize:      item.SelectedSize,
+			SelectedColorName: item.SelectedColor,
+			SelectedColorHex:  item.SelectedColorHex,
+			Quantity:          item.Quantity,
+			Price:             item.Price,
+			Subtotal:          item.Price * float64(item.Quantity),
+		})
+	}
+
+	biteshipConfig := config.GetBiteshipConfig()
+
+	senderInfo := TransactionHistorySenderInfo{
+		Name:       biteshipConfig.OriginName,
+		Phone:      biteshipConfig.OriginPhone,
+		Email:      biteshipConfig.OriginEmail,
+		Address:    biteshipConfig.OriginAddress,
+		PostalCode: biteshipConfig.OriginPostalCode,
+	}
+
+	c.JSON(http.StatusOK, TransactionHistoryDetailResponse{Data: TransactionHistoryDetail{
+		ID:                tx.ID,
+		OrderID:           tx.OrderID,
+		CustomerID:        tx.UserID,
+		ShippingAddressID: tx.ShippingAddressID,
+		TotalAmount:       tx.TotalAmount,
+		ShippingCost:      tx.ShippingCost,
+		Status:            tx.Status,
+		ShippingStatus:    tx.ShippingStatus,
+		CourierName:       tx.CourierName,
+		CourierService:    tx.CourierService,
+		TrackingNumber:    tx.TrackingNumber,
+		SnapToken:         tx.SnapToken,
+		Notes:             tx.Notes,
+		CreatedAt:         tx.CreatedAt,
+		UpdatedAt:         tx.UpdatedAt,
+		ShippingAddress: TransactionHistoryAddressSummary{
+			ID:                   tx.ShippingAddress.ID,
+			Title:                tx.ShippingAddress.Title,
+			RecipientName:        tx.ShippingAddress.RecipientName,
+			PhoneNumber:          tx.ShippingAddress.PhoneNumber,
+			Province:             tx.ShippingAddress.Province,
+			City:                 tx.ShippingAddress.City,
+			District:             tx.ShippingAddress.District,
+			Village:              tx.ShippingAddress.Village,
+			PostalCode:           tx.ShippingAddress.PostalCode,
+			FullAddress:          tx.ShippingAddress.FullAddress,
+			Latitude:             tx.ShippingAddress.Latitude,
+			Longitude:            tx.ShippingAddress.Longitude,
+			DestinationAreaID:    tx.ShippingAddress.DestinationAreaID,
+			DestinationAreaLabel: tx.ShippingAddress.DestinationAreaLabel,
+			IsPrimary:            tx.ShippingAddress.IsPrimary,
+		},
+		Sender: senderInfo,
+		Items:  responseItems,
+	}})
 }

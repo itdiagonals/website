@@ -18,6 +18,7 @@ import (
 	"github.com/itdiagonals/website/backend/service"
 
 	_ "github.com/itdiagonals/website/backend/docs"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
@@ -64,6 +65,7 @@ func main() {
 		logger.Fatal("failed to connect redis", "error", err.Error())
 	}
 
+	startStockReservationJanitor(config.DB, redisClient)
 	startShippingJobWorker(config.DB)
 
 	mailtrapConfig := config.LoadMailtrapConfig()
@@ -132,6 +134,21 @@ func startShippingJobWorker(db *gorm.DB) {
 
 	go worker.Start(context.Background())
 	logger.Info("shipping job worker started")
+}
+
+func startStockReservationJanitor(db *gorm.DB, redisClient *redis.Client) {
+	if db == nil || redisClient == nil {
+		logger.Warn("stock reservation janitor disabled: invalid dependencies")
+		return
+	}
+
+	transactionRepository := repository.NewTransactionRepository(db)
+	productRepository := repository.NewProductRepository(db)
+	stockReservationService := service.NewRedisStockReservationService(redisClient, productRepository)
+	janitor := service.NewStockReservationJanitor(transactionRepository, stockReservationService)
+
+	go janitor.Start(context.Background())
+	logger.Info("stock reservation janitor started")
 }
 
 func getTrustedProxies() []string {

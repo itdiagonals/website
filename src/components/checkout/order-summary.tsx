@@ -6,6 +6,8 @@ interface OrderSummaryProps {
   itemSubtotal: number;
   promoDiscount: number;
   onCheckout: () => void;
+  notes?: string;
+  onNotesChange?: (notes: string) => void;
   className?: string;
 }
 
@@ -14,6 +16,8 @@ export function OrderSummary({
   itemSubtotal,
   promoDiscount,
   onCheckout,
+  notes,
+  onNotesChange,
   className,
 }: OrderSummaryProps) {
   const totalPrice = itemSubtotal - promoDiscount;
@@ -25,6 +29,8 @@ export function OrderSummary({
           Add Notes
         </h3>
         <textarea
+          value={notes ?? ''}
+          onChange={(e) => onNotesChange?.(e.target.value)}
           placeholder="Write Notes"
           className="w-full h-[61px] rounded-[10px] border border-black/20 bg-white px-4 sm:px-[21px] py-3 sm:py-[18px] text-b1 text-black outline-none transition-colors placeholder:text-black/40 placeholder:opacity-40 resize-none"
         />

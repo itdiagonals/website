@@ -29,7 +29,7 @@ func NewProductFullRepository(db *gorm.DB) ProductFullRepository {
 
 func (r *productFullRepository) FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
 	var products []domain.Product
-	query := r.db.WithContext(ctx).Preload("Season").Preload("Category").Preload("CoverImage").Preload("CareGuide")
+	query := r.db.WithContext(ctx).Preload("Season").Preload("Category").Preload("CoverImage").Preload("CareGuide").Preload("Variants")
 
 	if categorySlug != "" {
 		query = query.Joins("JOIN categories ON categories.id = products.category_id").Where("categories.slug = ?", categorySlug)

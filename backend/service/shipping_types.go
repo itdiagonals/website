@@ -78,6 +78,7 @@ type ShippingTrackingResponse struct {
 	TrackingNumber string                  `json:"tracking_number,omitempty"`
 	ShippingStatus string                  `json:"shipping_status,omitempty"`
 	RawStatus      string                  `json:"raw_status,omitempty"`
+	TrackingLink   string                  `json:"tracking_link,omitempty"`
 	Events         []ShippingTrackingEvent `json:"events,omitempty"`
 }
 

@@ -10,6 +10,7 @@ func TestChooseLatestShippingStatus(t *testing.T) {
 		expected string
 	}{
 		{name: "promote from booked to picked", current: "booked", incoming: "picked", expected: "picked"},
+		{name: "promote from packed to booked", current: "packed", incoming: "booked", expected: "booked"},
 		{name: "prevent regression from delivered", current: "delivered", incoming: "picking_up", expected: "delivered"},
 		{name: "unknown incoming accepted", current: "picked", incoming: "custom_status", expected: "custom_status"},
 		{name: "empty incoming keeps current", current: "in_transit", incoming: "", expected: "in_transit"},

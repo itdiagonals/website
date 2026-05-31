@@ -43,12 +43,14 @@ type CartService interface {
 type cartService struct {
 	cartRepository    repository.CartRepository
 	productRepository repository.ProductRepository
+	stockReservation  StockReservationService
 }
 
-func NewCartService(cartRepository repository.CartRepository, productRepository repository.ProductRepository) CartService {
+func NewCartService(cartRepository repository.CartRepository, productRepository repository.ProductRepository, stockReservation StockReservationService) CartService {
 	return &cartService{
 		cartRepository:    cartRepository,
 		productRepository: productRepository,
+		stockReservation:  stockReservation,
 	}
 }
 
@@ -79,7 +81,10 @@ func (service *cartService) AddToCart(context context.Context, userID string, it
 		return nil, err
 	}
 
-	variantAvailableStock, variantFound := getVariantAvailableStock(detail, item.SelectedSize, item.SelectedColorName)
+	variantAvailableStock, variantFound, err := service.getVariantAvailableStock(context, detail, item.SelectedSize, item.SelectedColorName)
+	if err != nil {
+		return nil, err
+	}
 	if !variantFound {
 		return nil, ErrInvalidCartItem
 	}
@@ -147,7 +152,10 @@ func (service *cartService) GetMyCart(context context.Context, userID string) (*
 			continue
 		}
 
-		variantAvailableStock, variantFound := getVariantAvailableStock(detail, cart.Items[index].SelectedSize, cart.Items[index].SelectedColorName)
+		variantAvailableStock, variantFound, err := service.getVariantAvailableStock(context, detail, cart.Items[index].SelectedSize, cart.Items[index].SelectedColorName)
+		if err != nil {
+			return nil, err
+		}
 		totalQuantityForVariant := cart.Items[index].Quantity
 		for itemIndex, item := range cart.Items {
 			if itemIndex == index {
@@ -274,7 +282,10 @@ func (service *cartService) UpdateQuantity(context context.Context, userID strin
 		return nil, ErrInvalidCartItem
 	}
 
-	variantAvailableStock, variantFound := getVariantAvailableStock(detail, item.SelectedSize, item.SelectedColorName)
+	variantAvailableStock, variantFound, err := service.getVariantAvailableStock(context, detail, item.SelectedSize, item.SelectedColorName)
+	if err != nil {
+		return nil, err
+	}
 	if !variantFound {
 		return nil, ErrInvalidCartItem
 	}
@@ -352,7 +363,10 @@ func (service *cartService) UpdateQuantityByID(context context.Context, userID s
 		return nil, ErrInvalidCartItem
 	}
 
-	variantAvailableStock, variantFound := getVariantAvailableStock(detail, targetItem.SelectedSize, targetItem.SelectedColorName)
+	variantAvailableStock, variantFound, err := service.getVariantAvailableStock(context, detail, targetItem.SelectedSize, targetItem.SelectedColorName)
+	if err != nil {
+		return nil, err
+	}
 	if !variantFound {
 		return nil, ErrInvalidCartItem
 	}
@@ -438,28 +452,47 @@ func isAvailableColor(colors []domain.ProductColorOption, colorName string, colo
 	return false
 }
 
-func getVariantAvailableStock(detail *domain.ProductDetail, selectedSize string, selectedColorName string) (int, bool) {
+func (service *cartService) getVariantAvailableStock(ctx context.Context, detail *domain.ProductDetail, selectedSize string, selectedColorName string) (int, bool, error) {
 	if detail == nil {
-		return 0, false
+		return 0, false, nil
 	}
 
 	normalizedSize := strings.ToLower(strings.TrimSpace(selectedSize))
 	normalizedColor := strings.ToLower(strings.TrimSpace(selectedColorName))
 	if normalizedSize == "" || normalizedColor == "" {
-		return 0, false
+		return 0, false, nil
+	}
+
+	if service.stockReservation != nil && detail.ID > 0 {
+		availableStock, err := service.stockReservation.GetAvailableStock(ctx, detail.ID, normalizedSize, normalizedColor)
+		if err != nil {
+			return 0, false, err
+		}
+
+		if len(detail.Variants) == 0 {
+			return availableStock, true, nil
+		}
 	}
 
 	if len(detail.Variants) == 0 {
-		return detail.Stock, true
+		return detail.Stock, true, nil
 	}
 
 	for _, variant := range detail.Variants {
 		if strings.ToLower(strings.TrimSpace(variant.Size)) == normalizedSize && strings.ToLower(strings.TrimSpace(variant.ColorName)) == normalizedColor {
-			return variant.Stock, true
+			if service.stockReservation != nil && detail.ID > 0 {
+				availableStock, err := service.stockReservation.GetAvailableStock(ctx, detail.ID, normalizedSize, normalizedColor)
+				if err != nil {
+					return 0, false, err
+				}
+				return availableStock, true, nil
+			}
+
+			return variant.Stock, true, nil
 		}
 	}
 
-	return 0, false
+	return 0, false, nil
 }
 
 func calculateSubtotal(basePrice float64, quantity int) float64 {

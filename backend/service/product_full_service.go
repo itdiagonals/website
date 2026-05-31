@@ -15,12 +15,13 @@ import (
 )
 
 type ProductFullService struct {
-	repo          repository.ProductFullRepository
-	mediaRepo     repository.MediaRepository
-	categoryRepo  repository.CategoryRepository
-	seasonRepo    repository.SeasonRepository
-	careGuideRepo repository.CareGuideRepository
-	redis         *redis.Client
+	repo             repository.ProductFullRepository
+	mediaRepo        repository.MediaRepository
+	categoryRepo     repository.CategoryRepository
+	seasonRepo       repository.SeasonRepository
+	careGuideRepo    repository.CareGuideRepository
+	redis            *redis.Client
+	stockReservation StockReservationService
 }
 
 func NewProductFullService(
@@ -30,27 +31,50 @@ func NewProductFullService(
 	seasonRepo repository.SeasonRepository,
 	careGuideRepo repository.CareGuideRepository,
 	redisClient *redis.Client,
+	stockReservation StockReservationService,
 ) *ProductFullService {
 	return &ProductFullService{
-		repo:          repo,
-		mediaRepo:     mediaRepo,
-		categoryRepo:  categoryRepo,
-		seasonRepo:    seasonRepo,
-		careGuideRepo: careGuideRepo,
-		redis:         redisClient,
+		repo:             repo,
+		mediaRepo:        mediaRepo,
+		categoryRepo:     categoryRepo,
+		seasonRepo:       seasonRepo,
+		careGuideRepo:    careGuideRepo,
+		redis:            redisClient,
+		stockReservation: stockReservation,
 	}
 }
 
 func (s *ProductFullService) GetAllProducts(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
-	return s.repo.FindAll(ctx, categorySlug, page, limit)
+	products, total, err := s.repo.FindAll(ctx, categorySlug, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := s.adjustProductStocks(ctx, products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (s *ProductFullService) GetProductByID(ctx context.Context, id int) (*domain.Product, error) {
-	return s.repo.FindByID(ctx, id)
+	product, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.adjustProductStock(ctx, product); err != nil {
+		return nil, err
+	}
+	return product, nil
 }
 
 func (s *ProductFullService) GetProductBySlug(ctx context.Context, slug string) (*domain.Product, error) {
-	return s.repo.FindBySlug(ctx, slug)
+	product, err := s.repo.FindBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.adjustProductStock(ctx, product); err != nil {
+		return nil, err
+	}
+	return product, nil
 }
 
 func (s *ProductFullService) GetSimilarProducts(ctx context.Context, productID, seasonID, categoryID, limit int) ([]domain.Product, error) {
@@ -61,6 +85,9 @@ func (s *ProductFullService) GetSimilarProducts(ctx context.Context, productID, 
 		if err == nil && cached != "" {
 			var products []domain.Product
 			if err := json.Unmarshal([]byte(cached), &products); err == nil {
+				if err := s.adjustProductStocks(ctx, products); err != nil {
+					return nil, err
+				}
 				return products, nil
 			}
 		}
@@ -76,7 +103,53 @@ func (s *ProductFullService) GetSimilarProducts(ctx context.Context, productID, 
 		_ = s.redis.Set(ctx, cacheKey, data, 5*time.Minute).Err()
 	}
 
+	if err := s.adjustProductStocks(ctx, products); err != nil {
+		return nil, err
+	}
+
 	return products, nil
+}
+
+func (s *ProductFullService) adjustProductStocks(ctx context.Context, products []domain.Product) error {
+	for index := range products {
+		if err := s.adjustProductStock(ctx, &products[index]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *ProductFullService) adjustProductStock(ctx context.Context, product *domain.Product) error {
+	if product == nil || s.stockReservation == nil || product.ID <= 0 {
+		return nil
+	}
+
+	if len(product.Variants) == 0 {
+		reservedQuantity, err := s.stockReservation.GetReservedProductQuantity(ctx, product.ID)
+		if err != nil {
+			return err
+		}
+		product.Stock -= reservedQuantity
+		if product.Stock < 0 {
+			product.Stock = 0
+		}
+		return nil
+	}
+
+	totalStock := 0
+	for index := range product.Variants {
+		reservedQuantity, err := s.stockReservation.GetReservedQuantity(ctx, product.ID, product.Variants[index].Size, product.Variants[index].ColorName)
+		if err != nil {
+			return err
+		}
+		product.Variants[index].Stock -= reservedQuantity
+		if product.Variants[index].Stock < 0 {
+			product.Variants[index].Stock = 0
+		}
+		totalStock += product.Variants[index].Stock
+	}
+	product.Stock = totalStock
+	return nil
 }
 
 func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.Product, draftID string) error {

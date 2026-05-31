@@ -23,6 +23,8 @@ func registerAdminShipmentRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient 
 
 	admin := api.Group("/admin")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
+	admin.POST("/shipments/pack", shipmentHandler.MarkPacked)
 	admin.POST("/shipments/book", shipmentHandler.BookShipment)
 	admin.GET("/transactions", transactionHandler.ListTransactions)
+	admin.GET("/transactions/:order_id", transactionHandler.GetTransactionDetail)
 }

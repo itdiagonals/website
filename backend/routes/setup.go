@@ -16,7 +16,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, otp
 	registerWilayahRoutes(api, db)
 	registerProductRoutes(api, db, redisClient)
 	registerCheckoutRoutes(api, db, redisClient)
-	registerPaymentRoutes(api, db)
+	registerPaymentRoutes(api, db, redisClient)
 	registerTransactionRoutes(api, db, redisClient)
 	registerCartRoutes(router, redisClient, db)
 	registerStatsRoutes(api, db, redisClient)

@@ -12,7 +12,14 @@ import (
 
 type ShippingBookingService interface {
 	BookShipmentForOrder(ctx context.Context, orderID string) error
+	MarkOrderPacked(ctx context.Context, orderID string) error
 }
+
+var (
+	ErrShippingOrderNotPaid       = errors.New("order is not paid")
+	ErrShippingOrderAlreadyBooked = errors.New("shipment is already booked")
+	ErrShippingOrderInvalidState  = errors.New("order cannot be processed in its current shipping state")
+)
 
 type shippingBookingService struct {
 	transactionRepository repository.TransactionRepository
@@ -44,9 +51,17 @@ func (service *shippingBookingService) BookShipmentForOrder(ctx context.Context,
 	if transaction == nil {
 		return ErrMidtransOrderNotFound
 	}
+	if !strings.EqualFold(strings.TrimSpace(transaction.Status), "paid") {
+		return ErrShippingOrderNotPaid
+	}
 
 	if strings.TrimSpace(transaction.BiteshipOrderID) != "" {
-		return nil
+		return ErrShippingOrderAlreadyBooked
+	}
+
+	currentShippingStatus := normalizeShippingStatus(transaction.ShippingStatus)
+	if currentShippingStatus != "packed" && currentShippingStatus != "booked" {
+		return ErrShippingOrderInvalidState
 	}
 
 	destinationAreaID := strings.TrimSpace(transaction.ShippingAddress.DestinationAreaID)
@@ -105,6 +120,32 @@ func (service *shippingBookingService) BookShipmentForOrder(ctx context.Context,
 		strings.TrimSpace(booking.TrackingNumber),
 		shippingStatus,
 	)
+}
+
+func (service *shippingBookingService) MarkOrderPacked(ctx context.Context, orderID string) error {
+	transaction, err := service.transactionRepository.FindByOrderIDWithDetails(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	if transaction == nil {
+		return ErrMidtransOrderNotFound
+	}
+	if !strings.EqualFold(strings.TrimSpace(transaction.Status), "paid") {
+		return ErrShippingOrderNotPaid
+	}
+	if strings.TrimSpace(transaction.BiteshipOrderID) != "" || strings.TrimSpace(transaction.TrackingNumber) != "" {
+		return ErrShippingOrderAlreadyBooked
+	}
+
+	currentShippingStatus := normalizeShippingStatus(transaction.ShippingStatus)
+	switch currentShippingStatus {
+	case "packed":
+		return nil
+	case "pending":
+		return service.transactionRepository.UpdateShippingByOrderID(ctx, transaction.OrderID, "", "packed")
+	default:
+		return ErrShippingOrderInvalidState
+	}
 }
 
 func (service *shippingBookingService) buildShippingOrderItems(ctx context.Context, transactionItems []domain.TransactionItem) ([]ShippingOrderItem, error) {

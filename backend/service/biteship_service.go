@@ -367,6 +367,7 @@ func (service *biteshipService) GetTrackingByWaybill(ctx context.Context, waybil
 			Status         string `json:"status"`
 			WaybillID      string `json:"waybill_id"`
 			TrackingNumber string `json:"tracking_number"`
+			Link           string `json:"link"`
 			History        []struct {
 				Status    string `json:"status"`
 				Note      string `json:"note"`
@@ -376,6 +377,7 @@ func (service *biteshipService) GetTrackingByWaybill(ctx context.Context, waybil
 			} `json:"history"`
 		} `json:"tracking"`
 		Status string `json:"status"`
+		Link   string `json:"link"`
 	}
 	if err := json.Unmarshal(responseBody, &payload); err != nil {
 		return nil, err
@@ -402,6 +404,7 @@ func (service *biteshipService) GetTrackingByWaybill(ctx context.Context, waybil
 		TrackingNumber: trackingNumber,
 		ShippingStatus: normalizeShippingStatus(rawStatus),
 		RawStatus:      rawStatus,
+		TrackingLink:   firstNonEmptyString(strings.TrimSpace(payload.Tracking.Link), strings.TrimSpace(payload.Link)),
 		Events:         events,
 	}, nil
 }
@@ -574,6 +577,8 @@ func firstNonEmptyString(values ...string) string {
 func normalizeShippingStatus(value string) string {
 	status := strings.ToLower(strings.TrimSpace(value))
 	switch status {
+	case "packed", "packaged", "processing":
+		return "packed"
 	case "confirmed", "booked", "scheduled", "allocated", "ready", "ready_to_ship":
 		return "booked"
 	case "picked", "picked_up":

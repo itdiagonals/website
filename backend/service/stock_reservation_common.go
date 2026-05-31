@@ -1,9 +1,12 @@
 package service
 
+import "time"
+
 const (
 	stockReservationStatusReserved = "reserved"
 	stockReservationStatusConsumed = "consumed"
 	stockReservationStatusReleased = "released"
+	stockReservationTTL            = 3 * time.Hour
 )
 
 type stockReservationItem struct {

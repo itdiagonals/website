@@ -41,27 +41,24 @@ type MidtransNotificationService interface {
 }
 
 type midtransNotificationService struct {
-	transactionRepository      repository.TransactionRepository
-	stockReservationRepository repository.StockReservationRepository
-	productRepository          repository.ProductRepository
-	shippingJobRepository      repository.ShippingJobRepository
-	serverKey                  string
+	transactionRepository   repository.TransactionRepository
+	stockReservationService StockReservationService
+	shippingJobRepository   repository.ShippingJobRepository
+	serverKey               string
 }
 
 func NewMidtransNotificationService(
 	transactionRepository repository.TransactionRepository,
-	stockReservationRepository repository.StockReservationRepository,
-	productRepository repository.ProductRepository,
+	stockReservationService StockReservationService,
 	shippingJobRepository repository.ShippingJobRepository,
 ) MidtransNotificationService {
 	config.LoadEnv()
 
 	return &midtransNotificationService{
-		transactionRepository:      transactionRepository,
-		stockReservationRepository: stockReservationRepository,
-		productRepository:          productRepository,
-		shippingJobRepository:      shippingJobRepository,
-		serverKey:                  strings.TrimSpace(os.Getenv("MIDTRANS_SERVER_KEY")),
+		transactionRepository:   transactionRepository,
+		stockReservationService: stockReservationService,
+		shippingJobRepository:   shippingJobRepository,
+		serverKey:               strings.TrimSpace(os.Getenv("MIDTRANS_SERVER_KEY")),
 	}
 }
 
@@ -118,7 +115,10 @@ func (service *midtransNotificationService) HandleNotification(ctx context.Conte
 	}
 
 	if nextStatus == "paid" {
-		if err := service.stockReservationRepository.UpdateStatusByOrderID(ctx, payload.OrderID, stockReservationStatusReserved, stockReservationStatusConsumed); err != nil {
+		if service.stockReservationService == nil {
+			return ErrStockReservationUnavailable
+		}
+		if err := service.stockReservationService.Confirm(ctx, payload.OrderID); err != nil {
 			return err
 		}
 
@@ -126,7 +126,7 @@ func (service *midtransNotificationService) HandleNotification(ctx context.Conte
 			return nil
 		}
 
-		return service.shippingJobRepository.EnqueueBookShipment(ctx, payload.OrderID)
+		return nil
 	}
 
 	if nextStatus == "failed" {
@@ -190,27 +190,11 @@ func isGrossAmountMatch(grossAmount string, transactionTotal float64) bool {
 }
 
 func (service *midtransNotificationService) releaseStockForOrder(ctx context.Context, orderID string) error {
-	reservations, err := service.stockReservationRepository.FindByOrderIDAndStatus(ctx, orderID, stockReservationStatusReserved)
-	if err != nil {
-		return err
+	if service.stockReservationService == nil {
+		return ErrStockReservationUnavailable
 	}
 
-	if len(reservations) == 0 {
-		return nil
-	}
-
-	for _, reservation := range reservations {
-		if err := service.productRepository.IncreaseVariantStock(ctx, reservation.ProductID, reservation.SelectedSize, reservation.SelectedColorName, reservation.Quantity); err != nil {
-			return err
-		}
-	}
-
-	reservationIDs := make([]uint, 0, len(reservations))
-	for _, reservation := range reservations {
-		reservationIDs = append(reservationIDs, reservation.ID)
-	}
-
-	return service.stockReservationRepository.UpdateStatusByIDs(ctx, reservationIDs, stockReservationStatusReserved, stockReservationStatusReleased)
+	return service.stockReservationService.Release(ctx, orderID)
 }
 
 func shouldApplyStatusTransition(currentStatus string, nextStatus string) bool {

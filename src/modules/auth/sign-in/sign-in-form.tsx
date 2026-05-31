@@ -35,7 +35,7 @@ export default function SignInForm() {
         if (redirectTarget && redirectTarget.startsWith('/admin')) {
           router.replace(redirectTarget)
         } else {
-          router.replace('/admin/dashboard')
+          router.replace('/admin')
         }
       } catch (adminCheckError) {
         if (adminCheckError instanceof ApiError && adminCheckError.status === 403) {
@@ -50,7 +50,11 @@ export default function SignInForm() {
         }
       }
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Login gagal.')
+      if (caughtError instanceof ApiError && caughtError.status === 403) {
+        setError('Email belum diverifikasi. Silakan periksa kotak masuk Anda atau daftar ulang.')
+      } else {
+        setError(caughtError instanceof Error ? caughtError.message : 'Login gagal.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -69,7 +73,7 @@ export default function SignInForm() {
           <div className="flex flex-col items-center gap-[7px]">
             <div className="flex h-[65px] w-[259px] items-center justify-center">
               <img
-                src="/images/diagonals.webp"
+                src="/logo/diagonals.webp"
                 alt="Logo"
                 className="h-full w-full object-contain"
               />
@@ -104,10 +108,24 @@ export default function SignInForm() {
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && (
+                <div className="text-sm text-red-600">
+                  <p>{error}</p>
+                  {error.includes('Email belum diverifikasi') && (
+                    <p className="mt-1">
+                      <Link
+                        href={`/auth/verify-email?email=${encodeURIComponent(email)}`}
+                        className="underline text-primary-600 hover:text-primary-500"
+                      >
+                        Verifikasi email sekarang
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4">
-                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                <Button type="submit" variant="auth" size="full" disabled={submitting}>
                   {submitting ? 'Signing in...' : 'Enter'}
                 </Button>
               </div>

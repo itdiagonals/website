@@ -109,6 +109,7 @@ type ShippingTrackingResult struct {
 	TrackingNumber  string                  `json:"tracking_number,omitempty"`
 	ShippingStatus  string                  `json:"shipping_status"`
 	RawStatus       string                  `json:"raw_status,omitempty"`
+	TrackingLink    string                  `json:"tracking_link,omitempty"`
 	CourierName     string                  `json:"courier_name"`
 	CourierService  string                  `json:"courier_service"`
 	Events          []ShippingTrackingEvent `json:"events,omitempty"`
@@ -353,6 +354,7 @@ func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.C
 	result.TrackingNumber = normalizedTrackingNumber
 	result.ShippingStatus = normalizedShippingStatus
 	result.RawStatus = strings.TrimSpace(tracking.RawStatus)
+	result.TrackingLink = strings.TrimSpace(tracking.TrackingLink)
 	result.Events = tracking.Events
 
 	return result, nil

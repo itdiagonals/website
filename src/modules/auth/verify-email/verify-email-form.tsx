@@ -7,7 +7,7 @@ import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 
-export default function OtpForm() {
+export default function VerifyEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
@@ -34,7 +34,7 @@ export default function OtpForm() {
     }
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     const code = otp.join('')
@@ -44,12 +44,19 @@ export default function OtpForm() {
     }
 
     setSubmitting(true)
-    router.push(`/auth/forgot-password/new-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`)
+    try {
+      await api.auth.verifyRegistration({ email, code })
+      router.replace('/')
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Verifikasi gagal.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   async function handleResend() {
     if (!email) {
-      setError('Email tidak ditemukan. Ulangi dari halaman forgot password.')
+      setError('Email tidak ditemukan. Ulangi dari halaman sign up.')
       return
     }
 
@@ -57,7 +64,7 @@ export default function OtpForm() {
     setError(null)
 
     try {
-      await api.otp.request({ email, purpose: 'password_reset' })
+      await api.otp.request({ email, purpose: 'account_verification' })
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Gagal mengirim ulang OTP.')
     } finally {
@@ -97,11 +104,11 @@ export default function OtpForm() {
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
-                     value={digit}
-                      onChange={(e) => handleChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      className="h-12 w-10 rounded-[6px] border border-zinc-200 bg-white text-center text-b2 text-neutral-1000 outline-none transition-colors focus:border-primary-300 sm:h-14 sm:w-12"
-                    />
+                    value={digit}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    className="h-12 w-10 rounded-[6px] border border-zinc-200 bg-white text-center text-b2 text-neutral-1000 outline-none transition-colors focus:border-primary-300 sm:h-14 sm:w-12"
+                  />
                 ))}
               </div>
 
@@ -109,7 +116,7 @@ export default function OtpForm() {
 
               <div className="mt-4">
                 <Button type="submit" variant="auth" size="full" disabled={submitting}>
-                  {submitting ? 'Continuing...' : 'Verify'}
+                  {submitting ? 'Verifying...' : 'Verify'}
                 </Button>
               </div>
             </form>
@@ -122,7 +129,7 @@ export default function OtpForm() {
             {resending ? 'Sending...' : 'Resend'}
           </button>
         </p>
-        <Link href="/auth/forgot-password" className="text-b3 text-white underline hover:text-neutral-200">
+        <Link href="/auth/sign-up" className="text-b3 text-white underline hover:text-neutral-200">
           Change email
         </Link>
       </div>

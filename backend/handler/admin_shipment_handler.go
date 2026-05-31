@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -17,6 +18,14 @@ type BookShipmentRequest struct {
 }
 
 type BookShipmentResponse struct {
+	Message string `json:"message"`
+}
+
+type PackShipmentRequest struct {
+	OrderID string `json:"order_id" binding:"required"`
+}
+
+type PackShipmentResponse struct {
 	Message string `json:"message"`
 }
 
@@ -38,9 +47,38 @@ func (h *AdminShipmentHandler) BookShipment(c *gin.Context) {
 	}
 
 	if err := h.bookingService.BookShipmentForOrder(c.Request.Context(), orderID); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Message: "failed to book shipment: " + err.Error()})
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, service.ErrShippingOrderNotPaid) || errors.Is(err, service.ErrShippingOrderAlreadyBooked) || errors.Is(err, service.ErrShippingOrderInvalidState) || errors.Is(err, service.ErrMidtransOrderNotFound) {
+			statusCode = http.StatusBadRequest
+		}
+		c.JSON(statusCode, ErrorResponse{Message: "failed to book shipment: " + err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, BookShipmentResponse{Message: "shipment booked successfully"})
+}
+
+func (h *AdminShipmentHandler) MarkPacked(c *gin.Context) {
+	var req PackShipmentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Message: "invalid request: " + err.Error()})
+		return
+	}
+
+	orderID := strings.TrimSpace(req.OrderID)
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Message: "order_id is required"})
+		return
+	}
+
+	if err := h.bookingService.MarkOrderPacked(c.Request.Context(), orderID); err != nil {
+		statusCode := http.StatusInternalServerError
+		if errors.Is(err, service.ErrShippingOrderNotPaid) || errors.Is(err, service.ErrShippingOrderAlreadyBooked) || errors.Is(err, service.ErrShippingOrderInvalidState) || errors.Is(err, service.ErrMidtransOrderNotFound) {
+			statusCode = http.StatusBadRequest
+		}
+		c.JSON(statusCode, ErrorResponse{Message: "failed to mark packed: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, PackShipmentResponse{Message: "order marked as packed"})
 }

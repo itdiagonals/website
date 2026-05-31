@@ -13,8 +13,9 @@ export interface OrderItem {
   size: string;
   price: number;
   image: string;
-  status: "Order Accepted" | "Order Packaged" | "Order Sent" | "Order Finished";
+  status: string;
   timestamp: string;
+  tone?: "default" | "success" | "warning" | "danger";
 }
 
 interface OrderTrackingCardProps {
@@ -26,6 +27,14 @@ interface OrderTrackingCardProps {
 export function OrderTrackingCard({ item, variant = "ongoing", className }: OrderTrackingCardProps) {
   const router = useRouter();
   const isFinished = variant === "finished";
+  const statusToneClass =
+    item.tone === "success"
+      ? "text-green-700"
+      : item.tone === "warning"
+        ? "text-amber-700"
+        : item.tone === "danger"
+          ? "text-red-600"
+          : "text-secondary-500";
 
   return (
     <button
@@ -67,7 +76,7 @@ export function OrderTrackingCard({ item, variant = "ongoing", className }: Orde
             </div>
           )}
           <div className="flex flex-col gap-[9px] items-end text-right">
-            <p className="text-b3 font-bold text-secondary-500 whitespace-nowrap">{item.status}</p>
+            <p className={cn("text-b3 font-bold whitespace-nowrap", statusToneClass)}>{item.status}</p>
             <div className="text-b4 text-black whitespace-pre-wrap">
               {item.timestamp.split("\n").map((line, i) => (
                 <p key={i} className="leading-[18px]">
