@@ -14,9 +14,10 @@ interface Product {
 
 interface ProductRowProps {
   products: Product[];
+  isCarousel?: boolean;
 }
 
-export default function ProductRow({ products }: ProductRowProps) {
+export default function ProductRow({ products, isCarousel = true }: ProductRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollLeft = () => {
@@ -31,8 +32,47 @@ export default function ProductRow({ products }: ProductRowProps) {
     }
   };
 
+  // Render standard responsive grid instead of carousel when isCarousel is false
+  if (!isCarousel) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12 px-6 md:px-12 lg:px-20 w-full max-w-[1440px] mx-auto pb-6">
+        {products.map((product) => (
+          <Link
+            href={`/product/${product.id}`}
+            key={product.id}
+            className="flex flex-col gap-8 cursor-pointer w-full"
+          >
+            <div className="aspect-square flex items-center justify-center hover:scale-110 transition duration-600">
+              <Image
+                src={product.image}
+                alt={product.name}
+                width={200}
+                height={200}
+                className="object-contain"
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col gap-2">
+                <span className="text-primary-1000 text-base font-bold leading-tight font-sans hover:opacity-60 transition duration-600 line-clamp-1">
+                  {product.name}
+                </span>
+                <span className="text-primary-1000 text-xs font-normal font-sans">
+                  {product.price}
+                </span>
+              </div>
+              <div className="w-[27px] h-[27px] border border-neutral-900 flex items-center justify-center hover:bg-neutral-200 transition duration-600 shrink-0">
+                <ChevronRight size={16} strokeWidth={2} className="text-black" />
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="relative group w-full px-6">
+      {/* Left Navigation Chevron Arrow */}
       <button
         onClick={scrollLeft}
         aria-label="Scroll Left"
@@ -40,6 +80,8 @@ export default function ProductRow({ products }: ProductRowProps) {
       >
         <ChevronLeft size={18} className="text-black" />
       </button>
+
+      {/* Scrollable Products Row Container */}
       <div
         ref={scrollRef}
         className="flex flex-row overflow-x-auto gap-6 scrollbar-none scroll-smooth snap-x snap-mandatory pb-4"
@@ -77,6 +119,7 @@ export default function ProductRow({ products }: ProductRowProps) {
         ))}
       </div>
 
+      {/* Right Navigation Chevron Arrow */}
       <button
         onClick={scrollRight}
         aria-label="Scroll Right"
