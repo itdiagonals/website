@@ -7,9 +7,7 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.startsWith("/")
-  ? process.env.NEXT_PUBLIC_API_URL
-  : "http://localhost:8080/api/v1";
+const API_BASE_URL = process.env.INTERNAL_API_URL || "http://localhost:8080/api/v1";
 
 async function fetchBackendProduct(slug: string): Promise<BackendProduct | null> {
   try {

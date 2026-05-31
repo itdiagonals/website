@@ -36,7 +36,7 @@ export default function DashboardModule() {
       setError(null)
 
       try {
-        const statsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stats`)
+        const statsRes = await fetch('/api/v1/stats')
         if (!statsRes.ok) throw new Error('Failed to load stats')
         const statsData = await statsRes.json()
         setStats(statsData.data)

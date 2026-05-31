@@ -27,7 +27,7 @@ function InviteRedeemModule() {
         return
       }
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/users/invite-check?token=${encodeURIComponent(t)}`)
+        const res = await fetch(`/api/v1/users/invite-check?token=${encodeURIComponent(t)}`)
         if (!res.ok) {
           setStatus('invalid')
           return
