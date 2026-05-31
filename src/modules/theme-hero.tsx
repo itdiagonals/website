@@ -35,7 +35,7 @@ export default function ThemeHero({ theme }: ThemeHeroProps) {
         </div>
         {href && (
           <div className="">
-            <Link href={`/products/${href}`}>
+            <Link href={`${href}`}>
               <Button variant={"default"}>
                 Explore Now
               </Button>

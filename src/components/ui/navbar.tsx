@@ -46,7 +46,7 @@ function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVari
         "relative flex items-center border rounded-none overflow-hidden transition-all duration-500 ease-in-out",
         isMobile
           ? "w-full h-10"
-          : "hidden md:flex w-56 md:w-64 h-9",
+          : "hidden md:flex w-56 md:w-64 h-9",  
         isLight
           ? "bg-transparent border-neutral-400/50 focus-within:border-primary-500"
           : "bg-transparent border-neutral-300/30 focus-within:border-white"
@@ -208,7 +208,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                       "text-[12px] font-bold tracking-widest uppercase mb-1",
                       activeVariant === 'light' ? 'text-neutral-500' : 'text-neutral-400'
                     )}>
-                      PRODUK
+                      PRODUCT
                     </h4>
                     {NAV_PRODUCT_ITEMS.map((item) => (
                       <Link
@@ -274,7 +274,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                       activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
                     )}>
                       <Link
-                        href="/products"
+                        href="/season"
                         className={cn(
                           "text-[14px] font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-1",
                           activeVariant === 'light' ? 'text-black hover:text-primary-500' : 'text-white hover:text-neutral-300'
