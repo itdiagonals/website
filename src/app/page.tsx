@@ -2,14 +2,12 @@ import ThemeDesc from '../components/theme-desc';
 import RowGallery from '../components/row-gallery';
 import ThemeHero from '../modules/theme-hero';
 import WelcomeAnimation from '../components/welcome-animation';
-import NewArrivalHero from '../modules/new-arrival-hero';
-import Navbar from '../components/ui/navbar';
+import NewArrivalHero from '../modules/hero';
 // import ElLiguePremiere from '../modules/ElLiguePremiere';
 
 export default async function HomePage() {
   return (
     <>
-      <Navbar variant="dark" />
       <WelcomeAnimation currentSeason='Cross Player Season' />
       <NewArrivalHero />
       {/* <ElLiguePremiere/> */}

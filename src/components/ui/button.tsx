@@ -7,8 +7,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-neutral-100/50 text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
-        white: 'bg-white text-primary-700 hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
+        white: 'bg-white text-black hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
         outline: 'bg-transparent text-white hover:bg-primary-900 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
+        transparent: 'bg-white/40 text-black hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
       },
       size: {
         default: 'w-[190px]',
