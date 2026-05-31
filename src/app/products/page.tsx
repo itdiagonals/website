@@ -48,7 +48,7 @@ export default async function Products({ searchParams }: PageProps) {
     <section className="bg-neutral-100 py-28 flex flex-col items-center gap-12">
       {/* Decorative Theme Banner at the Top */}
       <div className="w-full max-w-[1440px] px-6 md:px-12 lg:px-20 mb-4">
-        <ThemeHero theme={{ title: 'Cross Player', image: '/CrossPlayer1.png', href: 'cross-player' }} />
+        <ThemeHero theme={{ title: 'Cross Player',  image: '/CrossPlayer1.png', href: 'cross-player' }} />
       </div>
 
       {/* Category Selection Filter Pills */}

@@ -50,7 +50,7 @@ const CAROUSEL_SLIDES: Slide[] = [
   },
 ];
 
-export default function NewArrivalHero() {
+export default function Hero() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const autoplayTimer = useRef<NodeJS.Timeout | null>(null);

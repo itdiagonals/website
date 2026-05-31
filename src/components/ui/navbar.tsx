@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Search, ShoppingCart, User, ChevronDown, X } from 'lucide-react';
+import { Search, ShoppingCart, User, ChevronDown, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
@@ -87,6 +87,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
 
   const isCartOrProfile = pathname?.startsWith('/cart') || pathname?.startsWith('/profile');
   const activeVariant = isCartOrProfile ? 'light' : variant;
+  const currentSeason = 'Cross Player';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -163,7 +164,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
 
           <nav className="hidden md:flex items-center gap-8 lg:gap-12">
             <Link
-              href="/new-arrivals"
+              href="/products"
               className={cn(
                 'text-base font-semibold tracking-wide transition-colors duration-500 ease-in-out',
                 isScrolled ? scrolledLink : linkDefault[activeVariant]
@@ -183,14 +184,18 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                 <ChevronDown className="w-4 h-4 transition-transform duration-300 group-hover:rotate-180" />
               </Link>
 
-              {/* Simple 2-Column Hover Dropdown */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[340px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[360px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
                 <div className={cn(
                   "border shadow-[0_20px_50px_rgba(0,0,0,0.25)] rounded-none py-6 px-6 grid grid-cols-2 gap-x-8 gap-y-4",
                   activeVariant === 'light' ? 'bg-neutral-100 border-neutral-200' : 'bg-primary-500 border-neutral-800/50'
                 )}>
-                  {/* Column 1: Categories */}
                   <div className="flex flex-col gap-3.5">
+                    <h4 className={cn(
+                      "text-[12px] font-bold tracking-widest uppercase mb-1",
+                      activeVariant === 'light' ? 'text-neutral-500' : 'text-neutral-400'
+                    )}>
+                      PRODUK
+                    </h4>
                     <Link
                       href="/products?category=Tops"
                       className={cn(
@@ -227,13 +232,42 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                     >
                       Men
                     </Link>
+
+                    {/* Divider and All Products */}
+                    <div className={cn(
+                      "border-t pt-3 mt-1",
+                      activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
+                    )}>
+                      <Link
+                        href="/products"
+                        className={cn(
+                          "text-[14px] font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-1",
+                          activeVariant === 'light' ? 'text-black hover:text-primary-500' : 'text-white hover:text-neutral-300'
+                        )}
+                      >
+                        All Products
+                        <span className="text-[12px] font-light">→</span>
+                      </Link>
+                    </div>
                   </div>
 
-                  {/* Column 2: Seasons */}
+                  {/* Column 2: SEASON */}
                   <div className={cn(
                     "flex flex-col gap-3.5 border-l pl-8",
                     activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
                   )}>
+                    <h4 className={cn(
+                      "text-[12px] font-bold tracking-widest uppercase mb-1",
+                      activeVariant === 'light' ? 'text-neutral-500' : 'text-neutral-400'
+                    )}>
+                      SEASON
+                    </h4>
+                    <Link
+                      href="/product/season"
+                      className="text-[14px] font-bold uppercase tracking-wider transition-colors duration-200 text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300"
+                    >
+                      {currentSeason}
+                    </Link>
                     <Link
                       href="/products?season=A"
                       className={cn(
@@ -261,32 +295,22 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                     >
                       Season C
                     </Link>
-                    <Link
-                      href="/products?season=D"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Season D
-                    </Link>
-                  </div>
 
-                  {/* Bottom: All Products */}
-                  <div className={cn(
-                    "col-span-2 border-t pt-4 mt-2 flex justify-center",
-                    activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
-                  )}>
-                    <Link
-                      href="/products"
-                      className={cn(
-                        "text-[14px] font-bold uppercase tracking-widest transition-colors duration-200 flex items-center gap-1.5",
-                        activeVariant === 'light' ? 'text-black hover:text-primary-500' : 'text-white hover:text-neutral-300'
-                      )}
-                    >
-                      All Products
-                      <span className="text-[12px] font-light">→</span>
-                    </Link>
+                    <div className={cn(
+                      "border-t pt-3 mt-1",
+                      activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
+                    )}>
+                      <Link
+                        href="/products"
+                        className={cn(
+                          "text-[14px] font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-1",
+                          activeVariant === 'light' ? 'text-black hover:text-primary-500' : 'text-white hover:text-neutral-300'
+                        )}
+                      >
+                        All Seasons
+                        <ChevronRight />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

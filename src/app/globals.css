@@ -161,3 +161,12 @@ body {
   line-height: 15px;
   font-weight: 400;
 }
+
+/* Utility to hide scrollbars for clean custom carousels */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
