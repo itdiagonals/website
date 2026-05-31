@@ -16,7 +16,7 @@ FROM alpine:3.21
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tzdata libwebp webp
+RUN apk add --no-cache ca-certificates tzdata libwebp
 
 RUN addgroup -S app && adduser -S app -G app
 
