@@ -22,7 +22,7 @@ export default function SeasonPromoSection({
       <div className="relative bg-primary-500 min-h-[261px] overflow-hidden w-full">
         <div className="absolute top-1/2 left-4 md:left-[102px] -translate-y-1/2 pointer-events-none select-none">
           <div className="rotate-[-6.87deg] text-white/10 text-center font-[Handi] text-[28px] md:text-[44.6px] leading-[48px] md:leading-[74px] whitespace-nowrap">
-            <p>"Across" signals a bridge, not a break: we cross</p>
+            <p>&ldquo;Across&rdquo; signals a bridge, not a break: we cross</p>
             <p>contexts and make them belong. Visually, the rhombus holds</p>
             <p>the balance and the diagonal carries the motion—together</p>
             <p>they bring opposites into quiet coherence.</p>

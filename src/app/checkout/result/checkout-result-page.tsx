@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import Navbar from "@/components/ui/navbar";
 
 export default function CheckoutResultPage() {
   const searchParams = useSearchParams();

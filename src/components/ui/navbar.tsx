@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Search, ShoppingCart, ChevronDown, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { api, Category, Season } from '@/src/lib/api';
+import { api } from '@/src/lib/api';
 import NavbarAccountMenu from '@/src/components/auth/navbar-account-menu';
 
 export type NavbarVariant = 'dark' | 'light' | 'transparent';
@@ -18,19 +18,12 @@ interface NavbarProps {
 function SearchBar({ variant, isScrolled = false, isMobile = false, onClose }: { variant: NavbarVariant; isScrolled?: boolean; isMobile?: boolean; onClose?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    const currentSearch = searchParams.get('search');
-    if (currentSearch) {
-      setQuery(currentSearch);
-    } else {
-      setQuery('');
-    }
-  }, [searchParams]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const currentSearch = searchParams.get('search') ?? '';
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const query = inputRef.current?.value.trim() ?? '';
     if (query.trim()) {
       router.push(`/products?search=${encodeURIComponent(query.trim())}`);
     } else {
@@ -54,14 +47,15 @@ function SearchBar({ variant, isScrolled = false, isMobile = false, onClose }: {
           : "bg-transparent border-neutral-400/50 focus-within:border-primary-900"
       )}
     >
-      <input
-        type="text"
-        placeholder="Search..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className={cn(
-          "w-full h-full pl-3 pr-9 bg-transparent text-sm outline-none transition-colors duration-500 ease-in-out",
-          isDarkMode
+        <input
+          key={currentSearch}
+          ref={inputRef}
+          type="text"
+          placeholder="Search..."
+          defaultValue={currentSearch}
+          className={cn(
+            "w-full h-full pl-3 pr-9 bg-transparent text-sm outline-none transition-colors duration-500 ease-in-out",
+            isDarkMode
             ? "text-white placeholder:text-white/60"
             : "text-primary-500 placeholder:text-neutral-500"
         )}
@@ -82,24 +76,9 @@ function SearchBar({ variant, isScrolled = false, isMobile = false, onClose }: {
   );
 }
 
-const NAV_PRODUCT_ITEMS = [
-  { title: 'Tops', href: '/products?category=Tops' },
-  { title: 'Bottoms', href: '/products?category=Bottoms' },
-  { title: 'Women', href: '/products?category=Women' },
-  { title: 'Men', href: '/products?category=Men' }
-];
-
-const NAV_SEASON_ITEMS = [
-  { title: 'Season A', href: '/season/water-to-the-rescue' },
-  { title: 'Season B', href: '/season/punk-rocker-yes-i-am' },
-  { title: 'Season C', href: '/season/the-hills' }
-];
-
 export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [seasons, setSeasons] = useState<Season[]>([]);
   const pathname = usePathname();
 
   const isCartOrProfile = pathname?.startsWith('/cart') || pathname?.startsWith('/profile');
@@ -120,35 +99,6 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadNavbarData = async () => {
-      try {
-        const [categoryData, seasonData] = await Promise.all([
-          api.categories.getAll(1, 50),
-          api.seasons.getAll(1, 50),
-        ]);
-
-        if (!cancelled) {
-          setCategories(categoryData);
-          setSeasons(seasonData);
-        }
-      } catch {
-        if (!cancelled) {
-          setCategories([]);
-          setSeasons([]);
-        }
-      }
-    };
-
-    void loadNavbarData();
-
-    return () => {
-      cancelled = true;
     };
   }, []);
 

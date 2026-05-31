@@ -1,6 +1,6 @@
 function getBaseUrl(): string {
   const env = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
-  const internalApiUrl = process.env.INTERNAL_API_URL || 'http://backend:8080/api/v1'
+  const internalApiUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080/api/v1'
 
   if (typeof window !== 'undefined') {
     return env

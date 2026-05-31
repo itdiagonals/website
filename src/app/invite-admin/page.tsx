@@ -12,13 +12,11 @@ function InviteRedeemModule() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 
-  const [status, setStatus] = useState<'loading' | 'valid' | 'invalid' | 'promoted' | 'needs_auth'>('loading')
+  const [status, setStatus] = useState<'loading' | 'valid' | 'invalid' | 'promoted' | 'needs_auth'>(token ? 'loading' : 'invalid')
   const [tokenEmail, setTokenEmail] = useState('')
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) {
-      setStatus('invalid')
       return
     }
 
@@ -111,14 +109,6 @@ function InviteRedeemModule() {
           <strong className="text-neutral-800">{tokenEmail}</strong> has been invited to join the Diagonals admin team.
         </p>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          <XCircle className="h-4 w-4" />
-          {error}
-        </div>
-      )}
-
       <div className="flex w-full max-w-xs flex-col gap-3">
         <Link
           href={`/auth/sign-in?redirect=${returnUrl}`}

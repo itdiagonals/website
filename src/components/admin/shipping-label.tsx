@@ -154,7 +154,6 @@ export default function ShippingLabel({ order, productNames }: ShippingLabelProp
 
   useEffect(() => {
     if (!trackingNumber) {
-      setBarcodeUrl('')
       return
     }
 

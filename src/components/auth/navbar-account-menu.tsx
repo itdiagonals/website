@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Loader2, LogOut, ShoppingCart, User, ReceiptText, ChevronDown } from 'lucide-react'
+import { Loader2, LogOut, User, ChevronDown } from 'lucide-react'
 
 import { api, ApiError, type User as UserModel } from '@/lib/api'
 import { cn } from '@/lib/utils'

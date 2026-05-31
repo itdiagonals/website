@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 
 export interface BuilderColor {
@@ -76,12 +76,6 @@ export default function ProductVariantBuilder({
   const [localColors, setLocalColors] = useState<BuilderColor[]>(colors.length > 0 ? colors : [])
   const [localSizes, setLocalSizes] = useState<BuilderSize[]>(sizes.length > 0 ? sizes : [])
   const [localVariants, setLocalVariants] = useState<BuilderVariant[]>(variants)
-
-  useEffect(() => {
-    setLocalColors(colors.length > 0 ? colors : [])
-    setLocalSizes(sizes.length > 0 ? sizes : [])
-    setLocalVariants(variants)
-  }, [colors, sizes, variants])
 
   const updateParent = useCallback(
     (nextColors: BuilderColor[], nextSizes: BuilderSize[], nextVariants: BuilderVariant[]) => {
