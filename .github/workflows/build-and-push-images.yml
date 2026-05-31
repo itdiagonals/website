@@ -74,3 +74,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Trigger Dokploy deploy
+        shell: bash
+        run: |
+          if [ "${{ matrix.image_name }}" = "diagonals-backend" ]; then
+            curl -X POST "${{ secrets.DOKPLOY_BACKEND_WEBHOOK_URL }}"
+          fi
+
+          if [ "${{ matrix.image_name }}" = "diagonals-frontend" ]; then
+            curl -X POST "${{ secrets.DOKPLOY_FRONTEND_WEBHOOK_URL }}"
+          fi
