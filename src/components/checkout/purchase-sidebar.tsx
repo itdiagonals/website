@@ -34,12 +34,12 @@ export function PurchaseSidebar({ items, showTitle = true, className }: Purchase
           <div
             key={item.id}
             className={cn(
-              "bg-white border border-primary-100 min-h-[192px] p-3 sm:p-4",
+              "bg-white border border-primary-100 min-h-[192px] p-3 sm:p-4 flex items-center",
               idx === 0 && "rounded-t-[10px]",
               idx === items.length - 1 && "rounded-b-[10px]"
             )}
           >
-            <div className="flex gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="relative w-[96px] h-[120px] sm:w-[113.887px] sm:h-[142.358px] shrink-0">
                 <Image
                   src={item.image}
@@ -50,15 +50,15 @@ export function PurchaseSidebar({ items, showTitle = true, className }: Purchase
                 />
               </div>
 
-              <div className="flex flex-col gap-[0.886px] text-black min-w-0">
+              <div className="flex flex-col gap-3 text-black min-w-0 justify-center">
                 <p
-                  className="font-medium text-[12.411px] leading-[21.276px] break-words"
+                  className="font-medium text-[18px] md:text-[16px] leading-[21.276px] break-words"
                   style={{ fontFamily: "Poppins, sans-serif" }}
                 >
                   {item.name}
                 </p>
                 <div
-                  className="text-[10.638px] leading-[0]"
+                  className="text-[16px] md:text-[14px] leading-[0]"
                   style={{ fontFamily: "Poppins, sans-serif" }}
                 >
                   <p className="leading-[21.276px]">{item.gender}</p>
