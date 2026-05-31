@@ -22,6 +22,8 @@ RUN addgroup -S app && adduser -S app -G app
 
 COPY --from=builder /out/server /app/server
 COPY --from=builder /out/migrate /app/migrate
+COPY --from=builder /src/migrations /app/migrations
+COPY --from=builder /src/utils/wilayah /app/utils/wilayah
 
 USER app
 
