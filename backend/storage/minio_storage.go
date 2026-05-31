@@ -73,7 +73,10 @@ func NewMinioStorage() (*MinioStorage, error) {
 		return nil, fmt.Errorf("failed to set MinIO lifecycle policy: %w", err)
 	}
 
-	publicURL := fmt.Sprintf("%s%s/%s", scheme, endpoint, bucket)
+	publicURL := PublicURLPrefix()
+	if publicURL == "" {
+		publicURL = fmt.Sprintf("%s%s/%s", scheme, endpoint, bucket)
+	}
 
 	return &MinioStorage{
 		client:     client,
@@ -112,7 +115,7 @@ func (s *MinioStorage) Put(ctx context.Context, objectKey string, reader io.Read
 		return UploadResult{}, fmt.Errorf("minio put object failed: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s", s.publicURL, objectKey)
+	url := PublicObjectURL(objectKey)
 	return UploadResult{
 		URL:      url,
 		Size:     info.Size,
