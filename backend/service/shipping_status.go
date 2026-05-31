@@ -4,12 +4,13 @@ import "strings"
 
 var shippingStatusRank = map[string]int{
 	"pending":    0,
-	"booked":     1,
-	"picking_up": 2,
-	"picked":     3,
-	"in_transit": 4,
-	"delivered":  5,
-	"failed":     5,
+	"packed":     1,
+	"booked":     2,
+	"picking_up": 3,
+	"picked":     4,
+	"in_transit": 5,
+	"delivered":  6,
+	"failed":     6,
 }
 
 func chooseLatestShippingStatus(current string, incoming string) string {

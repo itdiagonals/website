@@ -12,7 +12,6 @@ import { api } from '@/lib/api'
 export default function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTarget = searchParams.get('redirect') || '/auth/sign-in'
   const prefilledEmail = searchParams.get('email') || ''
 
   const [name, setName] = useState('')
@@ -39,10 +38,7 @@ export default function SignUpForm() {
 
     try {
       await api.auth.register({ name, email, password })
-      const signInUrl = redirectTarget.startsWith('/')
-        ? `/auth/sign-in?redirect=${encodeURIComponent(redirectTarget)}`
-        : '/auth/sign-in'
-      router.replace(signInUrl)
+      router.replace(`/auth/verify-email?email=${encodeURIComponent(email)}`)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Registrasi gagal.')
     } finally {
@@ -63,7 +59,7 @@ export default function SignUpForm() {
           <div className="flex flex-col items-center gap-[7px]">
             <div className="flex h-[65px] w-[259px] items-center justify-center">
               <img
-                src="/images/diagonals.webp"
+                src="/logo/diagonals.webp"
                 alt="Logo"
                 className="h-full w-full object-contain"
               />
@@ -101,7 +97,7 @@ export default function SignUpForm() {
               {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="mt-4">
-                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                <Button type="submit" variant="auth" size="full" disabled={submitting}>
                   {submitting ? 'Creating account...' : 'Sign Up'}
                 </Button>
               </div>

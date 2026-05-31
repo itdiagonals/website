@@ -6,6 +6,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { api } from '../lib/api';
+
+type Season = Awaited<ReturnType<typeof api.seasons.getAll>>[number];
+
+interface HeroProps {
+  seasons: Season[];
+}
+
 interface Slide {
   id: number;
   title: string;
@@ -15,47 +23,29 @@ interface Slide {
   isCurrent: boolean;
 }
 
-const CAROUSEL_SLIDES: Slide[] = [
-  {
-    id: 1,
-    title: 'Cross Player',
-    subtitle: 'Breeze of the Game',
-    image: '/Frame1.png',
-    link: '/product/season',
-    isCurrent: true,
-  },
-  {
-    id: 2,
-    title: 'Retro Classic',
-    subtitle: 'Season A Vintage Comfort',
-    image: '/image-1.png',
-    link: '/products',
-    isCurrent: false,
-  },
-  {
-    id: 3,
-    title: 'El Ligue Premiere',
-    subtitle: 'Season B: Football Heritage',
-    image: '/image-2.png',
-    link: '/products',
-    isCurrent: false,
-  },
-  {
-    id: 4,
-    title: 'All Season Classics',
-    subtitle: 'Season C: Timeless Collection',
-    image: '/image-3.png',
-    link: '/products',
-    isCurrent: false,
-  },
-];
+function mapSeasonsToSlides(seasons: Season[]): Slide[] {
+  const sorted = [...seasons].sort((a, b) => {
+    if (a.is_active && !b.is_active) return -1;
+    if (!a.is_active && b.is_active) return 1;
+    return 0;
+  });
+  return sorted.map((s) => ({
+    id: s.id,
+    title: s.name,
+    subtitle: s.subtitle || s.description || '',
+    image: s.cover_image?.url || '/Frame1.png',
+    link: `/season/${s.slug}`,
+    isCurrent: s.is_active,
+  }));
+}
 
-export default function Hero() {
+export default function Hero({ seasons }: HeroProps) {
+  const slides = mapSeasonsToSlides(seasons);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const autoplayTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const totalSlides = CAROUSEL_SLIDES.length;
+  const totalSlides = slides.length;
 
   const nextSlide = () => {
     setCurrentIdx((prev) => (prev + 1) % totalSlides);
@@ -90,7 +80,7 @@ export default function Hero() {
       className="relative w-full h-[850px] overflow-hidden text-neutral-100 font-sans"
     >
       <div className="absolute inset-0 w-full h-full">
-        {CAROUSEL_SLIDES.map((slide, idx) => (
+        {slides.map((slide, idx) => (
           <div
             key={slide.id}
             style={{
@@ -111,7 +101,7 @@ export default function Hero() {
       <div className="absolute top-0 left-0 w-full h-[220px] bg-[linear-gradient(180deg,rgba(0,0,0,0.65)_0%,rgba(0,0,0,0)_100%)] z-20 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-full h-[320px] bg-[linear-gradient(0deg,rgba(0,0,0,0.7)_0%,rgba(0,0,0,0)_100%)] z-20 pointer-events-none" />
 
-      {CAROUSEL_SLIDES.map((slide, idx) => (
+      {slides.map((slide, idx) => (
         <div
           key={slide.id}
           className={cn(
@@ -156,7 +146,7 @@ export default function Hero() {
       </button>
 
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3">
-        {CAROUSEL_SLIDES.map((_, idx) => (
+        {slides.map((_, idx) => (
           <button
             key={idx}
             onClick={() => goToSlide(idx)}

@@ -13,9 +13,10 @@ import (
 func registerCartRoutes(router *gin.Engine, redisClient *redis.Client, db *gorm.DB) {
 	cartRepository := repository.NewCartRepository(db, redisClient)
 	productRepository := repository.NewProductRepository(db)
+	stockReservationService := service.NewRedisStockReservationService(redisClient, productRepository)
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
-	cartService := service.NewCartService(cartRepository, productRepository)
+	cartService := service.NewCartService(cartRepository, productRepository, stockReservationService)
 	cartHandler := handler.NewCartHandler(cartService)
 
 	protected := router.Group("/api/v1")

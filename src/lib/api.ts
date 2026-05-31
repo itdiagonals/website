@@ -1,4 +1,18 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
+function getBaseUrl(): string {
+  const env = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+  const internalApiUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080/api/v1'
+
+  if (typeof window !== 'undefined') {
+    return env
+  }
+
+  if (env.startsWith('http')) {
+    return env
+  }
+  return internalApiUrl
+}
+
+const API_BASE_URL = getBaseUrl()
 
 type JsonRecord = Record<string, unknown>
 
@@ -536,6 +550,7 @@ export interface Product {
   detail_info?: Record<string, unknown> | null
   care_guide_id: number
   care_guide?: CareGuide
+  is_lookbook?: boolean
   available_colors?: ProductColor[]
   available_sizes?: ProductSize[]
   gallery?: ProductGalleryItem[]
@@ -590,6 +605,209 @@ export interface ProductPayload {
   draft_id?: string
 }
 
+export interface CartItem {
+  id: number
+  product_id: number
+  product_name: string
+  gender: string
+  image_url: string
+  base_price: number
+  available_stock: number
+  stock_sufficient: boolean
+  stock_message?: string
+  quantity: number
+  subtotal: number
+  selected_size: string
+  selected_color_name: string
+  selected_color_hex?: string
+}
+
+export interface Cart {
+  user_id: string
+  items: CartItem[]
+}
+
+export interface AddToCartPayload {
+  product_id: number
+  quantity: number
+  selected_size: string
+  selected_color_name: string
+  selected_color_hex?: string
+}
+
+export interface UpdateCartQuantityPayload {
+  cart_item_id: number
+  quantity: number
+}
+
+export interface RemoveFromCartPayload {
+  cart_item_id: number
+}
+
+export interface TransactionHistoryListItem {
+  id: number
+  order_id: string
+  customer_id: string
+  total_amount: number
+  shipping_cost: number
+  status: string
+  shipping_status: string
+  courier_name: string
+  courier_service: string
+  tracking_number?: string
+  created_at: string
+}
+
+export interface TransactionHistoryPagination {
+  page: number
+  limit: number
+  total: number
+  total_pages: number
+}
+
+export interface TransactionHistoryListResponse {
+  data: TransactionHistoryListItem[]
+  pagination: TransactionHistoryPagination
+}
+
+export interface ShippingRate {
+  courier_name: string
+  courier_code: string
+  service_name: string
+  service_code: string
+  price: number
+  estimated_days?: string
+  estimated_range?: string
+  available_collection_types?: string[]
+  shipping_fee?: number
+  insurance_fee?: number
+  cash_on_delivery_fee?: number
+}
+
+export interface TransactionHistoryDetailItem {
+  id: number
+  product_id: number
+  selected_size: string
+  selected_color_name: string
+  selected_color_hex?: string
+  quantity: number
+  price: number
+  subtotal: number
+}
+
+export interface TransactionHistoryAddressSummary {
+  id: number
+  title: string
+  recipient_name: string
+  phone_number: string
+  province: string
+  city: string
+  district: string
+  village: string
+  postal_code: string
+  full_address: string
+  latitude?: number
+  longitude?: number
+  destination_area_id?: string
+  destination_area_label?: string
+  is_primary: boolean
+}
+
+export interface TransactionHistorySenderInfo {
+  name: string
+  phone: string
+  email: string
+  address: string
+  postal_code: string
+}
+
+export interface TransactionHistoryDetail {
+  id: number
+  order_id: string
+  customer_id: string
+  shipping_address_id: number
+  total_amount: number
+  shipping_cost: number
+  status: string
+  shipping_status: string
+  courier_name: string
+  courier_service: string
+  tracking_number?: string
+  snap_token: string
+  notes?: string
+  created_at: string
+  updated_at: string
+  shipping_address: TransactionHistoryAddressSummary
+  sender?: TransactionHistorySenderInfo
+  items: TransactionHistoryDetailItem[]
+}
+
+export interface ShippingTrackingEvent {
+  status?: string
+  note?: string
+  description?: string
+  updated_at?: string
+  [key: string]: unknown
+}
+
+export interface TransactionTrackingData {
+  order_id: string
+  biteship_order_id?: string
+  tracking_number?: string
+  shipping_status: string
+  raw_status?: string
+  tracking_link?: string
+  courier_name: string
+  courier_service: string
+  events?: ShippingTrackingEvent[]
+}
+
+export interface CustomerAddress {
+  id: number
+  user_id: string
+  title: string
+  recipient_name: string
+  phone_number: string
+  province: string
+  city: string
+  district: string
+  village: string
+  postal_code: string
+  full_address: string
+  latitude?: number
+  longitude?: number
+  place_id?: string
+  map_provider?: string
+  location_source?: string
+  destination_area_id?: string
+  destination_area_label?: string
+  is_primary: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AddAddressPayload {
+  title: string
+  recipient_name: string
+  phone_number: string
+  province: string
+  city: string
+  district: string
+  village: string
+  postal_code: string
+  full_address: string
+  latitude?: number | null
+  longitude?: number | null
+  place_id?: string
+  map_provider?: string
+  location_source?: string
+  destination_area_id?: string
+  destination_area_label?: string
+  is_primary?: boolean
+}
+
+export type UpdateAddressPayload = AddAddressPayload
+
 export interface PresignedURLResponse {
   signed_url: string
   object_key: string
@@ -611,6 +829,10 @@ export const api = {
     getCsrf: () => ensureCsrfToken(true),
     register: async (data: { name: string; email: string; password: string }) => {
       const response = await request<AuthStatusResponse>('/auth/register', { method: 'POST', body: data }, { unwrapData: false })
+      return response
+    },
+    verifyRegistration: async (data: { email: string; code: string }) => {
+      const response = await request<AuthStatusResponse>('/auth/verify-registration', { method: 'POST', body: data }, { unwrapData: false })
       startSilentRefresh()
       return response
     },
@@ -650,6 +872,8 @@ export const api = {
   },
 
   users: {
+    me: () => request<User>('/users/me', undefined, { retryOnUnauthorized: true }),
+    updateMe: (data: { name: string; phone?: string }) => request<User>('/users/me', { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
     getAll: (page = 1, limit = 50) => request<User[]>(`/users?page=${page}&limit=${limit}`, undefined, { retryOnUnauthorized: true }),
     create: (data: CreateUserPayload) => request<User>('/users', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     update: (id: string, data: UserPayload) => request<User>(`/users/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
@@ -696,8 +920,10 @@ export const api = {
       params.set('limit', String(limit))
       return request<Product[]>(`/products?${params.toString()}`)
     },
+    getLookbooks: (limit = 3) => request<Product[]>(`/products?is_lookbook=true&limit=${limit}`),
     getById: (id: number) => request<Product>(`/products/${id}`),
     getBySlug: (slug: string) => request<Product>(`/products/slug/${slug}`),
+    getSimilar: (id: number, limit = 4) => request<Product[]>(`/products/${id}/similar?limit=${limit}`),
     create: (data: ProductPayload) => request<Product>('/products', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     update: (id: number, data: ProductPayload) =>
       request<Product>(`/products/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
@@ -741,5 +967,46 @@ export const api = {
       data: Pick<Media, 'alt' | 'url' | 'filename'> & Partial<Pick<Media, 'mime_type' | 'filesize' | 'width' | 'height'>>,
     ) => request<Media>(`/media/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
     delete: (id: number) => request<void>(`/media/${id}`, { method: 'DELETE' }, { retryOnUnauthorized: true }),
+  },
+
+  cart: {
+    get: () => request<Cart>('/cart', undefined, { retryOnUnauthorized: true }),
+    add: (data: AddToCartPayload) => request<Cart>('/cart/add', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    updateQuantity: (data: UpdateCartQuantityPayload) => request<Cart>('/cart/quantity', { method: 'PATCH', body: data }, { retryOnUnauthorized: true }),
+    remove: (data: RemoveFromCartPayload) => request<Cart>('/cart/remove', { method: 'DELETE', body: data }, { retryOnUnauthorized: true }),
+  },
+
+  checkout: {
+    rates: (data: { address_id: number; couriers?: string; selected_cart_item_ids: number[] }) =>
+      request<{ address_id: number; subtotal: number; total_weight: number; rates: ShippingRate[] }>('/checkout/rates', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    create: (data: { address_id: number; courier_name: string; courier_service: string; selected_cart_item_ids: number[]; notes?: string }) =>
+      request<TransactionHistoryDetail>('/checkout', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+  },
+
+  transactions: {
+    getAll: (page = 1, limit = 50) => request<TransactionHistoryListResponse>(`/transactions?page=${page}&limit=${limit}`, undefined, { retryOnUnauthorized: true, unwrapData: false }).then((response) => response.data),
+    getByOrderId: (orderId: string) => request<TransactionHistoryDetail>(`/transactions/${orderId}`, undefined, { retryOnUnauthorized: true }),
+    getTracking: (orderId: string, refresh = false) => request<TransactionTrackingData>(`/transactions/${orderId}/tracking${refresh ? '?refresh=true' : ''}`, undefined, { retryOnUnauthorized: true }),
+  },
+
+  addresses: {
+    getAll: () => request<CustomerAddress[]>('/addresses', undefined, { retryOnUnauthorized: true }),
+    create: (data: AddAddressPayload) => request<CustomerAddress>('/addresses', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    update: (id: number, data: UpdateAddressPayload) => request<CustomerAddress>(`/addresses/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
+  },
+
+  admin: {
+    packShipment: (data: { order_id: string }) =>
+      request<{ message: string }>('/admin/shipments/pack', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    bookShipment: (data: { order_id: string }) =>
+      request<{ message: string }>('/admin/shipments/book', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
+    transactions: (page = 1, limit = 50, status?: string) => {
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('limit', String(limit))
+      if (status) params.set('status', status)
+      return request<TransactionHistoryListResponse>(`/admin/transactions?${params.toString()}`, undefined, { retryOnUnauthorized: true, unwrapData: false })
+    },
+    getByOrderId: (orderId: string) => request<TransactionHistoryDetail>(`/admin/transactions/${orderId}`, undefined, { retryOnUnauthorized: true }),
   },
 }

@@ -78,7 +78,7 @@ export default function OtpForm() {
           <div className="flex flex-col items-center gap-[7px]">
             <div className="flex h-[65px] w-[259px] items-center justify-center">
               <img
-                src="/images/diagonals.webp"
+                src="/logo/diagonals.webp"
                 alt="Logo"
                 className="h-full w-full object-contain"
               />
@@ -108,7 +108,7 @@ export default function OtpForm() {
               {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="mt-4">
-                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                <Button type="submit" variant="auth" size="full" disabled={submitting}>
                   {submitting ? 'Continuing...' : 'Verify'}
                 </Button>
               </div>

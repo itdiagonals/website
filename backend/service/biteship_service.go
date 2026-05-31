@@ -237,6 +237,11 @@ func (service *biteshipService) CreateOrder(ctx context.Context, req CreateShipp
 		return nil, ErrInvalidShippingRequest
 	}
 
+	deliveryType := strings.TrimSpace(req.DeliveryType)
+	if deliveryType == "" {
+		deliveryType = "now"
+	}
+
 	requestBody := map[string]any{
 		"reference_id":              referenceID,
 		"origin_contact_name":       service.config.OriginName,
@@ -250,7 +255,7 @@ func (service *biteshipService) CreateOrder(ctx context.Context, req CreateShipp
 		"destination_postal_code":   destinationPostalCode,
 		"courier_company":           courierCompany,
 		"courier_type":              courierType,
-		"delivery_type":             "now",
+		"delivery_type":             deliveryType,
 		"items":                     items,
 	}
 
@@ -362,6 +367,7 @@ func (service *biteshipService) GetTrackingByWaybill(ctx context.Context, waybil
 			Status         string `json:"status"`
 			WaybillID      string `json:"waybill_id"`
 			TrackingNumber string `json:"tracking_number"`
+			Link           string `json:"link"`
 			History        []struct {
 				Status    string `json:"status"`
 				Note      string `json:"note"`
@@ -371,6 +377,7 @@ func (service *biteshipService) GetTrackingByWaybill(ctx context.Context, waybil
 			} `json:"history"`
 		} `json:"tracking"`
 		Status string `json:"status"`
+		Link   string `json:"link"`
 	}
 	if err := json.Unmarshal(responseBody, &payload); err != nil {
 		return nil, err
@@ -397,6 +404,7 @@ func (service *biteshipService) GetTrackingByWaybill(ctx context.Context, waybil
 		TrackingNumber: trackingNumber,
 		ShippingStatus: normalizeShippingStatus(rawStatus),
 		RawStatus:      rawStatus,
+		TrackingLink:   firstNonEmptyString(strings.TrimSpace(payload.Tracking.Link), strings.TrimSpace(payload.Link)),
 		Events:         events,
 	}, nil
 }
@@ -569,6 +577,8 @@ func firstNonEmptyString(values ...string) string {
 func normalizeShippingStatus(value string) string {
 	status := strings.ToLower(strings.TrimSpace(value))
 	switch status {
+	case "packed", "packaged", "processing":
+		return "packed"
 	case "confirmed", "booked", "scheduled", "allocated", "ready", "ready_to_ship":
 		return "booked"
 	case "picked", "picked_up":

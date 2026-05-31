@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Search, ShoppingCart, User, ChevronDown, X, ChevronRight } from 'lucide-react';
+import { Search, ShoppingCart, ChevronDown, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { api } from '@/src/lib/api';
+import NavbarAccountMenu from '@/src/components/auth/navbar-account-menu';
 
 export type NavbarVariant = 'dark' | 'light' | 'transparent';
 
@@ -13,22 +15,15 @@ interface NavbarProps {
   variant?: NavbarVariant;
 }
 
-function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVariant; isMobile?: boolean; onClose?: () => void }) {
+function SearchBar({ variant, isScrolled = false, isMobile = false, onClose }: { variant: NavbarVariant; isScrolled?: boolean; isMobile?: boolean; onClose?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    const currentSearch = searchParams.get('search');
-    if (currentSearch) {
-      setQuery(currentSearch);
-    } else {
-      setQuery('');
-    }
-  }, [searchParams]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const currentSearch = searchParams.get('search') ?? '';
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const query = inputRef.current?.value.trim() ?? '';
     if (query.trim()) {
       router.push(`/products?search=${encodeURIComponent(query.trim())}`);
     } else {
@@ -37,7 +32,7 @@ function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVari
     if (onClose) onClose();
   };
 
-  const isLight = variant === 'light';
+  const isDarkMode = isScrolled || variant === 'dark';
 
   return (
     <form
@@ -46,22 +41,23 @@ function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVari
         "relative flex items-center border rounded-none overflow-hidden transition-all duration-500 ease-in-out",
         isMobile
           ? "w-full h-10"
-          : "hidden md:flex w-56 md:w-64 h-9",  
-        isLight
-          ? "bg-transparent border-neutral-400/50 focus-within:border-primary-500"
-          : "bg-transparent border-neutral-300/30 focus-within:border-white"
+          : "hidden md:flex w-56 md:w-64 h-9",
+        isDarkMode
+          ? "bg-transparent border-white/30 focus-within:border-white/60"
+          : "bg-transparent border-neutral-400/50 focus-within:border-primary-900"
       )}
     >
-      <input
-        type="text"
-        placeholder="Search..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className={cn(
-          "w-full h-full pl-3 pr-9 bg-transparent text-sm outline-none transition-colors duration-500 ease-in-out",
-          isLight
-            ? "text-primary-500 placeholder:text-neutral-500"
-            : "text-white placeholder:text-neutral-400"
+        <input
+          key={currentSearch}
+          ref={inputRef}
+          type="text"
+          placeholder="Search..."
+          defaultValue={currentSearch}
+          className={cn(
+            "w-full h-full pl-3 pr-9 bg-transparent text-sm outline-none transition-colors duration-500 ease-in-out",
+            isDarkMode
+            ? "text-white placeholder:text-white/60"
+            : "text-primary-500 placeholder:text-neutral-500"
         )}
       />
       <button
@@ -69,9 +65,9 @@ function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVari
         aria-label="Search products"
         className={cn(
           "absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer transition-colors duration-300",
-          isLight
-            ? "text-neutral-600 hover:text-primary-500"
-            : "text-neutral-300 hover:text-white"
+          isDarkMode
+            ? "text-white/70 hover:text-white"
+            : "text-neutral-600 hover:text-primary-500"
         )}
       >
         <Search className="w-4 h-4" />
@@ -79,19 +75,6 @@ function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVari
     </form>
   );
 }
-
-const NAV_PRODUCT_ITEMS = [
-  { title: 'Tops', href: '/products?category=Tops' },
-  { title: 'Bottoms', href: '/products?category=Bottoms' },
-  { title: 'Women', href: '/products?category=Women' },
-  { title: 'Men', href: '/products?category=Men' }
-];
-
-const NAV_SEASON_ITEMS = [
-  { title: 'Season A', href: '/season/water-to-the-rescue' },
-  { title: 'Season B', href: '/season/punk-rocker-yes-i-am' },
-  { title: 'Season C', href: '/season/the-hills' }
-];
 
 export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -101,7 +84,6 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const isCartOrProfile = pathname?.startsWith('/cart') || pathname?.startsWith('/profile');
   const activeVariant = isCartOrProfile ? 'light' : variant;
   const currentSeason = 'Cross Player';
-  const currentSeasonSlug = 'cross-player';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -125,26 +107,26 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
 
   const defaultClasses: Record<NavbarVariant, string> = {
     dark: 'bg-primary-500 border-neutral-800/40',
-    light: 'bg-neutral-100 border-neutral-200',
-    transparent: 'bg-transparent border-transparent',
+    light: 'bg-neutral-100 border-neutral-200 text-primary-500',
+    transparent: 'bg-neutral-100 border-neutral-200 text-primary-500',
   };
 
   const linkDefault: Record<NavbarVariant, string> = {
     dark: 'text-white hover:text-white',
     light: 'text-primary-500 hover:text-primary-900',
-    transparent: 'text-neutral-200 hover:text-white',
+    transparent: 'text-neutral-900 hover:text-primrary-500',
   };
 
   const iconDefault: Record<NavbarVariant, string> = {
     dark: 'text-white hover:text-white',
     light: 'text-primary-500 hover:text-primary-900',
-    transparent: 'text-neutral-200 hover:text-white',
+    transparent: 'text-neutral-900 hover:text-primary-500',
   };
 
   const scrolledLink = 'text-white hover:text-white';
   const scrolledIcon = 'text-white hover:text-white';
 
-  const showBlackLogo = !isScrolled && activeVariant === 'light';
+  const showBlackLogo = !isScrolled && activeVariant !== 'dark';
 
   return (
     <>
@@ -195,12 +177,12 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                 )}
               >
                 All Product
-                <ChevronDown className="w-4 h-4 transition-transform duration-300 group-hover:rotate-180" />
+                <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
               </Link>
 
-              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[360px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out z-50">
+              <div className="absolute top-full left-1/2 z-50 w-[360px] -translate-x-1/2 pt-2 opacity-0 invisible transition-all duration-300 ease-in-out group-hover:visible group-hover:opacity-100 lg:w-[520px]">
                 <div className={cn(
-                  "border shadow-[0_20px_50px_rgba(0,0,0,0.25)] rounded-none py-6 px-6 grid grid-cols-2 gap-x-8 gap-y-4",
+                  "grid grid-cols-2 gap-x-8 gap-y-4 border px-6 py-6 shadow-[0_20px_50px_rgba(0,0,0,0.25)] rounded-none lg:px-8",
                   activeVariant === 'light' ? 'bg-neutral-100 border-neutral-200' : 'bg-primary-500 border-neutral-800/50'
                 )}>
                   <div className="flex flex-col gap-3.5">
@@ -210,19 +192,44 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                     )}>
                       PRODUCT
                     </h4>
-                    {NAV_PRODUCT_ITEMS.map((item) => (
-                      <Link
-                        key={item.title}
-                        href={item.href}
-                        className={cn(
-                          "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                          activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                        )}
-                      >
-                        {item.title}
-                      </Link>
-                    ))}
+                    <Link
+                      href="/products?category=Tops"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Tops
+                    </Link>
+                    <Link
+                      href="/products?category=Bottoms"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Bottoms
+                    </Link>
+                    <Link
+                      href="/products?category=Women"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Women
+                    </Link>
+                    <Link
+                      href="/products?category=Men"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Men
+                    </Link>
 
+                    {/* Divider and All Products */}
                     <div className={cn(
                       "border-t pt-3 mt-1",
                       activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
@@ -235,7 +242,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                         )}
                       >
                         All Products
-                        <span className="text-[12px] font-light">→</span>
+                        <ChevronRight className="h-4 w-4" />
                       </Link>
                     </div>
                   </div>
@@ -251,23 +258,38 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                       SEASON
                     </h4>
                     <Link
-                      href={`/season/${currentSeasonSlug}`}
+                      href="/product/season"
                       className="text-[14px] font-bold uppercase tracking-wider transition-colors duration-200 text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300"
                     >
                       {currentSeason}
                     </Link>
-                    {NAV_SEASON_ITEMS.map((item) => (
-                      <Link
-                        key={item.title}
-                        href={item.href}
-                        className={cn(
-                          "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                          activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                        )}
-                      >
-                        {item.title}
-                      </Link>
-                    ))}
+                    <Link
+                      href="/products?season=A"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Season A
+                    </Link>
+                    <Link
+                      href="/products?season=B"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Season B
+                    </Link>
+                    <Link
+                      href="/products?season=C"
+                      className={cn(
+                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                      )}
+                    >
+                      Season C
+                    </Link>
 
                     <div className={cn(
                       "border-t pt-3 mt-1",
@@ -297,7 +319,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
               </div>
             }>
               <div className="hidden md:block">
-                <SearchBar variant={activeVariant} />
+                <SearchBar variant={activeVariant} isScrolled={isScrolled} />
               </div>
             </Suspense>
 
@@ -323,16 +345,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
               <ShoppingCart className="w-5 h-5 md:w-5.5 md:h-5.5" />
             </Link>
 
-            <Link
-              href="/profile"
-              aria-label="View profile"
-              className={cn(
-                'transition-all duration-500 ease-in-out hover:scale-110',
-                isScrolled ? scrolledIcon : iconDefault[activeVariant]
-              )}
-            >
-              <User className="w-5 h-5 md:w-5.5 md:h-5.5" />
-            </Link>
+            <NavbarAccountMenu variant={activeVariant} isScrolled={isScrolled} />
           </div>
         </div>
 
@@ -349,6 +362,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
           }>
             <SearchBar
               variant={activeVariant}
+              isScrolled={isScrolled}
               isMobile
               onClose={() => setShowMobileSearch(false)}
             />

@@ -110,5 +110,8 @@ func isShippingJobPermanentError(err error) bool {
 	}
 
 	return errors.Is(err, ErrMidtransInvalidPayload) ||
-		errors.Is(err, ErrMidtransOrderNotFound)
+		errors.Is(err, ErrMidtransOrderNotFound) ||
+		errors.Is(err, ErrShippingOrderNotPaid) ||
+		errors.Is(err, ErrShippingOrderAlreadyBooked) ||
+		errors.Is(err, ErrShippingOrderInvalidState)
 }

@@ -4,11 +4,12 @@ import { Button } from "./ui/button";
 interface ThemeDescProps {
 	type: "current-season" | "all-season";
 	title: string;
+	subtitle?: string;
 	desc: string;
 	href: string;
 }
 
-export default function ThemeDesc({ type, title, desc, href }: ThemeDescProps) {
+export default function ThemeDesc({ type, title, subtitle, desc, href }: ThemeDescProps) {
 	const isCurrent = type === "current-season";
 
 	return (
@@ -20,7 +21,7 @@ export default function ThemeDesc({ type, title, desc, href }: ThemeDescProps) {
 						<div className="flex flex-col gap-5">
 							{isCurrent && (
 								<p className="text-[21px] font-normal leading-5">
-									theme of the season
+									Theme of the season
 								</p>
 							)}
 							<h2 className="text-3xl font-bold leading-12 max-w-85 uppercase">
@@ -28,7 +29,7 @@ export default function ThemeDesc({ type, title, desc, href }: ThemeDescProps) {
 							</h2>
 						</div>
 						<p className="justify-start text-sm font-normal leading-5">
-							{isCurrent ? "Breeze of the Game" : "Never stops wearing your passion"}
+							{isCurrent ? (subtitle || "Breeze of the Game") : "Never stops wearing your passion"}
 						</p>
 						<div className="gap-9 flex flex-col">
 							<div className="text-sm font-normal leading-5">

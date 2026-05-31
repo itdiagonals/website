@@ -10,6 +10,7 @@ interface Product {
   name: string;
   price: string;
   image: string;
+  slug?: string;
 }
 
 interface ProductRowProps {
@@ -89,7 +90,7 @@ export default function ProductRow({ products, isCarousel = true }: ProductRowPr
       >
         {products.map((product) => (
           <Link
-            href={`/product/${product.id}`}
+            href={`/products/${product.slug ?? product.id}`}
             key={product.id}
             className="flex flex-col gap-8 cursor-pointer flex-shrink-0 w-[260px] sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] snap-start"
           >
@@ -99,7 +100,8 @@ export default function ProductRow({ products, isCarousel = true }: ProductRowPr
                 alt={product.name}
                 width={200}
                 height={200}
-                className="object-contain"
+                className="h-auto max-h-full object-contain"
+                unoptimized
               />
             </div>
             <div className="flex justify-between items-center">

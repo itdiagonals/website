@@ -118,7 +118,7 @@ export default function InviteAdminModule() {
           <UserPlus className="h-12 w-12 text-primary-500" />
           <p className="text-lg font-semibold text-primary-1000">Create your account</p>
           <p className="max-w-sm text-center text-sm text-neutral-500">
-            {tokenEmail} is invited to become an admin, but you don't have an account yet. Create one below and you'll be automatically promoted to admin.
+            {tokenEmail} is invited to become an admin, but you don&apos;t have an account yet. Create one below and you&apos;ll be automatically promoted to admin.
           </p>
           <Link
             href={`/register?invite_token=${encodeURIComponent(token)}&email=${encodeURIComponent(tokenEmail)}`}

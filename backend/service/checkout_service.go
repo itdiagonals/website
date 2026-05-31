@@ -33,6 +33,7 @@ type CheckoutRequest struct {
 	CourierName         string
 	CourierService      string
 	SelectedCartItemIDs []uint
+	Notes               string
 }
 
 type ShippingRatesRequest struct {
@@ -59,14 +60,14 @@ type CheckoutService interface {
 }
 
 type checkoutService struct {
-	shippingService            ShippingService
-	cartRepository             repository.CartRepository
-	customerAddressRepository  repository.CustomerAddressRepository
-	userRepository             repository.UserRepository
-	productRepository          repository.ProductRepository
-	transactionRepository      repository.TransactionRepository
-	stockReservationRepository repository.StockReservationRepository
-	shippingConfig             config.BiteshipConfig
+	shippingService           ShippingService
+	cartRepository            repository.CartRepository
+	customerAddressRepository repository.CustomerAddressRepository
+	userRepository            repository.UserRepository
+	productRepository         repository.ProductRepository
+	transactionRepository     repository.TransactionRepository
+	stockReservationService   StockReservationService
+	shippingConfig            config.BiteshipConfig
 }
 
 func NewCheckoutService(
@@ -75,18 +76,18 @@ func NewCheckoutService(
 	cartRepository repository.CartRepository,
 	productRepository repository.ProductRepository,
 	transactionRepository repository.TransactionRepository,
-	stockReservationRepository repository.StockReservationRepository,
+	stockReservationService StockReservationService,
 	shippingService ShippingService,
 ) CheckoutService {
 	return &checkoutService{
-		shippingService:            shippingService,
-		cartRepository:             cartRepository,
-		customerAddressRepository:  customerAddressRepository,
-		userRepository:             userRepository,
-		productRepository:          productRepository,
-		transactionRepository:      transactionRepository,
-		stockReservationRepository: stockReservationRepository,
-		shippingConfig:             config.GetBiteshipConfig(),
+		shippingService:           shippingService,
+		cartRepository:            cartRepository,
+		customerAddressRepository: customerAddressRepository,
+		userRepository:            userRepository,
+		productRepository:         productRepository,
+		transactionRepository:     transactionRepository,
+		stockReservationService:   stockReservationService,
+		shippingConfig:            config.GetBiteshipConfig(),
 	}
 }
 
@@ -201,6 +202,7 @@ func (service *checkoutService) Checkout(ctx context.Context, customerID string,
 		Status:            "pending",
 		ShippingStatus:    "pending",
 		SnapToken:         snapResponse.Token,
+		Notes:             req.Notes,
 		User:              *user,
 		ShippingAddress:   *address,
 	}
@@ -266,83 +268,19 @@ func aggregateReservationItems(transactionItems []checkoutLineItem) []stockReser
 }
 
 func (service *checkoutService) reserveStockForOrder(ctx context.Context, orderID string, items []stockReservationItem) error {
-	if len(items) == 0 {
-		return ErrCheckoutSelectedItemNotFound
+	if service.stockReservationService == nil {
+		return ErrStockReservationUnavailable
 	}
 
-	reservations := make([]domain.StockReservation, 0, len(items))
-	for _, item := range items {
-		if item.ProductID <= 0 || item.Quantity <= 0 || strings.TrimSpace(item.SelectedSize) == "" || strings.TrimSpace(item.SelectedColorName) == "" {
-			return ErrCheckoutInsufficientStock
-		}
-
-		reservations = append(reservations, domain.StockReservation{
-			OrderID:           orderID,
-			ProductID:         item.ProductID,
-			SelectedSize:      item.SelectedSize,
-			SelectedColorName: item.SelectedColorName,
-			Quantity:          item.Quantity,
-			Status:            stockReservationStatusReserved,
-		})
-	}
-
-	if err := service.stockReservationRepository.CreateMany(ctx, reservations); err != nil {
-		return err
-	}
-
-	reservedItems := make([]stockReservationItem, 0, len(items))
-	for _, item := range items {
-		ok, err := service.productRepository.DecreaseVariantStockIfAvailable(ctx, item.ProductID, item.SelectedSize, item.SelectedColorName, item.Quantity)
-		if err != nil {
-			_ = service.rollbackReservedStock(ctx, reservedItems)
-			_ = service.stockReservationRepository.UpdateStatusByOrderID(ctx, orderID, stockReservationStatusReserved, stockReservationStatusReleased)
-			return err
-		}
-
-		if !ok {
-			_ = service.rollbackReservedStock(ctx, reservedItems)
-			_ = service.stockReservationRepository.UpdateStatusByOrderID(ctx, orderID, stockReservationStatusReserved, stockReservationStatusReleased)
-			return ErrCheckoutInsufficientStock
-		}
-
-		reservedItems = append(reservedItems, item)
-	}
-
-	return nil
-}
-
-func (service *checkoutService) rollbackReservedStock(ctx context.Context, items []stockReservationItem) error {
-	for _, item := range items {
-		if err := service.productRepository.IncreaseVariantStock(ctx, item.ProductID, item.SelectedSize, item.SelectedColorName, item.Quantity); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return service.stockReservationService.Reserve(ctx, orderID, items, stockReservationTTL)
 }
 
 func (service *checkoutService) releaseStockForOrder(ctx context.Context, orderID string) error {
-	reservations, err := service.stockReservationRepository.FindByOrderIDAndStatus(ctx, orderID, stockReservationStatusReserved)
-	if err != nil {
-		return err
+	if service.stockReservationService == nil {
+		return ErrStockReservationUnavailable
 	}
 
-	if len(reservations) == 0 {
-		return nil
-	}
-
-	for _, reservation := range reservations {
-		if err := service.productRepository.IncreaseVariantStock(ctx, reservation.ProductID, reservation.SelectedSize, reservation.SelectedColorName, reservation.Quantity); err != nil {
-			return err
-		}
-	}
-
-	reservationIDs := make([]uint, 0, len(reservations))
-	for _, reservation := range reservations {
-		reservationIDs = append(reservationIDs, reservation.ID)
-	}
-
-	return service.stockReservationRepository.UpdateStatusByIDs(ctx, reservationIDs, stockReservationStatusReserved, stockReservationStatusReleased)
+	return service.stockReservationService.Release(ctx, orderID)
 }
 
 func (service *checkoutService) prepareCheckout(ctx context.Context, userID string, addressID uint, selectedCartItemIDs []uint) (*domain.CustomerAddress, *domain.User, float64, int, []ShippingRateItem, []checkoutLineItem, error) {
@@ -537,6 +475,11 @@ func createSnapTransaction(orderID string, grandTotal float64, user *domain.User
 			Phone:    firstNonEmpty(address.PhoneNumber, user.Phone),
 			BillAddr: midtransAddress,
 			ShipAddr: midtransAddress,
+		},
+		Expiry: &snap.ExpiryDetails{
+			StartTime: time.Now().Format("2006-01-02 15:04:05 -0700"),
+			Duration:  60,
+			Unit:      "minute",
 		},
 	}
 

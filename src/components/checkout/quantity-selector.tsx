@@ -9,6 +9,7 @@ interface QuantitySelectorProps {
   min?: number;
   max?: number;
   className?: string;
+  disabled?: boolean;
 }
 
 export function QuantitySelector({
@@ -17,13 +18,14 @@ export function QuantitySelector({
   min = 1,
   max = 99,
   className,
+  disabled = false,
 }: QuantitySelectorProps) {
   const handleDecrement = () => {
-    if (value > min) onChange(value - 1);
+    if (!disabled && value > min) onChange(value - 1);
   };
 
   const handleIncrement = () => {
-    if (value < max) onChange(value + 1);
+    if (!disabled && value < max) onChange(value + 1);
   };
 
   return (
@@ -32,7 +34,7 @@ export function QuantitySelector({
       <div className="flex items-center">
         <button
           onClick={handleDecrement}
-          disabled={value <= min}
+          disabled={disabled || value <= min}
           className="flex items-center justify-center w-[35px] h-[35px] bg-white border border-primary-300 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Minus className="w-6 h-6 text-neutral-1000" />
@@ -42,7 +44,7 @@ export function QuantitySelector({
         </div>
         <button
           onClick={handleIncrement}
-          disabled={value >= max}
+          disabled={disabled || value >= max}
           className="flex items-center justify-center w-[35px] h-[35px] bg-white border border-primary-300 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="w-6 h-6 text-neutral-1000" />

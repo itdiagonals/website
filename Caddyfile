@@ -1,0 +1,8 @@
+# Diagonals reverse proxy
+# Routes /api/* to backend (localhost:8080)
+# Routes everything else to frontend (localhost:3000)
+
+:8081
+
+reverse_proxy /api/* localhost:8080
+reverse_proxy /* localhost:3000

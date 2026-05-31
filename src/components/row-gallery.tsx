@@ -16,17 +16,17 @@ const DEFAULT_ITEMS: GalleryItem[] = [
   {
     image: "/image-2.png",
     title: "Water To\nThe Rescue",
-    href: "/product/water-rescue",
+    href: "/products/water-rescue",
   },
   {
     image: "/image-1.png",
     title: "Punk Rocker,\nYes I Am",
-    href: "/product/punk-rocker",
+    href: "/products/punk-rocker",
   },
   {
     image: "/image-3.png",
     title: "The Hills",
-    href: "/product/the-hills",
+    href: "/products/the-hills",
   },
 ];
 

@@ -1,14 +1,74 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Copyright } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { api, Category, Season } from '@/src/lib/api';
+
+function sortByLatest<T extends { updated_at: string; created_at: string }>(items: T[]) {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.updated_at || a.created_at).getTime();
+    const bTime = new Date(b.updated_at || b.created_at).getTime();
+    return bTime - aTime;
+  });
+}
 
 export default function Footer() {
   const pathname = usePathname();
   const isCartOrProfile = pathname?.startsWith('/cart') || pathname?.startsWith('/profile');
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFooterData = async () => {
+      try {
+        const [seasonData, categoryData] = await Promise.all([
+          api.seasons.getAll(1, 50),
+          api.categories.getAll(1, 50),
+        ]);
+
+        if (!cancelled) {
+          setSeasons(sortByLatest(seasonData).slice(0, 4));
+          setCategories(categoryData.slice(0, 4));
+        }
+      } catch {
+        if (!cancelled) {
+          setSeasons([]);
+          setCategories([]);
+        }
+      }
+    };
+
+    void loadFooterData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const seasonLinks = useMemo(
+    () =>
+      seasons.map((season) => ({
+        id: season.id,
+        label: season.name,
+        href: `/products?season=${encodeURIComponent(season.slug)}`,
+      })),
+    [seasons]
+  );
+
+  const categoryLinks = useMemo(
+    () =>
+      categories.map((category) => ({
+        id: category.id,
+        label: category.name,
+        href: `/products?category=${encodeURIComponent(category.slug)}`,
+      })),
+    [categories]
+  );
 
   return (
     <footer className="w-full flex flex-col">
@@ -80,26 +140,19 @@ export default function Footer() {
                 Seasons
               </h3>
               <ul className="flex flex-col gap-4">
-                <li>
-                  <Link href="/product/season" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    Cross Player
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/products" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    Retro Classic
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/products" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    El Ligue Premiere
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/products" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    All Season Classics
-                  </Link>
-                </li>
+                {seasonLinks.length > 0 ? (
+                  seasonLinks.map((season) => (
+                    <li key={season.id}>
+                      <Link href={season.href} className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
+                        {season.label}
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-sm md:text-[15px] font-semibold text-neutral-400">
+                    Loading seasons...
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -136,26 +189,19 @@ export default function Footer() {
                 Shop
               </h3>
               <ul className="flex flex-col gap-4">
-                <li>
-                  <Link href="/products?category=Tops" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    Tops
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/products?category=Shorts" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    Shorts
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/products?category=Merchandise" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    Merchandise
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/products?category=Headwear" className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
-                    Headwear
-                  </Link>
-                </li>
+                {categoryLinks.length > 0 ? (
+                  categoryLinks.map((category) => (
+                    <li key={category.id}>
+                      <Link href={category.href} className="text-sm md:text-[15px] font-semibold text-primary-500 hover:text-black transition-colors duration-300">
+                        {category.label}
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-sm md:text-[15px] font-semibold text-neutral-400">
+                    Loading categories...
+                  </li>
+                )}
               </ul>
             </div>
           </div>

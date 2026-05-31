@@ -2,16 +2,20 @@ import Image from "next/image";
 import { Package, PackageOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { useRouter } from "next/navigation";
+
 export interface OrderItem {
   id: string;
+  orderId: string;
   name: string;
   gender: string;
   color: string;
   size: string;
   price: number;
   image: string;
-  status: "Order Accepted" | "Order Packaged" | "Order Sent" | "Order Finished";
+  status: string;
   timestamp: string;
+  tone?: "default" | "success" | "warning" | "danger";
 }
 
 interface OrderTrackingCardProps {
@@ -21,12 +25,22 @@ interface OrderTrackingCardProps {
 }
 
 export function OrderTrackingCard({ item, variant = "ongoing", className }: OrderTrackingCardProps) {
+  const router = useRouter();
   const isFinished = variant === "finished";
+  const statusToneClass =
+    item.tone === "success"
+      ? "text-green-700"
+      : item.tone === "warning"
+        ? "text-amber-700"
+        : item.tone === "danger"
+          ? "text-red-600"
+          : "text-secondary-500";
 
   return (
-    <div
+    <button
+      onClick={() => router.push(`/orders/${item.orderId}`)}
       className={cn(
-        "bg-white border border-primary-100 rounded-[10px] w-full overflow-hidden p-4 sm:px-[34px] sm:py-[24px]",
+        "w-full text-left bg-white border border-primary-100 rounded-[10px] overflow-hidden p-4 sm:px-[34px] sm:py-[24px] cursor-pointer hover:border-primary-300 transition-colors duration-200",
         className
       )}
     >
@@ -62,7 +76,7 @@ export function OrderTrackingCard({ item, variant = "ongoing", className }: Orde
             </div>
           )}
           <div className="flex flex-col gap-[9px] items-end text-right">
-            <p className="text-b3 font-bold text-secondary-500 whitespace-nowrap">{item.status}</p>
+            <p className={cn("text-b3 font-bold whitespace-nowrap", statusToneClass)}>{item.status}</p>
             <div className="text-b4 text-black whitespace-pre-wrap">
               {item.timestamp.split("\n").map((line, i) => (
                 <p key={i} className="leading-[18px]">
@@ -73,6 +87,6 @@ export function OrderTrackingCard({ item, variant = "ongoing", className }: Orde
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

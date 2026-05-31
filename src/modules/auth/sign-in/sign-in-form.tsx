@@ -29,17 +29,36 @@ export default function SignInForm() {
     try {
       await api.auth.login({ email, password })
 
-      const redirectTarget = searchParams.get('redirect') || '/admin'
-      if (!redirectTarget.startsWith('/admin')) {
-        router.replace(redirectTarget)
-        return
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-changed'))
       }
 
-      await api.users.getAll()
-      router.replace(redirectTarget)
+      try {
+        await api.users.getAll(1, 1)
+        const redirectTarget = searchParams.get('redirect')
+        if (redirectTarget && redirectTarget.startsWith('/admin')) {
+          router.replace(redirectTarget)
+        } else {
+          router.replace('/admin')
+        }
+        router.refresh()
+      } catch (adminCheckError) {
+        if (adminCheckError instanceof ApiError && adminCheckError.status === 403) {
+          const redirectTarget = searchParams.get('redirect')
+          if (redirectTarget && !redirectTarget.startsWith('/admin')) {
+            router.replace(redirectTarget)
+          } else {
+            router.replace('/')
+          }
+          router.refresh()
+        } else {
+          router.replace('/')
+          router.refresh()
+        }
+      }
     } catch (caughtError) {
       if (caughtError instanceof ApiError && caughtError.status === 403) {
-        setError('Login berhasil, tetapi akun ini tidak memiliki akses admin.')
+        setError('Email belum diverifikasi. Silakan periksa kotak masuk Anda atau daftar ulang.')
       } else {
         setError(caughtError instanceof Error ? caughtError.message : 'Login gagal.')
       }
@@ -61,7 +80,7 @@ export default function SignInForm() {
           <div className="flex flex-col items-center gap-[7px]">
             <div className="flex h-[65px] w-[259px] items-center justify-center">
               <img
-                src="/images/diagonals.webp"
+                src="/logo/diagonals.webp"
                 alt="Logo"
                 className="h-full w-full object-contain"
               />
@@ -96,10 +115,24 @@ export default function SignInForm() {
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && (
+                <div className="text-sm text-red-600">
+                  <p>{error}</p>
+                  {error.includes('Email belum diverifikasi') && (
+                    <p className="mt-1">
+                      <Link
+                        href={`/auth/verify-email?email=${encodeURIComponent(email)}`}
+                        className="underline text-primary-600 hover:text-primary-500"
+                      >
+                        Verifikasi email sekarang
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4">
-                <Button type="submit" variant="default" size="default" disabled={submitting}>
+                <Button type="submit" variant="auth" size="full" disabled={submitting}>
                   {submitting ? 'Signing in...' : 'Enter'}
                 </Button>
               </div>

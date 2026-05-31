@@ -48,6 +48,16 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
     };
   }, [isLightboxOpen, closeLightbox, goNext, goPrev]);
 
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setSelectedIndex((prev) => (prev + 1) % images.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   if (images.length === 0) return null;
 
   return (

@@ -20,6 +20,7 @@ type CheckoutRequest struct {
 	CourierName         string `json:"courier_name" binding:"required"`
 	CourierService      string `json:"courier_service" binding:"required"`
 	SelectedCartItemIDs []uint `json:"selected_cart_item_ids" binding:"required,min=1,dive,gt=0"`
+	Notes               string `json:"notes"`
 }
 
 type CheckoutResponse struct {
@@ -39,6 +40,7 @@ type CheckoutData struct {
 	Status            string                 `json:"status"`
 	ShippingStatus    string                 `json:"shipping_status"`
 	SnapToken         string                 `json:"snap_token"`
+	Notes             string                 `json:"notes"`
 	CreatedAt         time.Time              `json:"created_at"`
 	UpdatedAt         time.Time              `json:"updated_at"`
 	ShippingAddress   CheckoutAddressSummary `json:"shipping_address"`
@@ -184,6 +186,7 @@ func (handler *CheckoutHandler) Checkout(context *gin.Context) {
 		CourierName:         request.CourierName,
 		CourierService:      request.CourierService,
 		SelectedCartItemIDs: request.SelectedCartItemIDs,
+		Notes:               request.Notes,
 	})
 	if err != nil {
 		switch {
@@ -225,6 +228,7 @@ func toCheckoutData(transaction *domain.Transaction) CheckoutData {
 		Status:            transaction.Status,
 		ShippingStatus:    transaction.ShippingStatus,
 		SnapToken:         transaction.SnapToken,
+		Notes:             transaction.Notes,
 		CreatedAt:         transaction.CreatedAt,
 		UpdatedAt:         transaction.UpdatedAt,
 		ShippingAddress: CheckoutAddressSummary{

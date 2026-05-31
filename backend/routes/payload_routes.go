@@ -24,6 +24,13 @@ func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Cl
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
+	me := api.Group("/users")
+	me.Use(middleware.RequireAuth(authSessionRepository, userRepository))
+	{
+		me.GET("/me", h.GetMe)
+		me.PUT("/me", h.UpdateMe)
+	}
+
 	admin := api.Group("/users")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
 	{
@@ -76,7 +83,7 @@ func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.C
 func registerCategoryRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
 	mediaRepo := repository.NewMediaRepository(db)
 	repo := repository.NewCategoryRepository(db)
-	svc := service.NewCategoryService(repo, mediaRepo)
+	svc := service.NewCategoryService(repo, mediaRepo, redisClient)
 	h := handler.NewCategoryHandler(svc)
 
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
@@ -98,7 +105,7 @@ func registerCategoryRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redi
 func registerSeasonRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
 	mediaRepo := repository.NewMediaRepository(db)
 	repo := repository.NewSeasonRepository(db)
-	svc := service.NewSeasonService(repo, mediaRepo)
+	svc := service.NewSeasonService(repo, mediaRepo, redisClient)
 	h := handler.NewSeasonHandler(svc)
 
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)

@@ -90,7 +90,7 @@ var migration0013InitPayloadTables = Migration{
 				slug VARCHAR(255) NOT NULL UNIQUE,
 				season_id INT,
 				category_id INT,
-				gender VARCHAR(50) NOT NULL DEFAULT 'unisex',
+				gender VARCHAR(50) NOT NULL DEFAULT 'Unisex',
 				base_price NUMERIC(15,2) NOT NULL,
 				weight INT NOT NULL DEFAULT 0,
 				length INT NOT NULL DEFAULT 0,

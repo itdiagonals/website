@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ProfileCard,
   UserProfile,
@@ -11,8 +11,15 @@ import {
   OrderItem,
 } from "@/components/checkout/order-tracking-card";
 import { AddressMapPicker } from "@/components/checkout/address-map-picker";
+import {
+  api,
+  type CustomerAddress,
+  type Product,
+  type TransactionHistoryListItem,
+} from "@/lib/api";
+import { getOrderCardPresentation } from "./order-status";
 
-type AddressFormState = {
+export type AddressFormState = {
   id: string;
   title: string;
   recipientName: string;
@@ -33,7 +40,7 @@ type AddressFormState = {
   isPrimary: boolean;
 };
 
-const createEmptyAddressForm = (): AddressFormState => ({
+export const createEmptyAddressForm = (): AddressFormState => ({
   id: "",
   title: "",
   recipientName: "",
@@ -81,7 +88,7 @@ const toAddressForm = (address: UserProfileAddress): AddressFormState => ({
   isPrimary: address.isPrimary,
 });
 
-const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
+export const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
   id: form.id || crypto.randomUUID(),
   title: form.title,
   recipientName: form.recipientName,
@@ -102,46 +109,59 @@ const toAddressRecord = (form: AddressFormState): UserProfileAddress => ({
   isPrimary: form.isPrimary,
 });
 
+export function mapBackendAddressToProfile(address: CustomerAddress): UserProfileAddress {
+  return {
+    id: String(address.id),
+    title: address.title,
+    recipientName: address.recipient_name,
+    phoneNumber: address.phone_number,
+    province: address.province,
+    city: address.city,
+    district: address.district,
+    village: address.village,
+    postalCode: address.postal_code,
+    fullAddress: address.full_address,
+    latitude: address.latitude ?? null,
+    longitude: address.longitude ?? null,
+    placeId: address.place_id,
+    mapProvider: address.map_provider,
+    locationSource: address.location_source,
+    destinationAreaId: address.destination_area_id,
+    destinationAreaLabel: address.destination_area_label,
+    isPrimary: address.is_primary,
+  };
+}
+
+export function mapProfileAddressToPayload(address: UserProfileAddress) {
+  return {
+    title: address.title,
+    recipient_name: address.recipientName,
+    phone_number: address.phoneNumber,
+    province: address.province,
+    city: address.city,
+    district: address.district,
+    village: address.village,
+    postal_code: address.postalCode,
+    full_address: address.fullAddress,
+    latitude: address.latitude,
+    longitude: address.longitude,
+    place_id: address.placeId,
+    map_provider: address.mapProvider,
+    location_source: address.locationSource,
+    destination_area_id: address.destinationAreaId,
+    destination_area_label: address.destinationAreaLabel,
+    is_primary: address.isPrimary,
+  };
+}
+
 export function ProfileModule() {
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Rafael Benitez",
-    email: "RafaelJorge@my.id",
-    phone: "+62 812-3456-7890",
-    addresses: [
-      {
-        id: "addr-1",
-        title: "Home",
-        recipientName: "Rafael Benitez",
-        phoneNumber: "+62 812-3456-7890",
-        province: "DI Yogyakarta",
-        city: "Sleman",
-        district: "Depok",
-        village: "Caturtunggal",
-        postalCode: "55281",
-        fullAddress: "JL. Jeruk 2 A9",
-        latitude: -7.7746842,
-        longitude: 110.4085123,
-        destinationAreaLabel: "Caturtunggal, Depok, Sleman",
-        isPrimary: true,
-      },
-      {
-        id: "addr-2",
-        title: "Office",
-        recipientName: "Rafael Benitez",
-        phoneNumber: "+62 812-3456-7890",
-        province: "DI Yogyakarta",
-        city: "Kota Yogyakarta",
-        district: "Gondokusuman",
-        village: "Baciro",
-        postalCode: "55225",
-        fullAddress: "Jl. Mawar 10, Lt 2",
-        latitude: -7.782115,
-        longitude: 110.391546,
-        destinationAreaLabel: "Baciro, Gondokusuman, Kota Yogyakarta",
-        isPrimary: false,
-      },
-    ],
+    name: "Customer",
+    email: "",
+    phone: "",
+    addresses: [],
   });
+
   const [dialog, setDialog] = useState<
     "profile" | "address-list" | "address-form" | null
   >(null);
@@ -151,6 +171,118 @@ export function ProfileModule() {
   const [addressForm, setAddressForm] =
     useState<AddressFormState>(createEmptyAddressForm());
   const [addressError, setAddressError] = useState("");
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [ongoingOrders, setOngoingOrders] = useState<OrderItem[]>([]);
+  const [finishedOrders, setFinishedOrders] = useState<OrderItem[]>([]);
+
+  const fetchProfile = async () => {
+    try {
+      const user = await api.users.me();
+      setProfile((prev) => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const fetchAddresses = async () => {
+    try {
+      const addresses = await api.addresses.getAll();
+      setProfile((prev) => ({
+        ...prev,
+        addresses: addresses.map(mapBackendAddressToProfile),
+      }));
+    } catch (error) {
+      console.error("Failed to fetch addresses:", error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  function isClosedOrder(paymentStatus: string, shippingStatus: string) {
+    return getOrderCardPresentation(paymentStatus, shippingStatus).bucket === "closed";
+  }
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const list = await api.transactions.getAll(1, 50);
+      const detailResults = await Promise.all(
+        list.map(async (tx: TransactionHistoryListItem) => {
+          try {
+            const detail = await api.transactions.getByOrderId(tx.order_id);
+            return { tx, detail };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const productCache = new Map<number, Product>();
+      const ongoing: OrderItem[] = [];
+      const finished: OrderItem[] = [];
+
+      for (const result of detailResults) {
+        if (!result) continue;
+        const { tx, detail } = result;
+
+        for (const item of detail.items) {
+          let product: Product | undefined = productCache.get(item.product_id);
+          if (!product) {
+            try {
+              product = await api.products.getById(item.product_id);
+              productCache.set(item.product_id, product);
+            } catch {
+              product = undefined;
+            }
+          }
+
+          const paymentStatus = detail.status || tx.status;
+          const shippingStatus = detail.shipping_status || tx.shipping_status;
+          const presentation = getOrderCardPresentation(paymentStatus, shippingStatus);
+          const orderItem: OrderItem = {
+            id: `${tx.order_id}-${item.id}`,
+            orderId: tx.order_id,
+            name: product?.name || "Unknown Product",
+            gender: "",
+            color: item.selected_color_name,
+            size: item.selected_size,
+            price: Math.round(item.price),
+            image: product?.cover_image?.url || "",
+            status: presentation.label,
+            tone: presentation.tone,
+            timestamp: `${presentation.detail}\n${new Date(detail.updated_at || tx.created_at).toLocaleDateString("id-ID")}`,
+          };
+
+          if (isClosedOrder(paymentStatus, shippingStatus)) {
+            finished.push(orderItem);
+          } else {
+            ongoing.push(orderItem);
+          }
+        }
+      }
+
+      setOngoingOrders(ongoing);
+      setFinishedOrders(finished);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchProfile();
+    void fetchAddresses();
+    void fetchOrders();
+  }, [fetchOrders]);
 
   const primaryAddress = useMemo(
     () => profile.addresses?.find((address) => address.isPrimary),
@@ -181,17 +313,22 @@ export function ProfileModule() {
     setDialog("address-form");
   };
 
-  const submitProfile = (event: FormEvent<HTMLFormElement>) => {
+  const submitProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setProfile((prev) => ({
-      ...prev,
-      name: profileNameInput.trim() || prev.name,
-      phone: profilePhoneInput.trim(),
-    }));
-    setDialog(null);
+    try {
+      await api.users.updateMe({
+        name: profileNameInput.trim(),
+        phone: profilePhoneInput.trim(),
+      });
+      await fetchProfile();
+      setDialog(null);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      alert("Gagal memperbarui profil. Silakan coba lagi.");
+    }
   };
 
-  const submitAddress = (event: FormEvent<HTMLFormElement>) => {
+  const submitAddress = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (addressForm.latitude.trim() === "" || addressForm.longitude.trim() === "") {
@@ -206,94 +343,47 @@ export function ProfileModule() {
       addressForm.district.trim() === "" ||
       addressForm.village.trim() === ""
     ) {
-      setAddressError("Selected location is incomplete. Please choose a more specific point or search result.");
+      setAddressError("Please fill in all required address fields.");
       return;
     }
 
     const nextAddress = toAddressRecord(addressForm);
 
-    setProfile((prev) => {
-      const previousAddresses = prev.addresses ?? [];
-      const filtered = previousAddresses.filter(
-        (address) => address.id !== nextAddress.id
-      );
-      const normalized = nextAddress.isPrimary
-        ? filtered.map((address) => ({ ...address, isPrimary: false }))
-        : filtered;
-      const nextAddresses = [...normalized, nextAddress];
-
-      if (!nextAddresses.some((address) => address.isPrimary) && nextAddresses[0]) {
-        nextAddresses[0] = { ...nextAddresses[0], isPrimary: true };
+    try {
+      const isExistingBackendAddress = addressMode === "edit" && nextAddress.id && !nextAddress.id.startsWith("addr-");
+      if (isExistingBackendAddress) {
+        const numericId = Number(nextAddress.id);
+        if (!isNaN(numericId)) {
+          await api.addresses.update(numericId, mapProfileAddressToPayload(nextAddress));
+        }
+      } else {
+        await api.addresses.create(mapProfileAddressToPayload(nextAddress));
       }
-
-      return {
-        ...prev,
-        addresses: nextAddresses,
-      };
-    });
-
-    setDialog("address-list");
+      await fetchAddresses();
+      setDialog("address-list");
+    } catch (error) {
+      console.error("Failed to save address:", error);
+      setAddressError("Gagal menyimpan alamat. Silakan coba lagi.");
+    }
   };
 
-  const setPrimaryAddress = (id: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      addresses: (prev.addresses ?? []).map((address) => ({
-        ...address,
-        isPrimary: address.id === id,
-      })),
-    }));
+  const setPrimaryAddress = async (id: string) => {
+    const address = profile.addresses?.find((a) => a.id === id);
+    if (!address) return;
+
+    const numericId = Number(id);
+    if (isNaN(numericId)) return;
+
+    try {
+      await api.addresses.update(numericId, {
+        ...mapProfileAddressToPayload({ ...address, isPrimary: true }),
+        is_primary: true,
+      });
+      await fetchAddresses();
+    } catch (error) {
+      console.error("Failed to set primary address:", error);
+    }
   };
-
-  const ongoingOrders: OrderItem[] = [
-    {
-      id: "o1",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/blacktee.png",
-      status: "Order Packaged",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-    {
-      id: "o2",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/bluetee.png",
-      status: "Order Packaged",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-  ];
-
-  const finishedOrders: OrderItem[] = [
-    {
-      id: "o3",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/greentee.png",
-      status: "Order Finished",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-    {
-      id: "o4",
-      name: "Jersey Oversize Black System",
-      gender: "Pria",
-      color: "Biru Navy",
-      size: "40 cm",
-      price: 200000,
-      image: "/blacktee.png",
-      status: "Order Finished",
-      timestamp: "Pesanan diterima pukul 13.00\nDate",
-    },
-  ];
 
   return (
     <>
@@ -312,20 +402,35 @@ export function ProfileModule() {
                 }
                 onAddAddress={openAddressList}
               />
+              {(loadingProfile || loadingAddresses) && (
+                <p className="text-b2 text-neutral-500">Loading...</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-[22px] items-start w-full">
               <h2 className="text-h6 font-bold text-black">Order Tracking</h2>
-              {ongoingOrders.map((order) => (
-                <OrderTrackingCard key={order.id} item={order} variant="ongoing" />
-              ))}
+              {loadingOrders ? (
+                <p className="text-b2 text-neutral-500">Loading orders...</p>
+              ) : ongoingOrders.length === 0 ? (
+                <p className="text-b2 text-neutral-500">No ongoing orders.</p>
+              ) : (
+                ongoingOrders.map((order) => (
+                  <OrderTrackingCard key={order.id} item={order} variant="ongoing" />
+                ))
+              )}
             </div>
 
             <div className="flex flex-col gap-[22px] items-start w-full">
-              <h2 className="text-h6 font-bold text-black">Order Finished</h2>
-              {finishedOrders.map((order) => (
-                <OrderTrackingCard key={order.id} item={order} variant="finished" />
-              ))}
+              <h2 className="text-h6 font-bold text-black">Order History</h2>
+              {loadingOrders ? (
+                <p className="text-b2 text-neutral-500">Loading orders...</p>
+              ) : finishedOrders.length === 0 ? (
+                <p className="text-b2 text-neutral-500">No finished orders.</p>
+              ) : (
+                finishedOrders.map((order) => (
+                  <OrderTrackingCard key={order.id} item={order} variant="finished" />
+                ))
+              )}
             </div>
           </div>
         </main>
@@ -540,7 +645,18 @@ export function ProfileModule() {
                       setAddressError("");
                       setAddressForm((prev) => ({
                         ...prev,
-                        ...next,
+                        latitude: next.latitude ?? prev.latitude,
+                        longitude: next.longitude ?? prev.longitude,
+                        placeId: next.placeId ?? prev.placeId,
+                        mapProvider: next.mapProvider ?? prev.mapProvider,
+                        destinationAreaId: next.destinationAreaId ?? prev.destinationAreaId,
+                        destinationAreaLabel: next.destinationAreaLabel ?? prev.destinationAreaLabel,
+                        province: prev.province || next.province || "",
+                        city: prev.city || next.city || "",
+                        district: prev.district || next.district || "",
+                        village: prev.village || next.village || "",
+                        postalCode: prev.postalCode || next.postalCode || "",
+                        fullAddress: prev.fullAddress || next.fullAddress || "",
                         locationSource: next.latitude && next.longitude ? "map_picker" : prev.locationSource,
                       }));
                     }}
@@ -563,48 +679,78 @@ export function ProfileModule() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      Postal Code
+                      Kode Pos *
                       <input
                         value={addressForm.postalCode}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            postalCode: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      Province
+                      Provinsi *
                       <input
                         value={addressForm.province}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            province: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      City
+                      Kota *
                       <input
                         value={addressForm.city}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            city: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                     <label className="flex flex-col gap-2 text-b2 text-black">
-                      District
+                      Kecamatan *
                       <input
                         value={addressForm.district}
-                        readOnly
-                        className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                        onChange={(event) =>
+                          setAddressForm((prev) => ({
+                            ...prev,
+                            district: event.target.value,
+                          }))
+                        }
+                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                        required
                       />
                     </label>
                   </div>
 
                   <label className="flex flex-col gap-2 text-b2 text-black">
-                    Village
+                    Kelurahan *
                     <input
                       value={addressForm.village}
-                      readOnly
-                      className="h-11 rounded-[8px] border border-primary-100 bg-neutral-100 px-3 outline-none text-neutral-700"
+                      onChange={(event) =>
+                        setAddressForm((prev) => ({
+                          ...prev,
+                          village: event.target.value,
+                        }))
+                      }
+                      className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
+                      required
                     />
                   </label>
 

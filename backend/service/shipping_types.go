@@ -56,6 +56,7 @@ type CreateShippingOrderRequest struct {
 	DestinationAreaID       string              `json:"destination_area_id,omitempty"`
 	OrderNote               string              `json:"order_note,omitempty"`
 	Items                   []ShippingOrderItem `json:"items"`
+	DeliveryType            string              `json:"delivery_type,omitempty"`
 }
 
 type CreateShippingOrderResponse struct {
@@ -77,6 +78,7 @@ type ShippingTrackingResponse struct {
 	TrackingNumber string                  `json:"tracking_number,omitempty"`
 	ShippingStatus string                  `json:"shipping_status,omitempty"`
 	RawStatus      string                  `json:"raw_status,omitempty"`
+	TrackingLink   string                  `json:"tracking_link,omitempty"`
 	Events         []ShippingTrackingEvent `json:"events,omitempty"`
 }
 

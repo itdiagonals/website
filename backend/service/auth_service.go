@@ -19,6 +19,7 @@ var (
 	ErrInvalidRefreshToken    = errors.New("invalid refresh token")
 	ErrWeakPassword           = errors.New("password must be at least 8 characters")
 	ErrUserNotFound           = errors.New("user not found")
+	ErrEmailNotVerified       = errors.New("email not verified")
 )
 
 type RegisterInput struct {
@@ -46,8 +47,9 @@ type AuthTokens struct {
 }
 
 type AuthService interface {
-	Register(context context.Context, input RegisterInput, metadata SessionMetadata) (*AuthTokens, error)
+	Register(context context.Context, input RegisterInput) (*domain.User, error)
 	Login(context context.Context, input LoginInput, metadata SessionMetadata) (*AuthTokens, error)
+	VerifyAndIssueTokens(context context.Context, email string, metadata SessionMetadata) (*AuthTokens, error)
 	Refresh(context context.Context, refreshToken string) (*AuthTokens, error)
 	LogoutCurrentSession(context context.Context, userID string, sessionID string) error
 	LogoutAllSessions(context context.Context, userID string) error
@@ -67,7 +69,7 @@ func NewAuthService(userRepository repository.UserRepository, authSessionReposit
 	}
 }
 
-func (service *authService) Register(context context.Context, input RegisterInput, metadata SessionMetadata) (*AuthTokens, error) {
+func (service *authService) Register(context context.Context, input RegisterInput) (*domain.User, error) {
 	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 	if len(input.Password) < 8 {
 		return nil, ErrWeakPassword
@@ -98,6 +100,24 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 		return nil, err
 	}
 
+	return user, nil
+}
+
+func (service *authService) VerifyAndIssueTokens(context context.Context, email string, metadata SessionMetadata) (*AuthTokens, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+
+	user, err := service.userRepository.FindByEmail(context, email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	if err := service.userRepository.VerifyEmail(context, email); err != nil {
+		return nil, err
+	}
+
 	tokens, err := service.createSessionAndIssueTokens(context, user, metadata)
 	if err != nil {
 		return nil, err
@@ -120,6 +140,10 @@ func (service *authService) Login(context context.Context, input LoginInput, met
 
 	if !utils.CheckPasswordHash(input.Password, user.Password) {
 		return nil, ErrInvalidCredentials
+	}
+
+	if !user.IsVerified {
+		return nil, ErrEmailNotVerified
 	}
 
 	tokens, err := service.createSessionAndIssueTokens(context, user, metadata)

@@ -47,7 +47,12 @@ export default function SeasonsListModule() {
 
     try {
       const seasonItems = await api.seasons.getAll()
-      setSeasons(seasonItems)
+      const sorted = [...seasonItems].sort((a, b) => {
+        if (a.is_active && !b.is_active) return -1
+        if (!a.is_active && b.is_active) return 1
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      })
+      setSeasons(sorted)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to load seasons.')
     } finally {

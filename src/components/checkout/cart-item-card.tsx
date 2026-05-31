@@ -16,6 +16,11 @@ export interface CartItem {
   quantity: number;
   image: string;
   checked?: boolean;
+  availableStock?: number;
+  stockSufficient?: boolean;
+  stockMessage?: string;
+  isUpdating?: boolean;
+  errorMessage?: string;
 }
 
 interface CartItemCardProps {
@@ -34,6 +39,7 @@ export function CartItemCard({
   className,
 }: CartItemCardProps) {
   const subtotal = item.price * item.quantity;
+  const effectiveAvailableStock = Math.max(item.availableStock ?? item.quantity, 0);
 
   return (
     <div className={cn("relative border-b border-black/20 p-4 sm:p-6", className)}>
@@ -76,12 +82,24 @@ export function CartItemCard({
             <p className="text-b1 font-medium text-secondary-500">
               Rp {item.price.toLocaleString("id-ID")}
             </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="rounded-full bg-neutral-100 px-3 py-1 text-b3 text-neutral-600">
+                Sisa stok: <span className="font-semibold text-black">{effectiveAvailableStock}</span>
+              </span>
+              {!item.stockSufficient && item.stockMessage && (
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-b3 font-medium text-amber-800">
+                  {item.stockMessage}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <QuantitySelector
               value={item.quantity}
               onChange={(q) => onUpdateQuantity(item.id, q)}
+              max={Math.max(effectiveAvailableStock, 1)}
+              disabled={item.isUpdating}
             />
             <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-[12px]">
               <span className="text-b1 font-medium text-black">Subtotal :</span>
@@ -90,6 +108,11 @@ export function CartItemCard({
               </span>
             </div>
           </div>
+          {item.errorMessage && (
+            <div className="rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-b2 text-red-700">
+              {item.errorMessage}
+            </div>
+          )}
         </div>
       </div>
     </div>

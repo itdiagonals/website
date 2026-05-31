@@ -17,6 +17,7 @@ type Transaction struct {
 	Status         string    `json:"status" gorm:"column:status;type:varchar(50);not null;index"`
 	ShippingStatus string    `json:"shipping_status" gorm:"column:shipping_status;type:varchar(50);not null;default:'pending';index"`
 	SnapToken      string    `json:"snap_token" gorm:"column:snap_token;type:text"`
+	Notes          string    `json:"notes" gorm:"column:notes;type:text"`
 	CreatedAt      time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt      time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 

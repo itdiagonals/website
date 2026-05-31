@@ -30,7 +30,7 @@ export function Header() {
         <div className="flex flex-col gap-[10px] md:gap-[20px] items-center justify-center flex-1">
           <Link href="/" className="relative w-[120px] md:w-[163.721px] h-[32px] md:h-[40.93px]">
             <Image
-              src="/images/diagonals.webp"
+              src="/logo/diagonals.webp"
               alt="Diagonals"
               fill
               className="object-contain"

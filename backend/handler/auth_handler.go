@@ -41,6 +41,11 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
+type VerifyRegistrationRequest struct {
+	Email string `json:"email" binding:"required,email"`
+	Code  string `json:"code" binding:"required,len=6"`
+}
+
 type StatusResponse struct {
 	Status    string `json:"status"`
 	Message   string `json:"message,omitempty"`
@@ -61,7 +66,7 @@ func NewAuthHandler(authService service.AuthService, otpService service.OTPServi
 
 // Register godoc
 // @Summary Register customer account
-// @Description Register a new customer in Go-owned tables and issue access and refresh tokens. Returns a CSRF token in the csrf_token field.
+// @Description Register a new customer. An OTP will be sent to the email for verification before the account can be used.
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -79,11 +84,13 @@ func (handler *AuthHandler) Register(context *gin.Context) {
 		return
 	}
 
-	response, err := handler.authService.Register(context.Request.Context(), service.RegisterInput{
+	request.Email = strings.TrimSpace(strings.ToLower(request.Email))
+
+	_, err := handler.authService.Register(context.Request.Context(), service.RegisterInput{
 		Name:     request.Name,
 		Email:    request.Email,
 		Password: request.Password,
-	}, buildSessionMetadata(context))
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrEmailAlreadyRegistered):
@@ -96,9 +103,55 @@ func (handler *AuthHandler) Register(context *gin.Context) {
 		return
 	}
 
-	csrfToken := handler.setAuthCookies(context, *response)
+	_, otpErr := handler.otpService.RequestOTP(context.Request.Context(), request.Email, domain.OTPPurposeAccountVerification)
+	if otpErr != nil {
+		context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "Registration successful, but failed to send verification email. Please request a new code."})
+		return
+	}
 
-	context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "register successful", CSRFToken: csrfToken})
+	context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "Registration successful. Please check your email for the verification code."})
+}
+
+// VerifyRegistration godoc
+// @Summary Verify registration OTP
+// @Description Verify the OTP sent during registration and activate the account, issuing auth tokens.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param payload body handler.VerifyRegistrationRequest true "Verification payload"
+// @Success 200 {object} handler.StatusResponse
+// @Failure 400 {object} handler.ErrorResponse
+// @Failure 401 {object} handler.ErrorResponse
+// @Failure 403 {object} handler.ErrorResponse "Invalid or missing CSRF token"
+// @Failure 500 {object} handler.ErrorResponse
+// @Router /api/v1/auth/verify-registration [post]
+func (handler *AuthHandler) VerifyRegistration(context *gin.Context) {
+	var request VerifyRegistrationRequest
+	if err := context.ShouldBindJSON(&request); err != nil {
+		context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	request.Email = strings.TrimSpace(strings.ToLower(request.Email))
+	request.Code = strings.TrimSpace(request.Code)
+
+	if err := handler.otpService.VerifyOTP(context.Request.Context(), request.Email, request.Code); err != nil {
+		if errors.Is(err, service.ErrOTPInvalid) {
+			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
+			return
+		}
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	tokens, err := handler.authService.VerifyAndIssueTokens(context.Request.Context(), request.Email, buildSessionMetadata(context))
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	csrfToken := handler.setAuthCookies(context, *tokens)
+	context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "Email verified successfully", CSRFToken: csrfToken})
 }
 
 // Login godoc
@@ -128,6 +181,10 @@ func (handler *AuthHandler) Login(context *gin.Context) {
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
+			return
+		}
+		if errors.Is(err, service.ErrEmailNotVerified) {
+			context.JSON(http.StatusForbidden, ErrorResponse{Message: err.Error()})
 			return
 		}
 

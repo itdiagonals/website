@@ -89,14 +89,14 @@ export default function ImagePickerSingle({
                   key={item.id}
                   type="button"
                   onClick={() => onSelect(item.id)}
-                  className={`group relative aspect-square overflow-hidden rounded-md border-2 transition-all ${
-                    isSelected ? 'border-primary-500 shadow-sm' : 'border-transparent hover:border-neutral-300'
+                  className={`group relative flex h-20 w-full items-center justify-center overflow-hidden rounded-md border-2 bg-neutral-100 transition-all sm:h-24 md:h-28 ${
+                    isSelected ? 'border-primary-500 shadow-sm' : 'border-neutral-200 hover:border-primary-300'
                   }`}
                 >
                   <img
                     src={item.url}
                     alt={item.alt || item.filename}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
                   />
                   {isSelected && (
                     <div className="absolute inset-0 bg-primary-500/10" />

@@ -15,6 +15,8 @@ type TransactionRepository interface {
 	FindByUserIDPaginated(context context.Context, userID string, page int, limit int, status string) ([]domain.Transaction, error)
 	CountByUserID(context context.Context, userID string, status string) (int64, error)
 	FindByUserAndOrderID(context context.Context, userID string, orderID string) (*domain.Transaction, error)
+	FindAllPaginated(context context.Context, page int, limit int, status string) ([]domain.Transaction, error)
+	CountAll(context context.Context, status string) (int64, error)
 	UpdateStatusByOrderIDAndCurrent(context context.Context, orderID string, currentStatus string, nextStatus string) (bool, error)
 	UpdateStatusByOrderID(context context.Context, orderID string, status string) error
 	SetBiteshipBooking(context context.Context, orderID string, biteshipOrderID string, biteshipReferenceID string, trackingNumber string, shippingStatus string) error
@@ -134,6 +136,44 @@ func (repository *transactionRepository) FindByUserAndOrderID(context context.Co
 	}
 
 	return &transaction, nil
+}
+
+func (repository *transactionRepository) FindAllPaginated(context context.Context, page int, limit int, status string) ([]domain.Transaction, error) {
+	query := repository.db.WithContext(context)
+
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	offset := (page - 1) * limit
+	var transactions []domain.Transaction
+	err := query.
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&transactions).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
+}
+
+func (repository *transactionRepository) CountAll(context context.Context, status string) (int64, error) {
+	query := repository.db.WithContext(context).
+		Model(&domain.Transaction{})
+
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	var total int64
+	err := query.Count(&total).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
 
 func (repository *transactionRepository) UpdateStatusByOrderID(context context.Context, orderID string, status string) error {

@@ -26,7 +26,7 @@ export default function SimilarProducts({ products }: SimilarProductsProps) {
                 src={product.coverImage?.url ?? "/products/similar-1.png"}
                 alt={product.name}
                 fill
-                className="object-contain p-4 group-hover:scale-110 transition duration-500"
+                className="object-contain p-4 group-hover:scale-105 transition duration-500"
               />
             </div>
             <div className="flex items-center justify-between w-full">

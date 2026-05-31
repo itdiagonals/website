@@ -8,15 +8,18 @@ import (
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type ProductFullService struct {
-	repo          repository.ProductFullRepository
-	mediaRepo     repository.MediaRepository
-	categoryRepo  repository.CategoryRepository
-	seasonRepo    repository.SeasonRepository
-	careGuideRepo repository.CareGuideRepository
+	repo             repository.ProductFullRepository
+	mediaRepo        repository.MediaRepository
+	categoryRepo     repository.CategoryRepository
+	seasonRepo       repository.SeasonRepository
+	careGuideRepo    repository.CareGuideRepository
+	cache            *CatalogCache
+	stockReservation StockReservationService
 }
 
 func NewProductFullService(
@@ -25,26 +28,168 @@ func NewProductFullService(
 	categoryRepo repository.CategoryRepository,
 	seasonRepo repository.SeasonRepository,
 	careGuideRepo repository.CareGuideRepository,
+	redisClient *redis.Client,
+	stockReservation StockReservationService,
 ) *ProductFullService {
 	return &ProductFullService{
-		repo:          repo,
-		mediaRepo:     mediaRepo,
-		categoryRepo:  categoryRepo,
-		seasonRepo:    seasonRepo,
-		careGuideRepo: careGuideRepo,
+		repo:             repo,
+		mediaRepo:        mediaRepo,
+		categoryRepo:     categoryRepo,
+		seasonRepo:       seasonRepo,
+		careGuideRepo:    careGuideRepo,
+		cache:            NewCatalogCache(redisClient),
+		stockReservation: stockReservation,
 	}
 }
 
-func (s *ProductFullService) GetAllProducts(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
-	return s.repo.FindAll(ctx, categorySlug, page, limit)
+func (s *ProductFullService) GetAllProducts(ctx context.Context, categorySlug string, isLookbook bool, page, limit int) ([]domain.Product, int64, error) {
+	cacheKey := fmt.Sprintf("catalog:products:list:category=%s:lookbook=%t:page=%d:limit=%d", categorySlug, isLookbook, page, limit)
+	if s.cache != nil {
+		var cached cachedListPayload[domain.Product]
+		cacheHit, err := s.cache.Get(ctx, cacheKey, &cached)
+		if err == nil && cacheHit {
+			if err := s.adjustProductStocks(ctx, cached.Items); err != nil {
+				return nil, 0, err
+			}
+			return cached.Items, cached.Total, nil
+		}
+	}
+
+	products, total, err := s.repo.FindAll(ctx, categorySlug, isLookbook, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	if s.cache != nil {
+		_ = s.cache.Set(ctx, cacheKey, cachedListPayload[domain.Product]{Items: products, Total: total})
+	}
+	if err := s.adjustProductStocks(ctx, products); err != nil {
+		return nil, 0, err
+	}
+	return products, total, nil
 }
 
 func (s *ProductFullService) GetProductByID(ctx context.Context, id int) (*domain.Product, error) {
-	return s.repo.FindByID(ctx, id)
+	cacheKey := fmt.Sprintf("catalog:products:id:%d", id)
+	if s.cache != nil {
+		var cached domain.Product
+		cacheHit, err := s.cache.Get(ctx, cacheKey, &cached)
+		if err == nil && cacheHit {
+			if err := s.adjustProductStock(ctx, &cached); err != nil {
+				return nil, err
+			}
+			return &cached, nil
+		}
+	}
+
+	product, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		_ = s.cache.Set(ctx, cacheKey, product)
+	}
+	if err := s.adjustProductStock(ctx, product); err != nil {
+		return nil, err
+	}
+	return product, nil
 }
 
 func (s *ProductFullService) GetProductBySlug(ctx context.Context, slug string) (*domain.Product, error) {
-	return s.repo.FindBySlug(ctx, slug)
+	cacheKey := fmt.Sprintf("catalog:products:slug:%s", slug)
+	if s.cache != nil {
+		var cached domain.Product
+		cacheHit, err := s.cache.Get(ctx, cacheKey, &cached)
+		if err == nil && cacheHit {
+			if err := s.adjustProductStock(ctx, &cached); err != nil {
+				return nil, err
+			}
+			return &cached, nil
+		}
+	}
+
+	product, err := s.repo.FindBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		_ = s.cache.Set(ctx, cacheKey, product)
+	}
+	if err := s.adjustProductStock(ctx, product); err != nil {
+		return nil, err
+	}
+	return product, nil
+}
+
+func (s *ProductFullService) GetSimilarProducts(ctx context.Context, productID, seasonID, categoryID, limit int) ([]domain.Product, error) {
+	cacheKey := fmt.Sprintf("catalog:products:similar:%d:%d:%d:%d", productID, seasonID, categoryID, limit)
+
+	if s.cache != nil {
+		var cached []domain.Product
+		cacheHit, err := s.cache.Get(ctx, cacheKey, &cached)
+		if err == nil && cacheHit {
+			if err := s.adjustProductStocks(ctx, cached); err != nil {
+				return nil, err
+			}
+			return cached, nil
+		}
+	}
+
+	products, err := s.repo.FindSimilar(ctx, seasonID, categoryID, productID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.cache != nil {
+		_ = s.cache.Set(ctx, cacheKey, products)
+	}
+
+	if err := s.adjustProductStocks(ctx, products); err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+func (s *ProductFullService) adjustProductStocks(ctx context.Context, products []domain.Product) error {
+	for index := range products {
+		if err := s.adjustProductStock(ctx, &products[index]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *ProductFullService) adjustProductStock(ctx context.Context, product *domain.Product) error {
+	if product == nil || s.stockReservation == nil || product.ID <= 0 {
+		return nil
+	}
+
+	if len(product.Variants) == 0 {
+		reservedQuantity, err := s.stockReservation.GetReservedProductQuantity(ctx, product.ID)
+		if err != nil {
+			return err
+		}
+		product.Stock -= reservedQuantity
+		if product.Stock < 0 {
+			product.Stock = 0
+		}
+		return nil
+	}
+
+	totalStock := 0
+	for index := range product.Variants {
+		reservedQuantity, err := s.stockReservation.GetReservedQuantity(ctx, product.ID, product.Variants[index].Size, product.Variants[index].ColorName)
+		if err != nil {
+			return err
+		}
+		product.Variants[index].Stock -= reservedQuantity
+		if product.Variants[index].Stock < 0 {
+			product.Variants[index].Stock = 0
+		}
+		totalStock += product.Variants[index].Stock
+	}
+	product.Stock = totalStock
+	return nil
 }
 
 func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.Product, draftID string) error {
@@ -66,6 +211,9 @@ func (s *ProductFullService) CreateProduct(ctx context.Context, product *domain.
 			logger.Error("service.products.finalize_draft_failed", "draft_id", draftID, "error", err.Error())
 		}
 	}
+	if s.cache != nil {
+		_ = s.cache.InvalidateCatalog(ctx)
+	}
 	return nil
 }
 
@@ -83,11 +231,23 @@ func (s *ProductFullService) UpdateProduct(ctx context.Context, product *domain.
 		return err
 	}
 	product.Stock = repository.CalculateTotalStock(product.Variants)
-	return s.repo.Update(ctx, product)
+	if err := s.repo.Update(ctx, product); err != nil {
+		return err
+	}
+	if s.cache != nil {
+		_ = s.cache.InvalidateCatalog(ctx)
+	}
+	return nil
 }
 
 func (s *ProductFullService) DeleteProduct(ctx context.Context, id int) error {
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	if s.cache != nil {
+		_ = s.cache.InvalidateCatalog(ctx)
+	}
+	return nil
 }
 
 func validateProduct(product *domain.Product) error {

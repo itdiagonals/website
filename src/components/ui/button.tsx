@@ -10,10 +10,12 @@ const buttonVariants = cva(
         white: 'bg-white text-black hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
         outline: 'bg-transparent text-white  has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold border border-neutral-100',
         transparent: 'bg-white/40 text-black hover:bg-neutral-100 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold',
+        auth: 'bg-primary-300 text-white hover:bg-primary-400 has-[>svg]:gap-2 cursor-pointer hover:scale-105 font-bold rounded-lg',
         black: 'bg-primary-400 text-white hover:bg-primary-500 has-[>svg]:gap-2 cursor-pointer hover:scale-101 font-bold',
       },
       size: {
         default: 'w-[190px]',
+        full: 'w-full',
         icon: 'p-[10px]',
       },
     },

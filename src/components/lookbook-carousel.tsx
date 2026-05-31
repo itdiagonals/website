@@ -8,14 +8,17 @@ import { cn } from '@/lib/utils';
 
 interface LookbookItem {
   id: number;
-
   productName: string;
   price: string;
   image: string;
   href: string;
 }
 
-const LOOKBOOK_ITEMS: LookbookItem[] = [
+interface LookbookCarouselProps {
+  items?: LookbookItem[];
+}
+
+const DEFAULT_ITEMS: LookbookItem[] = [
   {
     id: 1,
     productName: "Beige Puffer & Beanie",
@@ -39,9 +42,10 @@ const LOOKBOOK_ITEMS: LookbookItem[] = [
   }
 ];
 
-export default function LookbookCarousel() {
+export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCarouselProps) {
+  const effectiveItems = items.length > 0 ? items : DEFAULT_ITEMS;
   const [currentIdx, setCurrentIdx] = useState(0);
-  const length = LOOKBOOK_ITEMS.length;
+  const length = effectiveItems.length;
 
   const nextSlide = () => {
     setCurrentIdx((prev) => (prev + 1) % length);
@@ -51,7 +55,7 @@ export default function LookbookCarousel() {
     setCurrentIdx((prev) => (prev - 1 + length) % length);
   };
 
-  const activeItem = LOOKBOOK_ITEMS[currentIdx];
+  const activeItem = effectiveItems[currentIdx];
 
   return (
     <section className="relative w-full h-[760px] md:h-[800px] bg-neutral-100 overflow-hidden py-12 flex flex-col justify-between select-none">
@@ -61,30 +65,31 @@ export default function LookbookCarousel() {
             Lookbook
           </h2>
 
-          <div className="flex items-center gap-6 mt-4">
+          <Link
+            href={activeItem.href}
+            className="flex items-center gap-6 mt-4 group cursor-pointer"
+          >
             <div className="flex flex-col">
-              <h3 className="font-sans text-[15px] font-bold text-neutral-800 uppercase tracking-wide">
+              <h3 className="font-sans text-[15px] font-bold text-neutral-800 uppercase tracking-wide group-hover:text-black transition-colors">
                 {activeItem.productName}
               </h3>
-              <p className="font-sans text-[13px] text-neutral-500 font-semibold mt-1">
+              <p className="font-sans text-[13px] text-neutral-500 font-semibold mt-1 group-hover:text-neutral-700 transition-colors">
                 {activeItem.price}
               </p>
             </div>
 
-            <Link href={activeItem.href}>
-              <button
-                aria-label={`Explore ${activeItem.productName}`}
-                className="flex items-center justify-center w-10 h-10 border border-black hover:bg-black hover:text-white transition-all duration-300 rounded-none cursor-pointer hover:scale-105 active:scale-95"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </Link>
-          </div>
+            <button
+              aria-label={`Explore ${activeItem.productName}`}
+              className="flex items-center justify-center w-10 h-10 border border-black bg-transparent text-black group-hover:bg-black group-hover:text-white transition-all duration-300 rounded-none cursor-pointer hover:scale-105 active:scale-95"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </Link>
         </div>
       </div>
 
       <div className="relative w-full h-[400px] md:h-[460px]  flex items-center justify-center overflow-visible [--shift-x:110px] sm:[--shift-x:180px] md:[--shift-x:280px] lg:[--shift-x:340px]">
-        {LOOKBOOK_ITEMS.map((item, idx) => {
+        {effectiveItems.map((item, idx) => {
           let offset = idx - currentIdx;
           if (offset < -1) offset += length;
           if (offset > 1) offset -= length;
@@ -131,10 +136,13 @@ export default function LookbookCarousel() {
               }}
               className="absolute left-1/2 top-1/2 h-[670px] w-full pointer-events-none"
             >
-              <div className={cn(
-                "relative w-full h-full transition-transform duration-700",
-                isActive && "pointer-events-auto"
-              )}>
+              <Link
+                href={item.href}
+                className={cn(
+                  "relative w-full h-full transition-transform duration-700 block",
+                  isActive ? "pointer-events-auto" : "pointer-events-none"
+                )}
+              >
                 <Image
                   src={item.image}
                   alt={item.productName}
@@ -145,7 +153,7 @@ export default function LookbookCarousel() {
                   )}
                   priority={isActive}
                 />
-              </div>
+              </Link>
             </div>
           );
         })}
@@ -168,7 +176,7 @@ export default function LookbookCarousel() {
       </button>
 
       <div className="relative z-20 max-w-[1440px] w-full mx-auto px-6 flex justify-center items-center gap-2 mt-4">
-        {LOOKBOOK_ITEMS.map((_, idx) => (
+        {effectiveItems.map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIdx(idx)}

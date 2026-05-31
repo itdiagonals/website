@@ -16,11 +16,14 @@ func registerProductRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis
 	seasonRepo := repository.NewSeasonRepository(db)
 	careGuideRepo := repository.NewCareGuideRepository(db)
 	repo := repository.NewProductFullRepository(db)
-	svc := service.NewProductFullService(repo, mediaRepo, categoryRepo, seasonRepo, careGuideRepo)
+	productRepository := repository.NewProductRepository(db)
+	stockReservationService := service.NewRedisStockReservationService(redisClient, productRepository)
+	svc := service.NewProductFullService(repo, mediaRepo, categoryRepo, seasonRepo, careGuideRepo, redisClient, stockReservationService)
 	h := handler.NewProductFullHandler(svc)
 
 	api.GET("/products", h.GetAllProducts)
 	api.GET("/products/:id", h.GetProductByID)
+	api.GET("/products/:id/similar", h.GetSimilarProducts)
 	api.GET("/products/slug/:slug", h.GetProductBySlug)
 
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)

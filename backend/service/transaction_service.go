@@ -85,6 +85,7 @@ type TransactionHistoryDetail struct {
 	CourierService    string                           `json:"courier_service"`
 	TrackingNumber    string                           `json:"tracking_number,omitempty"`
 	SnapToken         string                           `json:"snap_token"`
+	Notes             string                           `json:"notes"`
 	CreatedAt         time.Time                        `json:"created_at"`
 	UpdatedAt         time.Time                        `json:"updated_at"`
 	ShippingAddress   TransactionHistoryAddressSummary `json:"shipping_address"`
@@ -108,6 +109,7 @@ type ShippingTrackingResult struct {
 	TrackingNumber  string                  `json:"tracking_number,omitempty"`
 	ShippingStatus  string                  `json:"shipping_status"`
 	RawStatus       string                  `json:"raw_status,omitempty"`
+	TrackingLink    string                  `json:"tracking_link,omitempty"`
 	CourierName     string                  `json:"courier_name"`
 	CourierService  string                  `json:"courier_service"`
 	Events          []ShippingTrackingEvent `json:"events,omitempty"`
@@ -211,6 +213,7 @@ func (service *transactionHistoryService) GetMyTransactionByOrderID(ctx context.
 		CourierService:    transaction.CourierService,
 		TrackingNumber:    transaction.TrackingNumber,
 		SnapToken:         transaction.SnapToken,
+		Notes:             transaction.Notes,
 		CreatedAt:         transaction.CreatedAt,
 		UpdatedAt:         transaction.UpdatedAt,
 		ShippingAddress: TransactionHistoryAddressSummary{
@@ -351,6 +354,7 @@ func (service *transactionHistoryService) GetMyTransactionTracking(ctx context.C
 	result.TrackingNumber = normalizedTrackingNumber
 	result.ShippingStatus = normalizedShippingStatus
 	result.RawStatus = strings.TrimSpace(tracking.RawStatus)
+	result.TrackingLink = strings.TrimSpace(tracking.TrackingLink)
 	result.Events = tracking.Events
 
 	return result, nil
