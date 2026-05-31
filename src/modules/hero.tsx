@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -115,13 +115,13 @@ export default function NewArrivalHero() {
         <div
           key={slide.id}
           className={cn(
-            'absolute inset-0 flex flex-col items-center justify-end pb-40 text-center px-6 transition-all duration-1000 ease-out z-20',
+            'absolute inset-0 space-y-4 flex flex-col items-center justify-end pb-40 text-center px-6 transition-all duration-1000 ease-out z-20',
             idx === currentIdx
               ? 'opacity-100 translate-y-0 pointer-events-auto'
               : 'opacity-0 translate-y-6 pointer-events-none'
           )}
         >
-          <span className="text-white text-base md:text-lg font-medium select-none">
+          <span className="text-white drop-shadow-2xl text-base md:text-lg font-medium select-none">
             {slide.subtitle}
           </span>
 
@@ -129,7 +129,7 @@ export default function NewArrivalHero() {
             {slide.title}
           </h1>
 
-          <div className="mt-2">
+          <div className="">
             <Link href={slide.link}>
               <Button >
                 Explore Now

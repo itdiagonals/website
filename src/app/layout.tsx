@@ -2,9 +2,11 @@ import React from 'react'
 import './globals.css'
 import localFont from 'next/font/local'
 import { Inter } from 'next/font/google'
+import Navbar from '../components/ui/navbar'
+import Footer from '../components/ui/footer'
 export const metadata = {
   description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  title: 'Diagonals',
 }
 
 const dorivalUITrial = localFont({
@@ -66,7 +68,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${handi.variable} ${inter.variable} antialiased`}>
+        <Navbar variant='transparent'/>
         <main>{children}</main>
+        <Footer />
       </body>
     </html>
   )

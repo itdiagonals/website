@@ -31,7 +31,6 @@ export default function CartPage() {
 
   return (
     <>
-      <Navbar variant="light" />
       <CartModule initialItems={mockItems} />
     </>
   );
