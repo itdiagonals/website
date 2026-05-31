@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -83,7 +82,7 @@ func (s *MediaService) GeneratePresignedURL(ctx context.Context, objectKey strin
 		return "", "", err
 	}
 
-	publicURL := fmt.Sprintf("%s/%s", getPublicURLPrefix(), objectKey)
+	publicURL := storage.PublicObjectURL(objectKey)
 	return signedURL, publicURL, nil
 }
 
@@ -109,7 +108,7 @@ func (s *MediaService) ConfirmUpload(ctx context.Context, tempKey, alt, draftID 
 
 	media := domain.Media{
 		Alt:      strings.TrimSpace(alt),
-		URL:      fmt.Sprintf("%s/%s", getPublicURLPrefix(), finalKey),
+		URL:      storage.PublicObjectURL(finalKey),
 		Filename: storedName,
 		MimeType: mimeType,
 		Filesize: filesize,
@@ -152,15 +151,4 @@ func extractObjectKeyFromURL(url string) string {
 		return ""
 	}
 	return strings.Join(parts[len(parts)-2:], "/")
-}
-
-func getPublicURLPrefix() string {
-	endpoint := os.Getenv("S3_ENDPOINT")
-	bucket := os.Getenv("S3_BUCKET")
-	scheme := "http://"
-	if strings.HasPrefix(endpoint, "https://") {
-		scheme = "https://"
-	}
-	endpoint = strings.TrimPrefix(strings.TrimPrefix(endpoint, "https://"), "http://")
-	return fmt.Sprintf("%s%s/%s", scheme, endpoint, bucket)
 }
