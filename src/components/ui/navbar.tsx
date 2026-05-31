@@ -80,6 +80,19 @@ function SearchBar({ variant, isMobile = false, onClose }: { variant: NavbarVari
   );
 }
 
+const NAV_PRODUCT_ITEMS = [
+  { title: 'Tops', href: '/products?category=Tops' },
+  { title: 'Bottoms', href: '/products?category=Bottoms' },
+  { title: 'Women', href: '/products?category=Women' },
+  { title: 'Men', href: '/products?category=Men' }
+];
+
+const NAV_SEASON_ITEMS = [
+  { title: 'Season A', href: '/season/water-to-the-rescue' },
+  { title: 'Season B', href: '/season/punk-rocker-yes-i-am' },
+  { title: 'Season C', href: '/season/the-hills' }
+];
+
 export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -88,6 +101,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const isCartOrProfile = pathname?.startsWith('/cart') || pathname?.startsWith('/profile');
   const activeVariant = isCartOrProfile ? 'light' : variant;
   const currentSeason = 'Cross Player';
+  const currentSeasonSlug = 'cross-player';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -196,44 +210,19 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                     )}>
                       PRODUK
                     </h4>
-                    <Link
-                      href="/products?category=Tops"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Tops
-                    </Link>
-                    <Link
-                      href="/products?category=Bottoms"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Bottoms
-                    </Link>
-                    <Link
-                      href="/products?category=Women"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Women
-                    </Link>
-                    <Link
-                      href="/products?category=Men"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Men
-                    </Link>
+                    {NAV_PRODUCT_ITEMS.map((item) => (
+                      <Link
+                        key={item.title}
+                        href={item.href}
+                        className={cn(
+                          "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                          activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                        )}
+                      >
+                        {item.title}
+                      </Link>
+                    ))}
 
-                    {/* Divider and All Products */}
                     <div className={cn(
                       "border-t pt-3 mt-1",
                       activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
@@ -251,7 +240,6 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                     </div>
                   </div>
 
-                  {/* Column 2: SEASON */}
                   <div className={cn(
                     "flex flex-col gap-3.5 border-l pl-8",
                     activeVariant === 'light' ? 'border-neutral-200' : 'border-neutral-800/50'
@@ -263,38 +251,23 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                       SEASON
                     </h4>
                     <Link
-                      href="/product/season"
+                      href={`/season/${currentSeasonSlug}`}
                       className="text-[14px] font-bold uppercase tracking-wider transition-colors duration-200 text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300"
                     >
                       {currentSeason}
                     </Link>
-                    <Link
-                      href="/products?season=A"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Season A
-                    </Link>
-                    <Link
-                      href="/products?season=B"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Season B
-                    </Link>
-                    <Link
-                      href="/products?season=C"
-                      className={cn(
-                        "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
-                        activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
-                      )}
-                    >
-                      Season C
-                    </Link>
+                    {NAV_SEASON_ITEMS.map((item) => (
+                      <Link
+                        key={item.title}
+                        href={item.href}
+                        className={cn(
+                          "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                          activeVariant === 'light' ? 'text-primary-500 hover:text-black' : 'text-neutral-300 hover:text-white'
+                        )}
+                      >
+                        {item.title}
+                      </Link>
+                    ))}
 
                     <div className={cn(
                       "border-t pt-3 mt-1",
