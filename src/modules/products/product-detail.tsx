@@ -58,12 +58,12 @@ export default function ProductDetailModule({
       : "Varian ini sedang habis"
     : "Pilih warna dan ukuran untuk melihat stok tersedia";
 
-  const galleryImages =
-    product.gallery?.length
-      ? product.gallery.map((g) => g.imageUrl)
-      : product.coverImage?.url
-        ? [product.coverImage.url]
-        : [];
+  const seasonLookbookImages = product.season?.lookbookImages?.map((img) => img.url) || [];
+  const galleryImages = [
+    ...(product.coverImage?.url ? [product.coverImage.url] : []),
+    ...(product.gallery?.length ? product.gallery.map((g) => g.imageUrl) : []),
+    ...seasonLookbookImages,
+  ];
 
   const addToCartCore = async (): Promise<boolean> => {
     if (!canAddToCart) {

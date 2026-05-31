@@ -1,10 +1,11 @@
 import { CartModule } from "@/modules/checkout/cart-module";
-import Navbar from "@/src/components/ui/navbar";
+import { requireAuth } from '@/src/lib/auth-guard';
 
-export default function CartPage() {
+export default async function CartPage() {
+  await requireAuth('/cart');
+
   return (
     <>
-      <Navbar variant="light" />
       <CartModule />
     </>
   );

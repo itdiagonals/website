@@ -3,10 +3,11 @@ import './globals.css'
 import localFont from 'next/font/local'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
+import SiteLayout from '../components/site-layout'
 
 export const metadata = {
   description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  title: 'Diagonals',
 }
 
 const dorivalUITrial = localFont({
@@ -68,7 +69,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${handi.variable} ${inter.variable} antialiased`}>
-        <main>{children}</main>
+        <SiteLayout>{children}</SiteLayout>
         <Script
           src="https://app.sandbox.midtrans.com/snap/snap.js"
           data-client-key="Mid-client-bWmGIw6dVko6Yz-f2ih-sL12"

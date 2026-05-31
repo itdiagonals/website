@@ -70,7 +70,8 @@ export function OrderSummary({
 
       <Button
         onClick={onCheckout}
-        className="w-full h-[52px] sm:h-[58px] rounded-[10px] bg-primary-400 text-white text-[18px] sm:text-[20px] font-semibold uppercase tracking-wide hover:bg-primary-500"
+        variant="black"
+        className="w-full"
       >
         CHECKOUT
       </Button>

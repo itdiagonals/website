@@ -1,10 +1,11 @@
 import { ProfileModule } from "@/modules/checkout/profile-module";
-import Navbar from "@/src/components/ui/navbar";
+import { requireAuth } from '@/src/lib/auth-guard';
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  await requireAuth('/profile');
+
   return (
     <>
-      <Navbar variant="light" />
       <ProfileModule />
     </>
   );

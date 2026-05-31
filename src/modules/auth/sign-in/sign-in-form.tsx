@@ -29,6 +29,10 @@ export default function SignInForm() {
     try {
       await api.auth.login({ email, password })
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-changed'))
+      }
+
       try {
         await api.users.getAll(1, 1)
         const redirectTarget = searchParams.get('redirect')
@@ -37,6 +41,7 @@ export default function SignInForm() {
         } else {
           router.replace('/admin')
         }
+        router.refresh()
       } catch (adminCheckError) {
         if (adminCheckError instanceof ApiError && adminCheckError.status === 403) {
           const redirectTarget = searchParams.get('redirect')
@@ -45,8 +50,10 @@ export default function SignInForm() {
           } else {
             router.replace('/')
           }
+          router.refresh()
         } else {
           router.replace('/')
+          router.refresh()
         }
       }
     } catch (caughtError) {

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import ProductDetailModule from "@/src/modules/products/product-detail";
-import Navbar from "@/src/components/ui/navbar";
 import type { Product as BackendProduct, Season as BackendSeason } from "@/src/lib/api";
 import { mapBackendProduct, mapBackendSeason } from "@/src/lib/mappers";
 
@@ -70,7 +69,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
-      <Navbar variant="light" />
       <ProductDetailModule product={product} similarProducts={similarProducts} activeSeason={activeSeason} />
     </>
   );

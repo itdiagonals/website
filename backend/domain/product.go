@@ -10,7 +10,7 @@ type Product struct {
 	Season          *Season              `json:"season,omitempty" gorm:"foreignKey:SeasonID;references:ID"`
 	CategoryID      int                  `json:"category_id" gorm:"column:category_id"`
 	Category        *Category            `json:"category,omitempty" gorm:"foreignKey:CategoryID;references:ID"`
-	Gender          string               `json:"gender" gorm:"column:gender;not null;default:unisex;index"`
+	Gender          string               `json:"gender" gorm:"column:gender;not null;default:Unisex;index"`
 	BasePrice       float64              `json:"base_price" gorm:"column:base_price;not null"`
 	Weight          int                  `json:"weight" gorm:"column:weight;not null;default:0"`
 	Length          int                  `json:"length" gorm:"column:length;not null;default:0"`
@@ -27,6 +27,7 @@ type Product struct {
 	AvailableSizes  []ProductSize        `json:"available_sizes,omitempty" gorm:"foreignKey:ParentID;references:ID"`
 	Gallery         []ProductGalleryItem `json:"gallery,omitempty" gorm:"foreignKey:ParentID;references:ID"`
 	Variants        []ProductVariant     `json:"variants,omitempty" gorm:"foreignKey:ParentID;references:ID"`
+	IsLookbook      bool                 `json:"is_lookbook" gorm:"column:is_lookbook;not null;default:false"`
 	CreatedAt       time.Time            `json:"created_at" gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt       time.Time            `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 }
@@ -150,45 +151,47 @@ func (r CreateProductVariantRequest) ToProductVariant() ProductVariant {
 }
 
 type CreateProductRequest struct {
-	Name            string                         `json:"name" binding:"required"`
-	Slug            string                         `json:"slug" binding:"required"`
-	SeasonID        int                            `json:"season_id"`
-	CategoryID      int                            `json:"category_id"`
-	Gender          string                         `json:"gender"`
-	BasePrice       float64                        `json:"base_price" binding:"required"`
-	Weight          int                            `json:"weight"`
-	Length          int                            `json:"length"`
-	Width           int                            `json:"width"`
-	Height          int                            `json:"height"`
-	Stock           int                            `json:"stock"`
-	Description     string                         `json:"description"`
-	CoverImageID    int                            `json:"cover_image_id"`
-	DetailInfo      map[string]any                 `json:"detail_info,omitempty" swaggertype:"object"`
-	CareGuideID     int                            `json:"care_guide_id"`
-	AvailableColors []CreateProductColorRequest    `json:"available_colors,omitempty"`
-	AvailableSizes  []CreateProductSizeRequest     `json:"available_sizes,omitempty"`
+	Name            string                            `json:"name" binding:"required"`
+	Slug            string                            `json:"slug" binding:"required"`
+	SeasonID        int                               `json:"season_id"`
+	CategoryID      int                               `json:"category_id"`
+	Gender          string                            `json:"gender"`
+	BasePrice       float64                           `json:"base_price" binding:"required"`
+	Weight          int                               `json:"weight"`
+	Length          int                               `json:"length"`
+	Width           int                               `json:"width"`
+	Height          int                               `json:"height"`
+	Stock           int                               `json:"stock"`
+	Description     string                            `json:"description"`
+	CoverImageID    int                               `json:"cover_image_id"`
+	DetailInfo      map[string]any                    `json:"detail_info,omitempty" swaggertype:"object"`
+	CareGuideID     int                               `json:"care_guide_id"`
+	AvailableColors []CreateProductColorRequest       `json:"available_colors,omitempty"`
+	AvailableSizes  []CreateProductSizeRequest        `json:"available_sizes,omitempty"`
 	Gallery         []CreateProductGalleryItemRequest `json:"gallery,omitempty"`
-	Variants        []CreateProductVariantRequest  `json:"variants,omitempty"`
-	DraftID         string                         `json:"draft_id"`
+	Variants        []CreateProductVariantRequest     `json:"variants,omitempty"`
+	IsLookbook      bool                              `json:"is_lookbook"`
+	DraftID         string                            `json:"draft_id"`
 }
 
 func (r CreateProductRequest) ToProduct() Product {
 	return Product{
-		Name:         r.Name,
-		Slug:         r.Slug,
-		SeasonID:     r.SeasonID,
-		CategoryID:   r.CategoryID,
-		Gender:       r.Gender,
-		BasePrice:    r.BasePrice,
-		Weight:       r.Weight,
-		Length:       r.Length,
-		Width:        r.Width,
-		Height:       r.Height,
-		Stock:        r.Stock,
-		Description:  r.Description,
-		CoverImageID: r.CoverImageID,
-		DetailInfo:   r.DetailInfo,
-		CareGuideID:  r.CareGuideID,
+		Name:            r.Name,
+		Slug:            r.Slug,
+		SeasonID:        r.SeasonID,
+		CategoryID:      r.CategoryID,
+		Gender:          r.Gender,
+		BasePrice:       r.BasePrice,
+		Weight:          r.Weight,
+		Length:          r.Length,
+		Width:           r.Width,
+		Height:          r.Height,
+		Stock:           r.Stock,
+		Description:     r.Description,
+		CoverImageID:    r.CoverImageID,
+		DetailInfo:      r.DetailInfo,
+		CareGuideID:     r.CareGuideID,
+		IsLookbook:      r.IsLookbook,
 		AvailableColors: mapColors(r.AvailableColors),
 		AvailableSizes:  mapSizes(r.AvailableSizes),
 		Gallery:         mapGallery(r.Gallery),
@@ -197,45 +200,47 @@ func (r CreateProductRequest) ToProduct() Product {
 }
 
 type UpdateProductRequest struct {
-	Name            string                         `json:"name" binding:"required"`
-	Slug            string                         `json:"slug" binding:"required"`
-	SeasonID        int                            `json:"season_id"`
-	CategoryID      int                            `json:"category_id"`
-	Gender          string                         `json:"gender"`
-	BasePrice       float64                        `json:"base_price" binding:"required"`
-	Weight          int                            `json:"weight"`
-	Length          int                            `json:"length"`
-	Width           int                            `json:"width"`
-	Height          int                            `json:"height"`
-	Stock           int                            `json:"stock"`
-	Description     string                         `json:"description"`
-	CoverImageID    int                            `json:"cover_image_id"`
-	DetailInfo      map[string]any                 `json:"detail_info,omitempty" swaggertype:"object"`
-	CareGuideID     int                            `json:"care_guide_id"`
-	AvailableColors []CreateProductColorRequest    `json:"available_colors,omitempty"`
-	AvailableSizes  []CreateProductSizeRequest     `json:"available_sizes,omitempty"`
+	Name            string                            `json:"name" binding:"required"`
+	Slug            string                            `json:"slug" binding:"required"`
+	SeasonID        int                               `json:"season_id"`
+	CategoryID      int                               `json:"category_id"`
+	Gender          string                            `json:"gender"`
+	BasePrice       float64                           `json:"base_price" binding:"required"`
+	Weight          int                               `json:"weight"`
+	Length          int                               `json:"length"`
+	Width           int                               `json:"width"`
+	Height          int                               `json:"height"`
+	Stock           int                               `json:"stock"`
+	Description     string                            `json:"description"`
+	CoverImageID    int                               `json:"cover_image_id"`
+	DetailInfo      map[string]any                    `json:"detail_info,omitempty" swaggertype:"object"`
+	CareGuideID     int                               `json:"care_guide_id"`
+	AvailableColors []CreateProductColorRequest       `json:"available_colors,omitempty"`
+	AvailableSizes  []CreateProductSizeRequest        `json:"available_sizes,omitempty"`
 	Gallery         []CreateProductGalleryItemRequest `json:"gallery,omitempty"`
-	Variants        []CreateProductVariantRequest  `json:"variants,omitempty"`
+	Variants        []CreateProductVariantRequest     `json:"variants,omitempty"`
+	IsLookbook      bool                              `json:"is_lookbook"`
 }
 
 func (r UpdateProductRequest) ToProduct(id int) Product {
 	return Product{
-		ID:           id,
-		Name:         r.Name,
-		Slug:         r.Slug,
-		SeasonID:     r.SeasonID,
-		CategoryID:   r.CategoryID,
-		Gender:       r.Gender,
-		BasePrice:    r.BasePrice,
-		Weight:       r.Weight,
-		Length:       r.Length,
-		Width:        r.Width,
-		Height:       r.Height,
-		Stock:        r.Stock,
-		Description:  r.Description,
-		CoverImageID: r.CoverImageID,
-		DetailInfo:   r.DetailInfo,
-		CareGuideID:  r.CareGuideID,
+		ID:              id,
+		Name:            r.Name,
+		Slug:            r.Slug,
+		SeasonID:        r.SeasonID,
+		CategoryID:      r.CategoryID,
+		Gender:          r.Gender,
+		BasePrice:       r.BasePrice,
+		Weight:          r.Weight,
+		Length:          r.Length,
+		Width:           r.Width,
+		Height:          r.Height,
+		Stock:           r.Stock,
+		Description:     r.Description,
+		CoverImageID:    r.CoverImageID,
+		DetailInfo:      r.DetailInfo,
+		CareGuideID:     r.CareGuideID,
+		IsLookbook:      r.IsLookbook,
 		AvailableColors: mapColors(r.AvailableColors),
 		AvailableSizes:  mapSizes(r.AvailableSizes),
 		Gallery:         mapGallery(r.Gallery),

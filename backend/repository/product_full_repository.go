@@ -10,7 +10,7 @@ import (
 )
 
 type ProductFullRepository interface {
-	FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error)
+	FindAll(ctx context.Context, categorySlug string, isLookbook bool, page, limit int) ([]domain.Product, int64, error)
 	FindByID(ctx context.Context, id int) (*domain.Product, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Product, error)
 	FindSimilar(ctx context.Context, seasonID, categoryID, excludeID, limit int) ([]domain.Product, error)
@@ -27,12 +27,15 @@ func NewProductFullRepository(db *gorm.DB) ProductFullRepository {
 	return &productFullRepository{db: db}
 }
 
-func (r *productFullRepository) FindAll(ctx context.Context, categorySlug string, page, limit int) ([]domain.Product, int64, error) {
+func (r *productFullRepository) FindAll(ctx context.Context, categorySlug string, isLookbook bool, page, limit int) ([]domain.Product, int64, error) {
 	var products []domain.Product
 	query := r.db.WithContext(ctx).Preload("Season").Preload("Category").Preload("CoverImage").Preload("CareGuide").Preload("Variants")
 
 	if categorySlug != "" {
 		query = query.Joins("JOIN categories ON categories.id = products.category_id").Where("categories.slug = ?", categorySlug)
+	}
+	if isLookbook {
+		query = query.Where("products.is_lookbook = ?", true)
 	}
 
 	var total int64

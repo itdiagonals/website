@@ -67,9 +67,9 @@ func seedCareGuides(db *gorm.DB) {
 		{
 			Title: "General Fabric Care",
 			Instructions: map[string]any{
-				"wash":       "Check label",
-				"detergent":  "Mild detergent",
-				"bleach":     "Avoid bleach",
+				"wash":      "Check label",
+				"detergent": "Mild detergent",
+				"bleach":    "Avoid bleach",
 			},
 		},
 	}
@@ -121,30 +121,30 @@ func seedCategories(db *gorm.DB, store *storage.MinioStorage, ctx context.Contex
 
 func seedSeasons(db *gorm.DB, store *storage.MinioStorage, ctx context.Context, imagesDir string) []domain.Season {
 	items := []struct {
-		Name           string
-		Slug           string
-		Subtitle       string
-		Description    string
-		Active         bool
-		CoverFile      string
-		LookbookFiles  []string
+		Name          string
+		Slug          string
+		Subtitle      string
+		Description   string
+		Active        bool
+		CoverFile     string
+		LookbookFiles []string
 	}{
 		{
-			Name:        "El Ligue Premiere",
-			Slug:        "el-ligue-premiere",
-			Subtitle:    "Navy & Gold",
-			Description: "Our flagship collection inspired by classic football aesthetics. Bold colors and premium materials for the ultimate fan experience.",
-			Active:      true,
-			CoverFile:   "season-1.png",
+			Name:          "El Ligue Premiere",
+			Slug:          "el-ligue-premiere",
+			Subtitle:      "Navy & Gold",
+			Description:   "Our flagship collection inspired by classic football aesthetics. Bold colors and premium materials for the ultimate fan experience.",
+			Active:        true,
+			CoverFile:     "season-1.png",
 			LookbookFiles: []string{"season-1.png", "season-3.png"},
 		},
 		{
-			Name:        "Summer Drop",
-			Slug:        "summer-drop",
-			Subtitle:    "Pastel & White",
-			Description: "Lightweight summer essentials for on and off the pitch.",
-			Active:      false,
-			CoverFile:   "season-3.png",
+			Name:          "Summer Drop",
+			Slug:          "summer-drop",
+			Subtitle:      "Pastel & White",
+			Description:   "Lightweight summer essentials for on and off the pitch.",
+			Active:        false,
+			CoverFile:     "season-3.png",
 			LookbookFiles: []string{"season-3.png"},
 		},
 	}
@@ -226,32 +226,32 @@ func seedProducts(db *gorm.DB, store *storage.MinioStorage, ctx context.Context,
 	}
 
 	products := []struct {
-		Name          string
-		Slug          string
-		SeasonID      int
-		CategoryID    int
-		Gender        string
-		BasePrice     float64
-		Weight        int
-		Length        int
-		Width         int
-		Height        int
-		Stock         int
-		Description   string
-		CoverFile     string
-		CareGuideID   int
-		DetailInfo    map[string]any
-		Colors        []domain.ProductColor
-		Sizes         []domain.ProductSize
-		GalleryFiles  []string
-		Variants      []domain.ProductVariant
+		Name         string
+		Slug         string
+		SeasonID     int
+		CategoryID   int
+		Gender       string
+		BasePrice    float64
+		Weight       int
+		Length       int
+		Width        int
+		Height       int
+		Stock        int
+		Description  string
+		CoverFile    string
+		CareGuideID  int
+		DetailInfo   map[string]any
+		Colors       []domain.ProductColor
+		Sizes        []domain.ProductSize
+		GalleryFiles []string
+		Variants     []domain.ProductVariant
 	}{
 		{
 			Name:        "El Ligue Home Jersey",
 			Slug:        "el-ligue-home-jersey",
 			SeasonID:    activeSeason.ID,
 			CategoryID:  jerseysCat.ID,
-			Gender:      "men",
+			Gender:      "Men",
 			BasePrice:   899000,
 			Weight:      250,
 			Length:      70,
@@ -262,9 +262,9 @@ func seedProducts(db *gorm.DB, store *storage.MinioStorage, ctx context.Context,
 			CoverFile:   "products-1.png",
 			CareGuideID: jerseyCare.ID,
 			DetailInfo: map[string]any{
-				"material":    "100% Polyester",
-				"fit":         "Regular",
-				"technology":  "Dri-FIT",
+				"material":   "100% Polyester",
+				"fit":        "Regular",
+				"technology": "Dri-FIT",
 			},
 			Colors: []domain.ProductColor{
 				{Order: 0, ColorName: "Navy", HexCode: "#1a237e"},
@@ -289,7 +289,7 @@ func seedProducts(db *gorm.DB, store *storage.MinioStorage, ctx context.Context,
 			Slug:        "summer-training-shorts",
 			SeasonID:    activeSeason.ID,
 			CategoryID:  shortsCat.ID,
-			Gender:      "unisex",
+			Gender:      "Unisex",
 			BasePrice:   459000,
 			Weight:      180,
 			Length:      45,
@@ -325,19 +325,19 @@ func seedProducts(db *gorm.DB, store *storage.MinioStorage, ctx context.Context,
 
 	for _, p := range products {
 		product := domain.Product{
-			Name:         p.Name,
-			Slug:         p.Slug,
-			SeasonID:     p.SeasonID,
-			CategoryID:   p.CategoryID,
-			Gender:       p.Gender,
-			BasePrice:    p.BasePrice,
-			Weight:       p.Weight,
-			Length:       p.Length,
-			Width:        p.Width,
-			Height:       p.Height,
-			Stock:        p.Stock,
-			Description:  p.Description,
-			CareGuideID:  p.CareGuideID,
+			Name:        p.Name,
+			Slug:        p.Slug,
+			SeasonID:    p.SeasonID,
+			CategoryID:  p.CategoryID,
+			Gender:      p.Gender,
+			BasePrice:   p.BasePrice,
+			Weight:      p.Weight,
+			Length:      p.Length,
+			Width:       p.Width,
+			Height:      p.Height,
+			Stock:       p.Stock,
+			Description: p.Description,
+			CareGuideID: p.CareGuideID,
 		}
 
 		existing := domain.Product{}

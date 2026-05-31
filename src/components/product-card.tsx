@@ -30,6 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           fill
           className="object-contain p-4 group-hover:scale-110 transition duration-500"
+          unoptimized
         />
       </div>
       <div className="flex justify-between items-start">

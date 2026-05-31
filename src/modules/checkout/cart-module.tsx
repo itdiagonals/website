@@ -187,7 +187,7 @@ export function CartModule() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
+    <div className="min-h-screen flex flex-col bg-[#f3f3f3] pt-20">
       <main className="flex-grow pb-20">
         <div className="px-4 sm:px-6 md:px-[24px] max-w-[1440px] mx-auto w-full">
           <h1 className="text-h6 font-bold text-black mt-[14px] mb-[14px]">

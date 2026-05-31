@@ -1,10 +1,11 @@
-import Navbar from "@/components/ui/navbar";
 import { CheckoutModule } from "@/modules/checkout/checkout-module";
+import { requireAuth } from '@/src/lib/auth-guard';
 
-export default function CheckoutPage() {
+export default async function CheckoutPage() {
+  await requireAuth('/checkout');
+
   return (
     <>
-      <Navbar variant="light" />
       <CheckoutModule />
     </>
   );

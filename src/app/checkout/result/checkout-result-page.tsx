@@ -42,7 +42,6 @@ export default function CheckoutResultPage() {
 
   return (
     <>
-      <Navbar variant="light" />
       <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
         <main className="flex-grow flex items-center justify-center px-4">
           <div className="w-full max-w-md bg-white border border-primary-100 rounded-[10px] p-8 text-center">

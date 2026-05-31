@@ -34,7 +34,8 @@ func NewProductFullHandler(service *service.ProductFullService) *ProductFullHand
 // @Router       /api/v1/products [get]
 func (h *ProductFullHandler) GetAllProducts(c *gin.Context) {
 	categorySlug := c.Query("category")
-	logger.Info("handler.products.get_all", "category", categorySlug)
+	isLookbook := c.Query("is_lookbook") == "true"
+	logger.Info("handler.products.get_all", "category", categorySlug, "is_lookbook", isLookbook)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if page < 1 {
 		page = 1
@@ -46,7 +47,7 @@ func (h *ProductFullHandler) GetAllProducts(c *gin.Context) {
 	if limit > 200 {
 		limit = 200
 	}
-	products, total, err := h.service.GetAllProducts(c.Request.Context(), categorySlug, page, limit)
+	products, total, err := h.service.GetAllProducts(c.Request.Context(), categorySlug, isLookbook, page, limit)
 	if err != nil {
 		logger.Error("handler.products.get_all_failed", "error", err.Error())
 		response.FromError(c, err)

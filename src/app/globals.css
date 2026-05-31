@@ -2,7 +2,7 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #cac5c5;
+  --background: #f3f3f3;
   --foreground: #000000;
 }
 
@@ -160,4 +160,13 @@ body {
   font-size: 10px;
   line-height: 15px;
   font-weight: 400;
+}
+
+/* Utility to hide scrollbars for clean custom carousels */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

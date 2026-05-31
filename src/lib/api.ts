@@ -1,4 +1,18 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
+function getBaseUrl(): string {
+  const env = process.env.NEXT_PUBLIC_API_URL || '/api/v1'
+  const internalApiUrl = process.env.INTERNAL_API_URL || 'http://backend:8080/api/v1'
+
+  if (typeof window !== 'undefined') {
+    return env
+  }
+
+  if (env.startsWith('http')) {
+    return env
+  }
+  return internalApiUrl
+}
+
+const API_BASE_URL = getBaseUrl()
 
 type JsonRecord = Record<string, unknown>
 
@@ -536,6 +550,7 @@ export interface Product {
   detail_info?: Record<string, unknown> | null
   care_guide_id: number
   care_guide?: CareGuide
+  is_lookbook?: boolean
   available_colors?: ProductColor[]
   available_sizes?: ProductSize[]
   gallery?: ProductGalleryItem[]
@@ -905,6 +920,7 @@ export const api = {
       params.set('limit', String(limit))
       return request<Product[]>(`/products?${params.toString()}`)
     },
+    getLookbooks: (limit = 3) => request<Product[]>(`/products?is_lookbook=true&limit=${limit}`),
     getById: (id: number) => request<Product>(`/products/${id}`),
     getBySlug: (slug: string) => request<Product>(`/products/slug/${slug}`),
     getSimilar: (id: number, limit = 4) => request<Product[]>(`/products/${id}/similar?limit=${limit}`),

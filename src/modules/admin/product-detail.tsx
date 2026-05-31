@@ -136,6 +136,19 @@ export default function ProductDetailModule() {
               <InfoRow icon={<Calendar className="h-3.5 w-3.5 text-neutral-400" />} label="Season" value={product.season?.name || '-'} />
               <InfoRow icon={<Package className="h-3.5 w-3.5 text-neutral-400" />} label="Care Guide" value={product.care_guide?.title || '-'} />
               <InfoRow
+                icon={<Tag className="h-3.5 w-3.5 text-neutral-400" />}
+                label="Lookbook"
+                value={
+                  product.is_lookbook ? (
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
+                      Featured
+                    </span>
+                  ) : (
+                    <span className="text-sm text-neutral-400">Not featured</span>
+                  )
+                }
+              />
+              <InfoRow
                 icon={<Box className="h-3.5 w-3.5 text-neutral-400" />}
                 label="Stock"
                 value={

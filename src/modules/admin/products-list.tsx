@@ -40,6 +40,7 @@ interface ProductFormState {
   width: string
   height: string
   description: string
+  isLookbook: boolean
   detailInfo: DetailInfoItem[]
   colors: BuilderColor[]
   sizes: BuilderSize[]
@@ -54,13 +55,14 @@ const emptyForm: ProductFormState = {
   seasonId: '',
   careGuideId: '',
   coverImageId: '',
-  gender: 'unisex',
+  gender: 'Unisex',
   basePrice: '',
   weight: '',
   length: '',
   width: '',
   height: '',
   description: '',
+  isLookbook: false,
   detailInfo: [],
   colors: [],
   sizes: [],
@@ -75,7 +77,7 @@ export default function ProductsListModule() {
   const [careGuides, setCareGuides] = useState<CareGuide[]>([])
   const [media, setMedia] = useState<Media[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [genderFilter, setGenderFilter] = useState<'all' | 'men' | 'women' | 'unisex'>('all')
+  const [genderFilter, setGenderFilter] = useState<'all' | 'Men' | 'Women' | 'Unisex'>('all')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -160,13 +162,14 @@ export default function ProductsListModule() {
         seasonId: detail.season_id ? String(detail.season_id) : '',
         careGuideId: detail.care_guide_id ? String(detail.care_guide_id) : '',
         coverImageId: detail.cover_image_id ? String(detail.cover_image_id) : '',
-        gender: detail.gender || 'unisex',
+        gender: detail.gender || 'Unisex',
         basePrice: String(detail.base_price || 0),
         weight: String(detail.weight || 0),
         length: String(detail.length || 0),
         width: String(detail.width || 0),
         height: String(detail.height || 0),
         description: detail.description || '',
+        isLookbook: detail.is_lookbook || false,
         detailInfo: objectToDetailInfo(detail.detail_info ?? null),
         colors,
         sizes,
@@ -245,6 +248,7 @@ export default function ProductsListModule() {
         width: parseInteger(form.width),
         height: parseInteger(form.height),
         description: form.description.trim(),
+        is_lookbook: form.isLookbook,
         detail_info: detailInfoToObject(form.detailInfo),
         available_colors: availableColors,
         available_sizes: availableSizes,
@@ -310,7 +314,7 @@ export default function ProductsListModule() {
           />
         </div>
         <div className="flex items-center gap-2">
-          {(['all', 'men', 'women', 'unisex'] as const).map((filter) => (
+          {(['all', 'Men', 'Women', 'Unisex'] as const).map((filter) => (
             <button
               key={filter}
               type="button"
@@ -396,9 +400,9 @@ export default function ProductsListModule() {
           <label className="flex flex-col gap-2 text-sm text-primary-900">
             <span>Gender</span>
             <select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))} className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500">
-              <option value="unisex">Unisex</option>
-              <option value="men">Men</option>
-              <option value="women">Women</option>
+              <option value="Unisex">Unisex</option>
+              <option value="Men">Men</option>
+              <option value="Women">Women</option>
             </select>
           </label>
 
@@ -433,6 +437,16 @@ export default function ProductsListModule() {
           <label className="lg:col-span-2 flex flex-col gap-2 text-sm text-primary-900">
             <span>Description</span>
             <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} rows={4} className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
+          </label>
+
+          <label className="flex items-center gap-3 text-sm text-primary-900">
+            <input
+              type="checkbox"
+              checked={form.isLookbook}
+              onChange={(event) => setForm((current) => ({ ...current, isLookbook: event.target.checked }))}
+              className="h-5 w-5 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+            />
+            <span>Featured in Lookbook</span>
           </label>
 
           <div className="lg:col-span-2 flex flex-col gap-2 text-sm text-primary-900">
@@ -490,6 +504,7 @@ export default function ProductsListModule() {
                 <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Product</th>
                 <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Category</th>
                 <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Season</th>
+                <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-neutral-800">Lookbook</th>
                 <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-neutral-800">Gender</th>
                 <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-neutral-800">Base Price</th>
                 <th className="px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-neutral-800">Stock</th>
@@ -501,7 +516,7 @@ export default function ProductsListModule() {
             <tbody className="divide-y divide-neutral-300">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-8 text-center text-neutral-700">
+                  <td colSpan={10} className="px-5 py-8 text-center text-neutral-700">
                     Loading products...
                   </td>
                 </tr>
@@ -518,6 +533,15 @@ export default function ProductsListModule() {
                     </td>
                     <td className="px-5 py-3 text-neutral-800">{product.category?.name || '-'}</td>
                     <td className="px-5 py-3 text-neutral-800">{product.season?.name || '-'}</td>
+                    <td className="px-5 py-3 text-center">
+                      {product.is_lookbook ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="text-xs text-neutral-400">-</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3">
                       <span className="rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-medium capitalize text-primary-800">{product.gender}</span>
                     </td>
@@ -549,7 +573,7 @@ export default function ProductsListModule() {
 
               {!loading && filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-8 text-center text-neutral-700">
+                  <td colSpan={10} className="px-5 py-8 text-center text-neutral-700">
                     No products found
                   </td>
                 </tr>
