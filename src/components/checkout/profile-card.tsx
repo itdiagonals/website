@@ -97,7 +97,7 @@ export function ProfileCard({
               onClick={onEditProfile}
               className="text-neutral-400 hover:text-neutral-1000 transition-colors shrink-0"
             >
-              <Pencil className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Pencil className="w-5 h-5 sm:w-6 sm:h-6 mx-3 md:mx-0" />
             </button>
           </div>
 
@@ -141,7 +141,7 @@ export function ProfileCard({
                 onClick={onEditAddress}
                 className="text-neutral-400 hover:text-neutral-1000 transition-colors shrink-0"
               >
-                <Pencil className="w-5 h-5 sm:w-6 sm:h-6" />
+                <Pencil className="w-5 h-5 sm:w-6 sm:h-6 mx-3 md:mx-0" />
               </button>
             </div>
           </div>
