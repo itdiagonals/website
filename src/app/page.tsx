@@ -73,7 +73,7 @@ export default async function HomePage() {
         type="all-season"
         title="Explore all Season"
         desc="Discover our timeless collection that never fades. Crafted with premium materials designed for daily comfort and durability, making sure you always wear your passion with pride."
-        href="/products"
+        href="/season"
       />
       <RowGallery type="interactive" items={seasonItems} />
       <LookbookCarousel items={lookbookItems} />
