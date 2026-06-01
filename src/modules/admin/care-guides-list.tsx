@@ -3,17 +3,22 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
+import DynamicKeyValueEditor, {
+  detailInfoToObject,
+  objectToDetailInfo,
+  type DetailInfoItem,
+} from '@/components/admin/dynamic-key-value-editor'
 import { api, type CareGuide } from '@/lib/api'
-import { formatDate, parseJsonObject, stringifyJson } from '@/modules/admin/helpers'
+import { formatDate, stringifyJson } from '@/modules/admin/helpers'
 
 interface CareGuideFormState {
   title: string
-  instructionsText: string
+  instructions: DetailInfoItem[]
 }
 
 const emptyForm: CareGuideFormState = {
   title: '',
-  instructionsText: '',
+  instructions: [],
 }
 
 export default function CareGuidesListModule() {
@@ -59,7 +64,7 @@ export default function CareGuidesListModule() {
     setEditingId(guide.id)
     setForm({
       title: guide.title,
-      instructionsText: stringifyJson(guide.instructions),
+      instructions: objectToDetailInfo(guide.instructions ?? null),
     })
     setEditorOpen(true)
     setError(null)
@@ -79,7 +84,7 @@ export default function CareGuidesListModule() {
     try {
       const payload = {
         title: form.title.trim(),
-        instructions: parseJsonObject(form.instructionsText),
+        instructions: detailInfoToObject(form.instructions),
       }
 
       if (editingId) {
@@ -115,7 +120,7 @@ export default function CareGuidesListModule() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary-1000">Care Guides</h1>
-          <p className="mt-1 text-sm text-neutral-700">Manage JSON-based care instructions used by products.</p>
+          <p className="mt-1 text-sm text-neutral-700">Manage care instructions used by products without editing raw JSON.</p>
         </div>
         <button type="button" onClick={openCreateForm} className="flex items-center justify-center gap-2 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-400">
           <Plus className="h-4 w-4" />
@@ -150,16 +155,19 @@ export default function CareGuidesListModule() {
             <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} required className="rounded-lg border border-neutral-300 px-3 py-2 outline-none focus:border-primary-500" />
           </label>
 
-          <label className="flex flex-col gap-2 text-sm text-primary-900">
-            <span>Instructions JSON</span>
-            <textarea
-              value={form.instructionsText}
-              onChange={(event) => setForm((current) => ({ ...current, instructionsText: event.target.value }))}
-              rows={8}
-              placeholder='{"wash": "cold", "dry": "air dry"}'
-              className="rounded-lg border border-neutral-300 px-3 py-2 font-mono text-sm outline-none focus:border-primary-500"
+          <div className="flex flex-col gap-2 text-sm text-primary-900">
+            <span>Instructions</span>
+            <DynamicKeyValueEditor
+              items={form.instructions}
+              onChange={(instructions) => setForm((current) => ({ ...current, instructions }))}
+              disabled={saving}
+              emptyMessage="Belum ada instruksi. Tambahkan baris agar user bisa isi panduan perawatan satu per satu."
+              keyPlaceholder="Label instruksi (mis. wash)"
+              valuePlaceholder="Isi instruksi (mis. Cuci air dingin)"
+              addButtonLabel="Add instruction"
             />
-          </label>
+            <p className="text-xs text-neutral-500">Setiap baris akan disimpan sebagai pasangan label dan isi instruksi.</p>
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 

@@ -1,40 +1,28 @@
 import ThemeHero from "@/src/modules/theme-hero"
+import { api, Season } from "@/src/lib/api"
 
-const SeasonPage = () => {
+function sortByLatest(items: Season[]) {
+  return [...items].sort(
+    (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime(),
+  )
+}
+
+const SeasonPage = async () => {
+  const seasons = sortByLatest(await api.seasons.getAll(1, 1000))
+
   return (
     <>
-      <ThemeHero
-        theme={{
-          title: "Cross Player",
-          subtitle: "Theme of the Season",
-          image: "/CrossPlayer1.png",
-          href: "/season/cross-player"
-        }}
-      />
-      <ThemeHero
-        theme={{
-          title: "El Ligue Premiere",
-          subtitle: "Theme of the Season",
-          image: "/Frame1.webp",
-          href: "/season/el-ligue-premiere"
-        }}
-      />
-      <ThemeHero
-        theme={{
-          title: "Cross Player",
-          subtitle: "Theme of the Season",
-          image: "/welcome-background.webp",
-          href: "/season/cross-player"
-        }}
-      />
-      <ThemeHero
-        theme={{
-          title: "Cross Player",
-          subtitle: "Theme of the Season",
-          image: "/CrossPlayer1.png",
-          href: "/season/cross-player"
-        }}
-      />
+      {seasons.map((season) => (
+        <ThemeHero
+          key={season.id}
+          theme={{
+            title: season.name,
+            subtitle: season.subtitle || "Theme of the season!",
+            image: season.cover_image?.url || "/image-1.png",
+            href: `/season/${season.slug}`,
+          }}
+        />
+      ))}
     </>
   )
 }

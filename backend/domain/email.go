@@ -43,14 +43,15 @@ type OTPRequestInput struct {
 
 // OTPVerifyInput represents a request to verify OTP.
 type OTPVerifyInput struct {
-	Email string `json:"email" binding:"required,email"`
-	Code  string `json:"code" binding:"required,len=6"`
+	Email   string     `json:"email" binding:"required,email"`
+	Code    string     `json:"code" binding:"required,len=6"`
+	Purpose OTPPurpose `json:"purpose" binding:"required"`
 }
 
 // EmailTemplate represents a template-based email.
 type EmailTemplate struct {
-	From              EmailAddress       `json:"from"`
-	To                []EmailAddress     `json:"to"`
-	TemplateUUID      string             `json:"template_uuid"`
-	TemplateVariables map[string]string  `json:"template_variables"`
+	From              EmailAddress      `json:"from"`
+	To                []EmailAddress    `json:"to"`
+	TemplateUUID      string            `json:"template_uuid"`
+	TemplateVariables map[string]string `json:"template_variables"`
 }

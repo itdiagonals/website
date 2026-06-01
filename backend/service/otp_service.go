@@ -31,7 +31,7 @@ const (
 // OTPService handles OTP generation, storage, and verification.
 type OTPService interface {
 	RequestOTP(ctx context.Context, email string, purpose domain.OTPPurpose) (string, error)
-	VerifyOTP(ctx context.Context, email string, code string) error
+	VerifyOTP(ctx context.Context, email string, code string, purpose domain.OTPPurpose) error
 }
 
 // EmailSender is the abstraction for sending emails.
@@ -88,26 +88,24 @@ func (s *otpService) RequestOTP(ctx context.Context, email string, purpose domai
 	return code, nil
 }
 
-func (s *otpService) VerifyOTP(ctx context.Context, email string, code string) error {
+func (s *otpService) VerifyOTP(ctx context.Context, email string, code string, purpose domain.OTPPurpose) error {
 	email = strings.TrimSpace(strings.ToLower(email))
 	code = strings.TrimSpace(code)
 
-	for _, purpose := range []domain.OTPPurpose{domain.OTPPurposeAccountVerification, domain.OTPPurposePasswordReset} {
-		key := otpKey(email, purpose)
-		storedCode, err := s.redis.Get(ctx, key).Result()
-		if err == redis.Nil {
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("failed to retrieve OTP: %w", err)
-		}
+	key := otpKey(email, purpose)
+	storedCode, err := s.redis.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return ErrOTPInvalid
+	}
+	if err != nil {
+		return fmt.Errorf("failed to retrieve OTP: %w", err)
+	}
 
-		if subtle.ConstantTimeCompare([]byte(storedCode), []byte(code)) == 1 {
-			if err := s.redis.Del(ctx, key).Err(); err != nil {
-				logger.Warn("failed to delete OTP after verification", "error", err.Error())
-			}
-			return nil
+	if subtle.ConstantTimeCompare([]byte(storedCode), []byte(code)) == 1 {
+		if err := s.redis.Del(ctx, key).Err(); err != nil {
+			logger.Warn("failed to delete OTP after verification", "error", err.Error())
 		}
+		return nil
 	}
 
 	return ErrOTPInvalid

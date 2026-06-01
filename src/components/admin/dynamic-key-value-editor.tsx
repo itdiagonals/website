@@ -11,9 +11,21 @@ interface DynamicKeyValueEditorProps {
   items: DetailInfoItem[]
   onChange: (items: DetailInfoItem[]) => void
   disabled?: boolean
+  emptyMessage?: string
+  keyPlaceholder?: string
+  valuePlaceholder?: string
+  addButtonLabel?: string
 }
 
-export default function DynamicKeyValueEditor({ items, onChange, disabled }: DynamicKeyValueEditorProps) {
+export default function DynamicKeyValueEditor({
+  items,
+  onChange,
+  disabled,
+  emptyMessage = 'No detail fields added yet.',
+  keyPlaceholder = 'Field name (e.g. Material)',
+  valuePlaceholder = 'Value (e.g. 100% Cotton)',
+  addButtonLabel = 'Add detail field',
+}: DynamicKeyValueEditorProps) {
   function addItem() {
     onChange([...items, { key: '', value: '' }])
   }
@@ -29,9 +41,9 @@ export default function DynamicKeyValueEditor({ items, onChange, disabled }: Dyn
   }
 
   return (
-    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
       {items.length === 0 && (
-        <p className="text-sm text-neutral-500">No detail fields added yet.</p>
+        <p className="text-sm text-neutral-500">{emptyMessage}</p>
       )}
 
       {items.map((item, index) => (
@@ -39,7 +51,7 @@ export default function DynamicKeyValueEditor({ items, onChange, disabled }: Dyn
           <div className="flex flex-1 flex-col gap-1">
             <input
               type="text"
-              placeholder="Field name (e.g. Material)"
+              placeholder={keyPlaceholder}
               value={item.key}
               onChange={(event) => updateItem(index, 'key', event.target.value)}
               disabled={disabled}
@@ -49,7 +61,7 @@ export default function DynamicKeyValueEditor({ items, onChange, disabled }: Dyn
           <div className="flex flex-1 flex-col gap-1">
             <input
               type="text"
-              placeholder="Value (e.g. 100% Cotton)"
+              placeholder={valuePlaceholder}
               value={item.value}
               onChange={(event) => updateItem(index, 'value', event.target.value)}
               disabled={disabled}
@@ -75,7 +87,7 @@ export default function DynamicKeyValueEditor({ items, onChange, disabled }: Dyn
         className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-xs font-medium text-primary-900 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Plus className="h-3.5 w-3.5" />
-        Add detail field
+        {addButtonLabel}
       </button>
     </div>
   )

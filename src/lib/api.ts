@@ -808,6 +808,13 @@ export interface AddAddressPayload {
 
 export type UpdateAddressPayload = AddAddressPayload
 
+export interface WilayahItem {
+  code: string
+  name: string
+  level: 'province' | 'city' | 'district' | 'village'
+  parent_code?: string
+}
+
 export interface PresignedURLResponse {
   signed_url: string
   object_key: string
@@ -895,7 +902,7 @@ export const api = {
   seasons: {
     getAll: (page = 1, limit = 50) => request<Season[]>(`/seasons?page=${page}&limit=${limit}`),
     getById: (id: number) => request<Season>(`/seasons/${id}`),
-    getBySlug: (slug: string) => request<Season>(`/seasons/slug/${slug}`),
+    getBySlug: (slug: string) => request<Season>(`/seasons/slug/${encodeURIComponent(slug)}`),
     create: (data: SeasonPayload) => request<Season>('/seasons', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     update: (id: number, data: SeasonPayload) =>
       request<Season>(`/seasons/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
@@ -993,6 +1000,21 @@ export const api = {
     getAll: () => request<CustomerAddress[]>('/addresses', undefined, { retryOnUnauthorized: true }),
     create: (data: AddAddressPayload) => request<CustomerAddress>('/addresses', { method: 'POST', body: data }, { retryOnUnauthorized: true }),
     update: (id: number, data: UpdateAddressPayload) => request<CustomerAddress>(`/addresses/${id}`, { method: 'PUT', body: data }, { retryOnUnauthorized: true }),
+  },
+
+  wilayah: {
+    search: (params: { level: WilayahItem['level']; parentCode?: string; query?: string; limit?: number }) => {
+      const searchParams = new URLSearchParams()
+      searchParams.set('level', params.level)
+      if (params.parentCode) searchParams.set('parent_code', params.parentCode)
+      if (params.query?.trim()) searchParams.set('query', params.query.trim())
+      if (params.limit) searchParams.set('limit', String(params.limit))
+
+      return request<{ data: WilayahItem[] }>(`/wilayah/search?${searchParams.toString()}`, undefined, {
+        retryOnUnauthorized: true,
+        unwrapData: false,
+      }).then((response) => response.data)
+    },
   },
 
   admin: {

@@ -284,7 +284,7 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
                     {seasonItems.length > 0 ? seasonItems.map((season, index) => (
                       <Link
                         key={season.id}
-                        href={`/products?season=${encodeURIComponent(season.slug)}`}
+                        href={`/season/${encodeURIComponent(season.slug)}`}
                         className={cn(
                           "text-[14px] font-semibold uppercase tracking-wider transition-colors duration-200",
                           season.is_active

@@ -24,9 +24,13 @@ export type AddressFormState = {
   title: string;
   recipientName: string;
   phoneNumber: string;
+  provinceCode: string;
   province: string;
+  cityCode: string;
   city: string;
+  districtCode: string;
   district: string;
+  villageCode: string;
   village: string;
   postalCode: string;
   fullAddress: string;
@@ -45,9 +49,13 @@ export const createEmptyAddressForm = (): AddressFormState => ({
   title: "",
   recipientName: "",
   phoneNumber: "",
+  provinceCode: "",
   province: "",
+  cityCode: "",
   city: "",
+  districtCode: "",
   district: "",
+  villageCode: "",
   village: "",
   postalCode: "",
   fullAddress: "",
@@ -66,9 +74,13 @@ const toAddressForm = (address: UserProfileAddress): AddressFormState => ({
   title: address.title,
   recipientName: address.recipientName,
   phoneNumber: address.phoneNumber,
+  provinceCode: "",
   province: address.province,
+  cityCode: "",
   city: address.city,
+  districtCode: "",
   district: address.district,
+  villageCode: "",
   village: address.village,
   postalCode: address.postalCode,
   fullAddress: address.fullAddress,
