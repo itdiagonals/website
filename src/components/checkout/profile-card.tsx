@@ -60,7 +60,7 @@ export function ProfileCard({
       <div className="w-full max-w-[1080px] flex flex-col gap-6 sm:gap-[36px]">
         <div className="flex flex-col gap-6 sm:gap-[35px] w-full">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 sm:gap-[50px]">
+            <div className="flex items-center gap-4 sm:gap-[50px] flex-1 min-w-0">
               <div className="relative w-[60px] h-[60px] sm:w-[83px] sm:h-[83px] rounded-full bg-neutral-200 overflow-hidden shrink-0">
                 {profile.avatar ? (
                   <Image
@@ -141,7 +141,7 @@ export function ProfileCard({
                 onClick={onEditAddress}
                 className="text-neutral-400 hover:text-neutral-1000 transition-colors shrink-0"
               >
-                <Pencil className="w-5 h-5 sm:w-6 sm:h-6 mx-3 md:mx-0" />
+              <Pencil className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
           </div>
