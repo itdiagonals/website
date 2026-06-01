@@ -2,9 +2,9 @@ package config
 
 import (
 	"log"
-
 	"os"
 	"strings"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -26,4 +26,15 @@ func ConnectDB() {
 	if err != nil {
 		log.Fatal("failed to connect database: ", err)
 	}
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Fatal("failed to get underlying sql.DB: ", err)
+	}
+
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(15 * time.Minute)
+
+	log.Println("database connection pool configured: max_open=25, max_idle=10, max_lifetime=15m")
 }

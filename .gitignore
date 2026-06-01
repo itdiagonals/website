@@ -2,6 +2,7 @@
 
 .vscode
 list
+k6/
 
 # dependencies
 /node_modules
