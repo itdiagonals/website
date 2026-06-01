@@ -69,7 +69,10 @@ func main() {
 	startShippingJobWorker(config.DB)
 
 	mailtrapConfig := config.LoadMailtrapConfig()
-	emailProvider := service.NewMailtrapProvider(mailtrapConfig)
+	resendConfig := config.LoadResendConfig()
+	mailtrapProvider := service.NewMailtrapProvider(mailtrapConfig)
+	resendProvider := service.NewResendProvider(resendConfig)
+	emailProvider := service.NewFallbackEmailProvider(mailtrapProvider, resendProvider)
 	emailQueue := service.NewInMemoryEmailQueue(1000)
 	emailWorker := service.NewEmailWorker(emailQueue, emailProvider, 3)
 	go emailWorker.Start(context.Background())
