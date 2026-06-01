@@ -11,6 +11,7 @@ import (
 	"github.com/itdiagonals/website/backend/config"
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/pkg/logger"
+	"github.com/resend/resend-go/v3"
 )
 
 // EmailProvider is the abstraction for email sending providers.
@@ -117,4 +118,103 @@ func convertAddresses(addrs []domain.EmailAddress) []mailtrapAddress {
 		result[i] = mailtrapAddress{Email: addr.Email, Name: addr.Name}
 	}
 	return result
+}
+
+// resendProvider implements EmailProvider using the Resend SDK.
+type resendProvider struct {
+	config config.ResendConfig
+	client *resend.Client
+}
+
+func NewResendProvider(cfg config.ResendConfig) EmailProvider {
+	return &resendProvider{
+		config: cfg,
+		client: resend.NewClient(cfg.APIKey),
+	}
+}
+
+func (p *resendProvider) Send(ctx context.Context, msg domain.EmailMessage) error {
+	from := formatResendFrom(msg.From, p.config)
+	to := convertToResendRecipients(msg.To)
+
+	params := &resend.SendEmailRequest{
+		From:    from,
+		To:      to,
+		Subject: msg.Subject,
+		Text:    msg.Text,
+		Html:    msg.HTML,
+	}
+
+	sent, err := p.client.Emails.Send(params)
+	if err != nil {
+		return fmt.Errorf("resend send failed: %w", err)
+	}
+	if sent == nil || sent.Id == "" {
+		return fmt.Errorf("resend returned empty response")
+	}
+
+	logger.Info("email.resend.sent", "id", sent.Id, "to", to)
+	return nil
+}
+
+func formatResendFrom(addr domain.EmailAddress, cfg config.ResendConfig) string {
+	name := addr.Name
+	if name == "" {
+		name = cfg.FromName
+	}
+	email := addr.Email
+	if email == "" {
+		email = cfg.FromEmail
+	}
+	if name == "" {
+		return email
+	}
+	return fmt.Sprintf("%s <%s>", name, email)
+}
+
+func convertToResendRecipients(addrs []domain.EmailAddress) []string {
+	result := make([]string, len(addrs))
+	for i, addr := range addrs {
+		if addr.Name != "" {
+			result[i] = fmt.Sprintf("%s <%s>", addr.Name, addr.Email)
+			continue
+		}
+		result[i] = addr.Email
+	}
+	return result
+}
+
+// fallbackEmailProvider tries the primary provider first and, if it fails,
+// retries the same message against the secondary provider. It returns an
+// error only if both providers fail.
+type fallbackEmailProvider struct {
+	primary   EmailProvider
+	secondary EmailProvider
+}
+
+func NewFallbackEmailProvider(primary, secondary EmailProvider) EmailProvider {
+	return &fallbackEmailProvider{
+		primary:   primary,
+		secondary: secondary,
+	}
+}
+
+func (f *fallbackEmailProvider) Send(ctx context.Context, msg domain.EmailMessage) error {
+	primaryErr := f.primary.Send(ctx, msg)
+	if primaryErr == nil {
+		return nil
+	}
+	logger.Warn("email.primary.failed.fallback", "provider", "mailtrap", "error", primaryErr.Error())
+
+	if f.secondary == nil {
+		return fmt.Errorf("primary provider failed and no fallback configured: %w", primaryErr)
+	}
+
+	if err := f.secondary.Send(ctx, msg); err != nil {
+		logger.Error("email.fallback.failed", "provider", "resend", "error", err.Error())
+		return fmt.Errorf("primary failed (%v) and fallback failed: %w", primaryErr, err)
+	}
+
+	logger.Info("email.fallback.success", "provider", "resend")
+	return nil
 }
