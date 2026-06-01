@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AddressMapPicker } from "@/components/checkout/address-map-picker";
 import { SearchableWilayahSelect } from "@/components/checkout/searchable-wilayah-select";
 import {
@@ -12,19 +12,39 @@ import {
   AddressFormState,
   createEmptyAddressForm,
   toAddressRecord,
+  toAddressForm,
   mapProfileAddressToPayload,
 } from "@/modules/checkout/profile-module";
+import { type UserProfileAddress } from "@/components/checkout/profile-card";
 
 interface AddAddressDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (newAddress: CustomerAddress) => void;
+  mode?: "add" | "edit";
+  initialAddress?: UserProfileAddress;
 }
 
-export function AddAddressDialog({ open, onClose, onSuccess }: AddAddressDialogProps) {
-  const [addressForm, setAddressForm] = useState<AddressFormState>(createEmptyAddressForm);
+export function AddAddressDialog({ open, onClose, onSuccess, mode = "add", initialAddress }: AddAddressDialogProps) {
+  const [addressForm, setAddressForm] = useState<AddressFormState>(() => {
+    if (mode === "edit" && initialAddress) {
+      return toAddressForm(initialAddress);
+    }
+    return createEmptyAddressForm();
+  });
   const [addressError, setAddressError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      if (mode === "edit" && initialAddress) {
+        setAddressForm(toAddressForm(initialAddress));
+      } else {
+        setAddressForm(createEmptyAddressForm());
+      }
+      setAddressError("");
+    }
+  }, [open, mode, initialAddress]);
 
   const updateAddressForm = (next: Partial<AddressFormState>) => {
     setAddressForm((prev) => ({ ...prev, ...next }));
@@ -96,9 +116,15 @@ export function AddAddressDialog({ open, onClose, onSuccess }: AddAddressDialogP
     setLoading(true);
     try {
       const nextAddress = toAddressRecord(addressForm);
-      const created = await api.addresses.create(mapProfileAddressToPayload(nextAddress));
-      onSuccess(created);
-      setAddressForm(createEmptyAddressForm);
+      if (mode === "edit" && initialAddress) {
+        const numericId = Number(initialAddress.id);
+        const updated = await api.addresses.update(numericId, mapProfileAddressToPayload(nextAddress));
+        onSuccess(updated);
+      } else {
+        const created = await api.addresses.create(mapProfileAddressToPayload(nextAddress));
+        onSuccess(created);
+        setAddressForm(createEmptyAddressForm());
+      }
       setAddressError("");
     } catch (error) {
       console.error("Failed to save address:", error);
@@ -114,7 +140,7 @@ export function AddAddressDialog({ open, onClose, onSuccess }: AddAddressDialogP
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-[720px] rounded-[10px] border border-primary-100 bg-white p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h3 className="text-h7 font-bold text-black">Tambah Alamat</h3>
+          <h3 className="text-h7 font-bold text-black">{mode === "edit" ? "Edit Alamat" : "Tambah Alamat"}</h3>
           <button
             type="button"
             onClick={onClose}
