@@ -10,7 +10,7 @@ import {
   OrderTrackingCard,
   OrderItem,
 } from "@/components/checkout/order-tracking-card";
-import { AddressMapPicker } from "@/components/checkout/address-map-picker";
+import { AddAddressDialog } from "@/components/checkout/add-address-dialog";
 import {
   api,
   type CustomerAddress,
@@ -69,7 +69,7 @@ export const createEmptyAddressForm = (): AddressFormState => ({
   isPrimary: false,
 });
 
-const toAddressForm = (address: UserProfileAddress): AddressFormState => ({
+export const toAddressForm = (address: UserProfileAddress): AddressFormState => ({
   id: address.id,
   title: address.title,
   recipientName: address.recipientName,
@@ -574,241 +574,21 @@ export function ProfileModule() {
               </>
             )}
 
-            {dialog === "address-form" && (
-              <>
-                <div className="flex items-center justify-between gap-4 mb-4">
-                  <h3 className="text-h7 font-bold text-black">
-                    {addressMode === "add" ? "Add Address" : "Edit Address"}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={openAddressList}
-                    className="h-10 px-4 rounded-[8px] border border-primary-100 text-b2"
-                  >
-                    Saved addresses
-                  </button>
-                </div>
-
-                <form onSubmit={submitAddress} className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Title
-                      <input
-                        value={addressForm.title}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            title: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Recipient Name
-                      <input
-                        value={addressForm.recipientName}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            recipientName: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Phone Number
-                      <input
-                        value={addressForm.phoneNumber}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            phoneNumber: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <AddressMapPicker
-                    value={{
-                      fullAddress: addressForm.fullAddress,
-                      postalCode: addressForm.postalCode,
-                      province: addressForm.province,
-                      city: addressForm.city,
-                      district: addressForm.district,
-                      village: addressForm.village,
-                      latitude: addressForm.latitude,
-                      longitude: addressForm.longitude,
-                      placeId: addressForm.placeId,
-                      mapProvider: addressForm.mapProvider,
-                      destinationAreaId: addressForm.destinationAreaId,
-                      destinationAreaLabel: addressForm.destinationAreaLabel,
-                    }}
-                    onChange={(next) => {
-                      setAddressError("");
-                      setAddressForm((prev) => ({
-                        ...prev,
-                        latitude: next.latitude ?? prev.latitude,
-                        longitude: next.longitude ?? prev.longitude,
-                        placeId: next.placeId ?? prev.placeId,
-                        mapProvider: next.mapProvider ?? prev.mapProvider,
-                        destinationAreaId: next.destinationAreaId ?? prev.destinationAreaId,
-                        destinationAreaLabel: next.destinationAreaLabel ?? prev.destinationAreaLabel,
-                        province: prev.province || next.province || "",
-                        city: prev.city || next.city || "",
-                        district: prev.district || next.district || "",
-                        village: prev.village || next.village || "",
-                        postalCode: prev.postalCode || next.postalCode || "",
-                        fullAddress: prev.fullAddress || next.fullAddress || "",
-                        locationSource: next.latitude && next.longitude ? "map_picker" : prev.locationSource,
-                      }));
-                    }}
-                  />
-
-                  <label className="flex flex-col gap-2 text-b2 text-black">
-                    Full Address Detail
-                    <textarea
-                      value={addressForm.fullAddress}
-                      onChange={(event) =>
-                        setAddressForm((prev) => ({
-                          ...prev,
-                          fullAddress: event.target.value,
-                        }))
-                      }
-                      className="min-h-[100px] rounded-[8px] border border-primary-100 px-3 py-3 outline-none"
-                      required
-                    />
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Kode Pos *
-                      <input
-                        value={addressForm.postalCode}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            postalCode: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Provinsi *
-                      <input
-                        value={addressForm.province}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            province: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Kota *
-                      <input
-                        value={addressForm.city}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            city: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                    <label className="flex flex-col gap-2 text-b2 text-black">
-                      Kecamatan *
-                      <input
-                        value={addressForm.district}
-                        onChange={(event) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            district: event.target.value,
-                          }))
-                        }
-                        className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                        required
-                      />
-                    </label>
-                  </div>
-
-                  <label className="flex flex-col gap-2 text-b2 text-black">
-                    Kelurahan *
-                    <input
-                      value={addressForm.village}
-                      onChange={(event) =>
-                        setAddressForm((prev) => ({
-                          ...prev,
-                          village: event.target.value,
-                        }))
-                      }
-                      className="h-11 rounded-[8px] border border-primary-100 px-3 outline-none"
-                      required
-                    />
-                  </label>
-
-                  <input type="hidden" value={addressForm.placeId} readOnly />
-                  <input type="hidden" value={addressForm.mapProvider} readOnly />
-                  <input type="hidden" value={addressForm.destinationAreaId} readOnly />
-                  <input type="hidden" value={addressForm.destinationAreaLabel} readOnly />
-
-                  {addressError && (
-                    <p className="text-b2 text-red-200">{addressError}</p>
-                  )}
-
-                  <label className="flex items-center gap-3 text-b2 text-black">
-                    <input
-                      type="checkbox"
-                      checked={addressForm.isPrimary}
-                      onChange={(event) =>
-                        setAddressForm((prev) => ({
-                          ...prev,
-                          isPrimary: event.target.checked,
-                        }))
-                      }
-                    />
-                    Set as primary address
-                  </label>
-
-                  <div className="mt-2 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={openAddressList}
-                      className="h-10 px-4 rounded-[8px] border border-primary-100 text-b2"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="h-10 px-4 rounded-[8px] bg-primary-400 text-white text-b2"
-                    >
-                      Save
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
           </div>
         </div>
+      )}
+
+      {dialog === "address-form" && (
+        <AddAddressDialog
+          open={true}
+          onClose={openAddressList}
+          onSuccess={async () => {
+            await fetchAddresses();
+            setDialog("address-list");
+          }}
+          mode={addressMode}
+          initialAddress={addressMode === "edit" ? toAddressRecord(addressForm) : undefined}
+        />
       )}
     </>
   );

@@ -8,6 +8,7 @@ import { ShippingRateCard } from "@/components/checkout/shipping-rate-card";
 import { CheckoutStepper } from "@/components/checkout/checkout-stepper";
 import { CheckoutOrderSummary } from "@/components/checkout/checkout-order-summary";
 import { AddAddressDialog } from "@/components/checkout/add-address-dialog";
+import { mapBackendAddressToProfile } from "@/modules/checkout/profile-module";
 import { cn } from "@/lib/utils";
 
 type Step = "address" | "shipping" | "review" | "payment";
@@ -93,6 +94,7 @@ export function CheckoutModule() {
   const [error, setError] = useState<string | null>(null);
   const [transaction, setTransaction] = useState<TransactionHistoryDetail | null>(null);
   const [showAddAddress, setShowAddAddress] = useState(false);
+  const [showEditAddress, setShowEditAddress] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const [timeRemainingMs, setTimeRemainingMs] = useState<number | null>(null);
   const [autoOpenRequested, setAutoOpenRequested] = useState(false);
@@ -295,6 +297,13 @@ export function CheckoutModule() {
     setShowAddAddress(false);
   };
 
+  const handleEditAddressSuccess = (updatedAddress: CustomerAddress) => {
+    setAddresses((prev) =>
+      prev.map((a) => (a.id === updatedAddress.id ? updatedAddress : a))
+    );
+    setShowEditAddress(false);
+  };
+
   if (loading && step === "address" && addresses.length === 0 && !showAddAddress) {
     return (
       <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
@@ -330,6 +339,14 @@ export function CheckoutModule() {
                     onSelect={setSelectedAddressId}
                   />
                   <div className="mt-4 flex items-center gap-3">
+                    {selectedAddress && (
+                      <button
+                        onClick={() => setShowEditAddress(true)}
+                        className="px-4 py-2 rounded-[8px] border border-primary-300 text-b2 text-primary-500 hover:bg-primary-100/20 transition-colors"
+                      >
+                        Edit Alamat
+                      </button>
+                    )}
                     <button
                       onClick={() => setShowAddAddress(true)}
                       className="px-4 py-2 rounded-[8px] border border-primary-300 text-b2 text-primary-500 hover:bg-primary-100/20 transition-colors"
@@ -560,6 +577,14 @@ export function CheckoutModule() {
         open={showAddAddress}
         onClose={() => setShowAddAddress(false)}
         onSuccess={handleAddAddressSuccess}
+      />
+
+      <AddAddressDialog
+        open={showEditAddress}
+        onClose={() => setShowEditAddress(false)}
+        onSuccess={handleEditAddressSuccess}
+        mode="edit"
+        initialAddress={selectedAddress ? mapBackendAddressToProfile(selectedAddress) : undefined}
       />
     </div>
   );
