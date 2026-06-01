@@ -30,6 +30,22 @@ interface PageProps {
   }>
 }
 
+import type { Metadata } from 'next'
+import { SITE_NAME } from '@/src/lib/seo'
+
+export const metadata: Metadata = {
+  title: `Shop All Products | ${SITE_NAME}`,
+  description: 'Browse the full collection of Diagonals streetwear. Filter by season, category, and gender to find your perfect fit.',
+  openGraph: {
+    title: `Shop All Products | ${SITE_NAME}`,
+    description: 'Browse the full collection of Diagonals streetwear. Filter by season, category, and gender to find your perfect fit.',
+    type: 'website',
+  },
+  alternates: {
+    canonical: '/products',
+  },
+}
+
 export default async function Products({ searchParams }: PageProps) {
   const resolvedSearchParams = await searchParams
   const searchQuery = resolvedSearchParams.search || ''

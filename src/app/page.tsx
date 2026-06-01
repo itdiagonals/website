@@ -10,6 +10,14 @@ function formatRupiah(price: number): string {
   return `Rp. ${price.toLocaleString('id-ID')}`;
 }
 
+import type { Metadata } from 'next'
+import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '../lib/seo'
+
+export const metadata: Metadata = {
+  title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+  description: SITE_DESCRIPTION,
+}
+
 export default async function HomePage() {
   const [seasons, allProducts, categories] = await Promise.all([
     api.seasons.getAll(),
