@@ -58,10 +58,10 @@ export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCaro
   const activeItem = effectiveItems[currentIdx];
 
   return (
-    <section className="relative w-full h-[760px] md:h-[800px] bg-neutral-100 overflow-hidden py-12 flex flex-col justify-between select-none">
-      <div className="relative z-20 max-w-[1440px] w-full mx-auto px-6 md:px-12 lg:px-20 flex flex-col md:flex-row items-start justify-between">
+    <section className="relative w-full h-[560px] sm:h-[660px] md:h-[760px] lg:h-[800px] bg-neutral-100 overflow-hidden py-12 flex flex-col justify-between select-none">
+      <div className="relative z-20 max-w-full md:max-w-[1440px] w-full mx-auto px-6 md:px-12 lg:px-20 flex flex-col md:flex-row items-start justify-between">
         <div className="flex flex-col">
-          <h2 className="font-[DorivalUITrial] text-[28px] md:text-[34px] font-bold text-black uppercase tracking-wider">
+          <h2 className="font-[DorivalUITrial] text-xl sm:text-[24px] md:text-[28px] lg:text-[34px] font-bold text-black uppercase tracking-wider">
             Lookbook
           </h2>
 
@@ -70,10 +70,10 @@ export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCaro
             className="flex items-center gap-6 mt-4 group cursor-pointer"
           >
             <div className="flex flex-col">
-              <h3 className="font-sans text-[15px] font-bold text-neutral-800 uppercase tracking-wide group-hover:text-black transition-colors">
+              <h3 className="font-sans text-[13px] sm:text-[15px] font-bold text-neutral-800 uppercase tracking-wide group-hover:text-black transition-colors">
                 {activeItem.productName}
               </h3>
-              <p className="font-sans text-[13px] text-neutral-500 font-semibold mt-1 group-hover:text-neutral-700 transition-colors">
+              <p className="font-sans text-[11px] sm:text-[13px] text-neutral-500 font-semibold mt-1 group-hover:text-neutral-700 transition-colors">
                 {activeItem.price}
               </p>
             </div>
@@ -88,7 +88,7 @@ export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCaro
         </div>
       </div>
 
-      <div className="relative w-full h-[400px] md:h-[460px]  flex items-center justify-center overflow-visible [--shift-x:110px] sm:[--shift-x:180px] md:[--shift-x:280px] lg:[--shift-x:340px]">
+      <div className="relative w-full h-[300px] sm:h-[360px] md:h-[400px] lg:h-[460px]  flex items-center justify-center overflow-visible [--shift-x:110px] sm:[--shift-x:180px] md:[--shift-x:280px] lg:[--shift-x:340px]">
         {effectiveItems.map((item, idx) => {
           let offset = idx - currentIdx;
           if (offset < -1) offset += length;
@@ -134,7 +134,7 @@ export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCaro
                 filter: blur !== '0px' ? `blur(${blur})` : 'none',
                 transition: 'transform 850ms cubic-bezier(0.16, 1, 0.3, 1), opacity 850ms cubic-bezier(0.16, 1, 0.3, 1), filter 850ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
-              className="absolute left-1/2 top-1/2 h-[670px] w-full pointer-events-none"
+              className="absolute left-1/2 top-1/2 h-[400px] sm:h-[520px] md:h-[670px] w-full pointer-events-none"
             >
               <Link
                 href={item.href}

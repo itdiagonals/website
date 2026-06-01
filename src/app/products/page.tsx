@@ -88,8 +88,8 @@ export default async function Products({ searchParams }: PageProps) {
   ]
 
   return (
-    <section className="bg-neutral-100 py-28 flex flex-col items-center gap-12">
-      <div className="w-full max-w-[1440px] px-6 md:px-12 lg:px-20 mb-4">
+    <section className="bg-neutral-100 py-12 md:py-20 lg:py-28 flex flex-col items-center gap-6 md:gap-12">
+      <div className="w-full max-w-full md:max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 mb-4">
         <ThemeHero
           theme={{
             title: activeSeason?.name || 'Current Season',
@@ -103,8 +103,8 @@ export default async function Products({ searchParams }: PageProps) {
       <ProductsFilter seasons={seasonOptions} categories={categoryOptions} genders={genderOptions} />
 
       {(searchQuery || selectedSeason || selectedCategory || selectedGender) && (
-        <div className="w-full max-w-[1440px] px-6 md:px-12 lg:px-20 text-center flex flex-col items-center gap-3 bg-neutral-200/50 py-6 rounded-lg border border-neutral-300/30">
-          <p className="text-lg md:text-xl text-primary-500 font-medium">
+        <div className="w-full max-w-full md:max-w-[1440px] px-4 sm:px-6 md:px-12 lg:px-20 text-center flex flex-col items-center gap-3 bg-neutral-200/50 py-4 md:py-6 rounded-lg border border-neutral-300/30">
+            <p className="text-base md:text-lg lg:text-xl text-primary-500 font-medium">
             Showing
             {searchQuery ? <span className="font-bold text-black"> &ldquo;{searchQuery}&rdquo;</span> : null}
             {selectedSeason ? <span className="font-bold text-black"> · {seasonOptions.find((option) => option.value === selectedSeason)?.label}</span> : null}
@@ -121,18 +121,18 @@ export default async function Products({ searchParams }: PageProps) {
         </div>
       )}
 
-      <div className="flex flex-col gap-16 w-full">
+      <div className="flex flex-col gap-8 md:gap-16 w-full">
         {mappedProducts.length > 0 ? (
           <>
             <ProductRow products={firstHalf} />
             {secondHalf.length > 0 && <ProductRow products={secondHalf} />}
           </>
         ) : (
-          <div className="w-full text-center py-20 flex flex-col items-center gap-6">
-            <p className="text-2xl font-bold text-neutral-600">No products found matching</p>
+          <div className="w-full text-center py-8 md:py-20 flex flex-col items-center gap-6">
+            <p className="text-xl md:text-2xl font-bold text-neutral-600">No products found matching</p>
             <p className="text-neutral-400 -mt-2">Try searching with other keywords, or browse all products.</p>
             <Link href="/products">
-              <button className="px-8 py-3 bg-primary-500 hover:bg-neutral-800 text-white font-bold rounded-none hover:scale-105 transition-all duration-300 cursor-pointer">
+              <button className="px-4 md:px-6 lg:px-8 py-2 md:py-3 bg-primary-500 hover:bg-neutral-800 text-white font-bold rounded-none hover:scale-105 transition-all duration-300 cursor-pointer">
                 Browse All Products
               </button>
             </Link>

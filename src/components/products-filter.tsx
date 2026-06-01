@@ -42,7 +42,7 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative flex min-w-[180px] flex-col gap-2 text-primary-400">
+    <div ref={wrapperRef} className="relative flex min-w-[140px] sm:min-w-[160px] md:min-w-[180px] flex-col gap-2 text-primary-400">
       <span className="text-xs font-medium uppercase tracking-[0.18em] text-primary-400/70">
         {label}
       </span>
@@ -50,7 +50,7 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className={[
-          'flex w-full items-center justify-between border-b border-primary-400/30 bg-transparent pb-3 text-left text-base font-medium text-primary-400 outline-none transition',
+          'flex w-full items-center justify-between border-b border-primary-400/30 bg-transparent pb-2 md:pb-3 text-left text-sm md:text-base font-medium text-primary-400 outline-none transition',
           'hover:border-primary-400 hover:text-primary-500',
           isOpen ? 'border-primary-400 text-primary-500' : '',
         ].join(' ')}
@@ -80,7 +80,7 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
                   setIsOpen(false);
                 }}
                 className={[
-                  'flex w-full items-center justify-between px-4 py-3 text-left text-[15px] transition-colors',
+                  'flex w-full items-center justify-between px-3 md:px-4 py-2 md:py-3 text-left text-[13px] md:text-[15px] transition-colors',
                   isSelected ? 'bg-primary-500 text-white' : 'text-primary-500 hover:bg-neutral-100',
                 ].join(' ')}
                 role="option"

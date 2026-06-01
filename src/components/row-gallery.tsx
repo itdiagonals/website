@@ -35,7 +35,7 @@ export default function RowGallery({ type, items = DEFAULT_ITEMS }: RowGalleryPr
 
   return (
     <section className="w-full">
-      <div className="grid grid-cols-3 w-full h-[400px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full h-[250px] sm:h-[350px] md:h-[400px]">
         {items.map((item, index) => {
           if (isInteractive && item.href) {
             return (
@@ -56,13 +56,13 @@ export default function RowGallery({ type, items = DEFAULT_ITEMS }: RowGalleryPr
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* Text and Button Overlay */}
-                <div className="absolute inset-x-6 bottom-6 flex justify-between items-end z-10">
-                  <h3 className="text-white text-2xl font-bold leading-tight whitespace-pre-line tracking-wide drop-shadow-md">
+                <div className="absolute inset-x-4 md:inset-x-6 bottom-4 md:bottom-6 flex justify-between items-end z-10">
+                  <h3 className="text-white text-lg sm:text-xl md:text-2xl font-bold leading-tight whitespace-pre-line tracking-wide drop-shadow-md">
                     {item.title}
                   </h3>
 
                   {/* Square Arrow Button */}
-                  <div className="w-[42px] h-[42px] bg-white/20 border border-white/30 flex items-center justify-center backdrop-blur-md transition-all duration-300 group-hover:bg-white group-hover:border-white shrink-0">
+                  <div className="w-[32px] h-[32px] sm:w-[36px] sm:h-[36px] md:w-[42px] md:h-[42px] bg-white/20 border border-white/30 flex items-center justify-center backdrop-blur-md transition-all duration-300 group-hover:bg-white group-hover:border-white shrink-0">
                     <svg
                       className="w-5 h-5 text-white group-hover:text-primary-500 transition-colors duration-300"
                       fill="none"

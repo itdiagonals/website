@@ -23,13 +23,13 @@ export default function ProductRow({ products, isCarousel = true }: ProductRowPr
 
   const scrollLeft = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+      scrollRef.current.scrollBy({ left: -scrollRef.current.clientWidth * 0.8, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+      scrollRef.current.scrollBy({ left: scrollRef.current.clientWidth * 0.8, behavior: 'smooth' });
     }
   };
 
@@ -72,7 +72,7 @@ export default function ProductRow({ products, isCarousel = true }: ProductRowPr
   }
 
   return (
-    <div className="relative group w-full px-6">
+    <div className="relative group w-full px-4 sm:px-6">
       {/* Left Navigation Chevron Arrow */}
       <button
         onClick={scrollLeft}
@@ -92,7 +92,7 @@ export default function ProductRow({ products, isCarousel = true }: ProductRowPr
           <Link
             href={`/products/${product.slug ?? product.id}`}
             key={product.id}
-            className="flex flex-col gap-8 cursor-pointer flex-shrink-0 w-[260px] sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] snap-start"
+            className="flex flex-col gap-8 cursor-pointer flex-shrink-0 w-[calc(100%-32px)] sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] snap-start"
           >
             <div className="aspect-square flex items-center justify-center hover:scale-110 transition duration-600">
               <Image
