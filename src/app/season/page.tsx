@@ -7,6 +7,22 @@ function sortByLatest(items: Season[]) {
   )
 }
 
+import type { Metadata } from 'next'
+import { SITE_NAME } from '@/src/lib/seo'
+
+export const metadata: Metadata = {
+  title: `Seasons & Collections | ${SITE_NAME}`,
+  description: 'Explore all Diagonals seasons and collections. From exclusive drops to timeless essentials.',
+  openGraph: {
+    title: `Seasons & Collections | ${SITE_NAME}`,
+    description: 'Explore all Diagonals seasons and collections. From exclusive drops to timeless essentials.',
+    type: 'website',
+  },
+  alternates: {
+    canonical: '/season',
+  },
+}
+
 const SeasonPage = async () => {
   const seasons = sortByLatest(await api.seasons.getAll(1, 1000))
 

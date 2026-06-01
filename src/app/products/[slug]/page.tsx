@@ -44,6 +44,46 @@ async function fetchSimilarProducts(productId: number): Promise<BackendProduct[]
   }
 }
 
+import type { Metadata } from 'next'
+import { SITE_NAME } from '@/src/lib/seo'
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { slug } = await params
+  const product = await fetchBackendProduct(slug)
+
+  if (!product) {
+    return {
+      title: 'Product Not Found',
+    }
+  }
+
+  const title = `${product.name} | ${SITE_NAME}`
+  const description = product.description
+    ? String(product.description).slice(0, 160)
+    : `Shop ${product.name} at ${SITE_NAME}. Premium streetwear crafted for the modern urban lifestyle.`
+  const imageUrl = product.cover_image?.url || '/logo/diagonals.webp'
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: [{ url: imageUrl, alt: product.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: `/products/${slug}`,
+    },
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function ProductPage({ params }: ProductPageProps) {

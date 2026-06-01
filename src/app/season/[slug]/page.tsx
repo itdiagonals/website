@@ -52,6 +52,46 @@ async function fetchAllProducts(limit = 200) {
   return products
 }
 
+import type { Metadata } from 'next'
+import { SITE_NAME } from '@/src/lib/seo'
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const season = await api.seasons.getBySlug(slug).catch(() => null)
+
+  if (!season) {
+    return {
+      title: 'Season Not Found',
+    }
+  }
+
+  const title = `${season.name} Collection | ${SITE_NAME}`
+  const description = season.description
+    ? String(season.description).slice(0, 160)
+    : `Explore the ${season.name} collection at ${SITE_NAME}. Discover curated streetwear and urban essentials.`
+  const imageUrl = season.cover_image?.url || '/logo/diagonals.webp'
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      images: [{ url: imageUrl, alt: season.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: `/season/${slug}`,
+    },
+  }
+}
+
 export const dynamic = 'force-dynamic'
 
 export default async function SeasonPage({ params, searchParams }: SeasonPageProps) {
