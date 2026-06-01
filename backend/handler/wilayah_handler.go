@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
@@ -12,14 +15,15 @@ import (
 
 type WilayahHandler struct {
 	wilayahService service.WilayahService
+	cache          *service.CatalogCache
 }
 
 type WilayahListResponse struct {
 	Data []domain.Wilayah `json:"data"`
 }
 
-func NewWilayahHandler(wilayahService service.WilayahService) *WilayahHandler {
-	return &WilayahHandler{wilayahService: wilayahService}
+func NewWilayahHandler(wilayahService service.WilayahService, cache *service.CatalogCache) *WilayahHandler {
+	return &WilayahHandler{wilayahService: wilayahService, cache: cache}
 }
 
 // Search godoc
@@ -47,12 +51,24 @@ func (handler *WilayahHandler) Search(context *gin.Context) {
 		limit = parsedLimit
 	}
 
-	wilayah, err := handler.wilayahService.Search(context.Request.Context(), service.SearchWilayahInput{
+	input := service.SearchWilayahInput{
 		Level:      context.Query("level"),
 		ParentCode: context.Query("parent_code"),
 		Query:      context.Query("query"),
 		Limit:      limit,
-	})
+	}
+
+	cacheKey := buildWilayahCacheKey(input)
+	if cacheKey != "" && handler.cache != nil {
+		var cachedResponse WilayahListResponse
+		cacheHit, cacheErr := handler.cache.Get(context.Request.Context(), cacheKey, &cachedResponse)
+		if cacheErr == nil && cacheHit {
+			context.JSON(http.StatusOK, cachedResponse)
+			return
+		}
+	}
+
+	wilayah, err := handler.wilayahService.Search(context.Request.Context(), input)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidWilayahSearch) {
 			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
@@ -63,5 +79,29 @@ func (handler *WilayahHandler) Search(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, WilayahListResponse{Data: wilayah})
+	response := WilayahListResponse{Data: wilayah}
+	if cacheKey != "" && handler.cache != nil {
+		_ = handler.cache.Set(context.Request.Context(), cacheKey, response)
+	}
+
+	context.JSON(http.StatusOK, response)
+}
+
+func buildWilayahCacheKey(input service.SearchWilayahInput) string {
+	normalized := map[string]string{
+		"level":       normalizeWilayahCacheValue(input.Level),
+		"parent_code": normalizeWilayahCacheValue(input.ParentCode),
+		"query":       normalizeWilayahCacheValue(input.Query),
+	}
+
+	payload, err := json.Marshal(normalized)
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("catalog:wilayah:search:%s:limit=%d", strings.ToLower(string(payload)), input.Limit)
+}
+
+func normalizeWilayahCacheValue(value string) string {
+	return strings.TrimSpace(strings.ToLower(value))
 }

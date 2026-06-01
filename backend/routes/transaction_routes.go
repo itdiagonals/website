@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/handler"
 	"github.com/itdiagonals/website/backend/middleware"
@@ -10,6 +12,13 @@ import (
 	"gorm.io/gorm"
 )
 
+var trackingRefreshIPRateLimit = service.AuthRateLimitConfig{
+	Scope:    "tracking-refresh-ip",
+	Window:   1 * time.Minute,
+	Max:      15,
+	Cooldown: 1 * time.Minute,
+}
+
 func registerTransactionRoutes(api *gin.RouterGroup, backendDB *gorm.DB, redisClient *redis.Client) {
 	transactionRepository := repository.NewTransactionRepository(backendDB)
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
@@ -18,9 +27,10 @@ func registerTransactionRoutes(api *gin.RouterGroup, backendDB *gorm.DB, redisCl
 	transactionService := service.NewTransactionHistoryService(transactionRepository, shippingService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
 	protected := api.Group("")
 	protected.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("customer"))
 	protected.GET("/transactions", transactionHandler.GetMyTransactions)
 	protected.GET("/transactions/:order_id", transactionHandler.GetMyTransactionDetail)
-	protected.GET("/transactions/:order_id/tracking", transactionHandler.GetMyTransactionTracking)
+	protected.GET("/transactions/:order_id/tracking", middleware.RequireRateLimitByIP(authRateLimiter, trackingRefreshIPRateLimit), transactionHandler.GetMyTransactionTracking)
 }

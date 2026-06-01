@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/handler"
@@ -11,6 +13,21 @@ import (
 	"github.com/itdiagonals/website/backend/storage"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+)
+
+var (
+	catalogReadIPRateLimit = service.AuthRateLimitConfig{
+		Scope:    "catalog-read-ip",
+		Window:   1 * time.Minute,
+		Max:      300,
+		Cooldown: 0,
+	}
+	inviteTokenIPRateLimit = service.AuthRateLimitConfig{
+		Scope:    "invite-token-ip",
+		Window:   15 * time.Minute,
+		Max:      30,
+		Cooldown: 15 * time.Minute,
+	}
 )
 
 func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client, emailSender service.EmailSender, fromAddress domain.EmailAddress) {
@@ -42,8 +59,9 @@ func registerUserRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Cl
 		admin.POST("/invite", inviteH.InviteAdmin)
 	}
 
-	api.GET("/users/invite-check", inviteH.CheckInviteToken)
-	api.POST("/users/invite-redeem", inviteH.RedeemInviteToken)
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
+	api.GET("/users/invite-check", middleware.RequireRateLimitByIP(authRateLimiter, inviteTokenIPRateLimit), inviteH.CheckInviteToken)
+	api.POST("/users/invite-redeem", middleware.RequireRateLimitByIP(authRateLimiter, inviteTokenIPRateLimit), inviteH.RedeemInviteToken)
 }
 
 func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
@@ -65,8 +83,9 @@ func registerMediaRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.C
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
-	api.GET("/media", h.GetAllMedia)
-	api.GET("/media/:id", h.GetMediaByID)
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
+	api.GET("/media", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetAllMedia)
+	api.GET("/media/:id", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetMediaByID)
 
 	admin := api.Group("/media")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
@@ -89,9 +108,10 @@ func registerCategoryRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redi
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
-	api.GET("/categories", h.GetAllCategories)
-	api.GET("/categories/:id", h.GetCategoryByID)
-	api.GET("/categories/slug/:slug", h.GetCategoryBySlug)
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
+	api.GET("/categories", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetAllCategories)
+	api.GET("/categories/:id", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetCategoryByID)
+	api.GET("/categories/slug/:slug", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetCategoryBySlug)
 
 	admin := api.Group("/categories")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
@@ -111,9 +131,10 @@ func registerSeasonRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
-	api.GET("/seasons", h.GetAllSeasons)
-	api.GET("/seasons/:id", h.GetSeasonByID)
-	api.GET("/seasons/slug/:slug", h.GetSeasonBySlug)
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
+	api.GET("/seasons", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetAllSeasons)
+	api.GET("/seasons/:id", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetSeasonByID)
+	api.GET("/seasons/slug/:slug", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetSeasonBySlug)
 
 	admin := api.Group("/seasons")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))
@@ -132,8 +153,9 @@ func registerCareGuideRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *red
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)
 
-	api.GET("/care-guides", h.GetAllCareGuides)
-	api.GET("/care-guides/:id", h.GetCareGuideByID)
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
+	api.GET("/care-guides", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetAllCareGuides)
+	api.GET("/care-guides/:id", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetCareGuideByID)
 
 	admin := api.Group("/care-guides")
 	admin.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("admin"))

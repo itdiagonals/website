@@ -22,6 +22,7 @@ const (
 type AuthHandler struct {
 	authService service.AuthService
 	otpService  service.OTPService
+	limiter     service.AuthRateLimiter
 }
 
 type RegisterRequest struct {
@@ -60,9 +61,30 @@ type AuthSessionsResponse struct {
 	Data []domain.AuthSessionSummary `json:"data"`
 }
 
-func NewAuthHandler(authService service.AuthService, otpService service.OTPService) *AuthHandler {
-	return &AuthHandler{authService: authService, otpService: otpService}
+func NewAuthHandler(authService service.AuthService, otpService service.OTPService, limiter service.AuthRateLimiter) *AuthHandler {
+	return &AuthHandler{authService: authService, otpService: otpService, limiter: limiter}
 }
+
+var (
+	loginIdentifierRateLimit = service.AuthRateLimitConfig{
+		Scope:    "auth-login-identifier",
+		Window:   15 * time.Minute,
+		Max:      5,
+		Cooldown: 15 * time.Minute,
+	}
+	verifyIdentifierRateLimit = service.AuthRateLimitConfig{
+		Scope:    "auth-verify-identifier",
+		Window:   15 * time.Minute,
+		Max:      5,
+		Cooldown: 15 * time.Minute,
+	}
+	resetIdentifierRateLimit = service.AuthRateLimitConfig{
+		Scope:    "auth-reset-identifier",
+		Window:   15 * time.Minute,
+		Max:      5,
+		Cooldown: 15 * time.Minute,
+	}
+)
 
 // Register godoc
 // @Summary Register customer account
@@ -135,7 +157,11 @@ func (handler *AuthHandler) VerifyRegistration(context *gin.Context) {
 	request.Email = strings.TrimSpace(strings.ToLower(request.Email))
 	request.Code = strings.TrimSpace(request.Code)
 
-	if err := handler.otpService.VerifyOTP(context.Request.Context(), request.Email, request.Code); err != nil {
+	if !handler.enforceIdentifierRateLimit(context, verifyIdentifierRateLimit, request.Email) {
+		return
+	}
+
+	if err := handler.otpService.VerifyOTP(context.Request.Context(), request.Email, request.Code, domain.OTPPurposeAccountVerification); err != nil {
 		if errors.Is(err, service.ErrOTPInvalid) {
 			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
 			return
@@ -171,6 +197,12 @@ func (handler *AuthHandler) Login(context *gin.Context) {
 	var request LoginRequest
 	if err := context.ShouldBindJSON(&request); err != nil {
 		context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
+		return
+	}
+
+	request.Email = strings.TrimSpace(strings.ToLower(request.Email))
+
+	if !handler.enforceIdentifierRateLimit(context, loginIdentifierRateLimit, request.Email) {
 		return
 	}
 
@@ -332,7 +364,11 @@ func (handler *AuthHandler) ResetPassword(context *gin.Context) {
 	request.Email = strings.TrimSpace(strings.ToLower(request.Email))
 	request.Code = strings.TrimSpace(request.Code)
 
-	if err := handler.otpService.VerifyOTP(context.Request.Context(), request.Email, request.Code); err != nil {
+	if !handler.enforceIdentifierRateLimit(context, resetIdentifierRateLimit, request.Email) {
+		return
+	}
+
+	if err := handler.otpService.VerifyOTP(context.Request.Context(), request.Email, request.Code, domain.OTPPurposePasswordReset); err != nil {
 		if errors.Is(err, service.ErrOTPInvalid) {
 			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
 			return
@@ -448,4 +484,23 @@ func getCurrentAuthContext(context *gin.Context) (string, string, bool) {
 	}
 
 	return userID, sessionID, true
+}
+
+func (handler *AuthHandler) enforceIdentifierRateLimit(context *gin.Context, config service.AuthRateLimitConfig, identifier string) bool {
+	if handler.limiter == nil {
+		return true
+	}
+
+	allowed, err := handler.limiter.AllowByIPAndIdentifier(context.Request.Context(), context.ClientIP(), identifier, config)
+	if err != nil {
+		context.JSON(http.StatusServiceUnavailable, ErrorResponse{Message: "service temporarily unavailable"})
+		return false
+	}
+
+	if !allowed {
+		context.JSON(http.StatusTooManyRequests, ErrorResponse{Message: "too many requests, please try again later"})
+		return false
+	}
+
+	return true
 }

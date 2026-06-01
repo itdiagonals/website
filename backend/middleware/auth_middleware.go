@@ -7,7 +7,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/repository"
+	"github.com/itdiagonals/website/backend/service"
 	"github.com/itdiagonals/website/backend/utils"
+)
+
+const (
+	authRateLimitExceededMessage = "too many requests, please try again later"
+	authRateLimitUnavailable     = "service temporarily unavailable"
 )
 
 func RequireAuth(authSessionRepository repository.AuthSessionRepository, userRepository repository.UserRepository) gin.HandlerFunc {
@@ -67,6 +73,23 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		context.AbortWithStatusJSON(http.StatusForbidden, gin.H{"message": "forbidden"})
+	}
+}
+
+func RequireRateLimitByIP(limiter service.AuthRateLimiter, config service.AuthRateLimitConfig) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		allowed, err := limiter.AllowByIP(context.Request.Context(), context.ClientIP(), config)
+		if err != nil {
+			context.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{"message": authRateLimitUnavailable})
+			return
+		}
+
+		if !allowed {
+			context.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"message": authRateLimitExceededMessage})
+			return
+		}
+
+		context.Next()
 	}
 }
 

@@ -20,11 +20,12 @@ func registerProductRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis
 	stockReservationService := service.NewRedisStockReservationService(redisClient, productRepository)
 	svc := service.NewProductFullService(repo, mediaRepo, categoryRepo, seasonRepo, careGuideRepo, redisClient, stockReservationService)
 	h := handler.NewProductFullHandler(svc)
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
 
-	api.GET("/products", h.GetAllProducts)
-	api.GET("/products/:id", h.GetProductByID)
-	api.GET("/products/:id/similar", h.GetSimilarProducts)
-	api.GET("/products/slug/:slug", h.GetProductBySlug)
+	api.GET("/products", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetAllProducts)
+	api.GET("/products/:id", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetProductByID)
+	api.GET("/products/:id/similar", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetSimilarProducts)
+	api.GET("/products/slug/:slug", middleware.RequireRateLimitByIP(authRateLimiter, catalogReadIPRateLimit), h.GetProductBySlug)
 
 	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
 	userRepository := repository.NewUserRepository(db)

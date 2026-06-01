@@ -1,0 +1,33 @@
+[    2702ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[    2891ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://2016-182-253-131-52.ngrok-free.app/api/v1/users?page=1&limit=50:0
+[    2909ms] [LOG] [HMR] connected @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[    2955ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ https://2016-182-253-131-52.ngrok-free.app/api/v1/auth/refresh:0
+[    3051ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[    3082ms] [LOG] [Fast Refresh] done in 133ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[    3509ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://2016-182-253-131-52.ngrok-free.app/auth/sign-in?redirect=%2Fadmin%2Fcare-guides:0
+[   60388ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   60702ms] [LOG] [Fast Refresh] done in 268ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   83313ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   83377ms] [LOG] [Fast Refresh] done in 151ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   91668ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   92508ms] [LOG] [Fast Refresh] done in 944ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   92729ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[   92803ms] [LOG] [Fast Refresh] done in 177ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  105611ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  105677ms] [LOG] [Fast Refresh] done in 154ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  146490ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  146809ms] [LOG] [Fast Refresh] done in 433ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  147443ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  148027ms] [LOG] [Fast Refresh] done in 695ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  179602ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  179636ms] [LOG] [Fast Refresh] done in 143ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  224013ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  224635ms] [LOG] [Fast Refresh] done in 729ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  225888ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  225995ms] [LOG] [Fast Refresh] done in 218ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  226709ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  226821ms] [LOG] [Fast Refresh] done in 225ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  244256ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  244740ms] [LOG] [Fast Refresh] done in 587ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  244878ms] [LOG] [Fast Refresh] rebuilding @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297
+[  244958ms] [LOG] [Fast Refresh] done in 184ms @ https://2016-182-253-131-52.ngrok-free.app/_next/static/chunks/9cc0b_next_dist_ff495ffb._.js:2297

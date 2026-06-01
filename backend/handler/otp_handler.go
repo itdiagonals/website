@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
@@ -14,11 +15,19 @@ import (
 type OTPHandler struct {
 	otpService service.OTPService
 	userRepo   repository.UserRepository
+	limiter    service.AuthRateLimiter
 }
 
 // NewOTPHandler creates a new OTP handler.
-func NewOTPHandler(otpService service.OTPService, userRepo repository.UserRepository) *OTPHandler {
-	return &OTPHandler{otpService: otpService, userRepo: userRepo}
+func NewOTPHandler(otpService service.OTPService, userRepo repository.UserRepository, limiter service.AuthRateLimiter) *OTPHandler {
+	return &OTPHandler{otpService: otpService, userRepo: userRepo, limiter: limiter}
+}
+
+var otpVerifyIdentifierRateLimit = service.AuthRateLimitConfig{
+	Scope:    "otp-verify-identifier",
+	Window:   15 * time.Minute,
+	Max:      5,
+	Cooldown: 15 * time.Minute,
 }
 
 // RequestOTP godoc
@@ -75,7 +84,11 @@ func (h *OTPHandler) VerifyOTP(c *gin.Context) {
 	input.Email = strings.TrimSpace(strings.ToLower(input.Email))
 	input.Code = strings.TrimSpace(input.Code)
 
-	if err := h.otpService.VerifyOTP(c.Request.Context(), input.Email, input.Code); err != nil {
+	if !h.enforceIdentifierRateLimit(c, otpVerifyIdentifierRateLimit, input.Email) {
+		return
+	}
+
+	if err := h.otpService.VerifyOTP(c.Request.Context(), input.Email, input.Code, input.Purpose); err != nil {
 		if err == service.ErrOTPInvalid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
@@ -84,10 +97,34 @@ func (h *OTPHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
-	if err := h.userRepo.VerifyEmail(c.Request.Context(), input.Email); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "OTP verified but failed to activate account"})
+	if input.Purpose == domain.OTPPurposeAccountVerification {
+		if err := h.userRepo.VerifyEmail(c.Request.Context(), input.Email); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "OTP verified but failed to activate account"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully, account activated"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully, account activated"})
+	c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully"})
+}
+
+func (h *OTPHandler) enforceIdentifierRateLimit(c *gin.Context, config service.AuthRateLimitConfig, identifier string) bool {
+	if h.limiter == nil {
+		return true
+	}
+
+	allowed, err := h.limiter.AllowByIPAndIdentifier(c.Request.Context(), c.ClientIP(), identifier, config)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service temporarily unavailable"})
+		return false
+	}
+
+	if !allowed {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many requests, please try again later"})
+		return false
+	}
+
+	return true
 }

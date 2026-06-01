@@ -1,0 +1,293 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "Diagonals Logo Diagonals Logo" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "Diagonals Logo" [ref=e5]
+        - img "Diagonals Logo" [ref=e6]
+      - navigation [ref=e7]:
+        - link "New Arrivals" [ref=e8] [cursor=pointer]:
+          - /url: /products
+        - link "All Product" [ref=e10] [cursor=pointer]:
+          - /url: /products
+          - text: All Product
+          - img [ref=e11]
+      - generic [ref=e13]:
+        - generic [ref=e15]:
+          - textbox "Search..." [ref=e16]
+          - button "Search products" [ref=e17] [cursor=pointer]:
+            - img [ref=e18]
+        - link "View shopping cart" [ref=e21] [cursor=pointer]:
+          - /url: /cart
+          - img [ref=e22]
+        - button "Open sign in menu" [ref=e27]:
+          - img [ref=e28]
+          - img [ref=e31]
+  - main [ref=e33]:
+    - generic [ref=e34]:
+      - img "Diagonals Logo" [ref=e36]
+      - img [ref=e38]
+      - generic [ref=e54]: El Ligue Premiere
+      - button "Enter Website" [ref=e56] [cursor=pointer]
+    - generic [ref=e57]:
+      - generic [ref=e63]:
+        - generic [ref=e64]: Navy & Gold
+        - heading "El Ligue Premiere" [level=1] [ref=e65]
+        - link "Explore Now" [ref=e67] [cursor=pointer]:
+          - /url: /season/el-ligue-premiere
+          - button "Explore Now" [ref=e68]
+      - generic:
+        - generic: tes2
+        - heading "tes2" [level=1]
+        - generic:
+          - link "Explore Now":
+            - /url: /season/tes2
+            - button "Explore Now"
+      - generic:
+        - generic: Summer
+        - heading "Summer 2026" [level=1]
+        - generic:
+          - link "Explore Now":
+            - /url: /season/summer-2026
+            - button "Explore Now"
+      - generic:
+        - generic: Pastel & White
+        - heading "Summer Drop" [level=1]
+        - generic:
+          - link "Explore Now":
+            - /url: /season/summer-drop
+            - button "Explore Now"
+      - button "Previous Slide" [ref=e69] [cursor=pointer]:
+        - img [ref=e70]
+      - button "Next Slide" [ref=e72] [cursor=pointer]:
+        - img [ref=e73]
+      - generic [ref=e75]:
+        - button "Go to slide 1" [ref=e76] [cursor=pointer]
+        - button "Go to slide 2" [ref=e77] [cursor=pointer]
+        - button "Go to slide 3" [ref=e78] [cursor=pointer]
+        - button "Go to slide 4" [ref=e79] [cursor=pointer]
+    - generic [ref=e84]:
+      - generic [ref=e85]:
+        - paragraph [ref=e86]: Theme of the season
+        - heading "EL LIGUE PREMIERE" [level=2] [ref=e87]
+      - paragraph [ref=e88]: Navy & Gold
+      - generic [ref=e89]:
+        - generic [ref=e90]: Our flagship collection inspired by classic football aesthetics. Bold colors and premium materials for the ultimate fan experience.
+        - link "Explore Now" [ref=e91] [cursor=pointer]:
+          - /url: /season/el-ligue-premiere
+          - button "Explore Now" [ref=e92]
+    - generic [ref=e94]:
+      - img "Gallery image 1" [ref=e96]
+      - img "Gallery image 2" [ref=e98]
+      - img "Gallery image 3" [ref=e100]
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - heading "New Arrival" [level=2] [ref=e103]
+        - link "View All" [ref=e104] [cursor=pointer]:
+          - /url: /products
+          - button "View All" [ref=e105]
+      - generic [ref=e106]:
+        - button "Scroll Left" [ref=e107] [cursor=pointer]:
+          - img [ref=e108]
+        - generic [ref=e110]:
+          - link "Product Lagi Product Lagi Rp. 59.000" [ref=e111] [cursor=pointer]:
+            - /url: /products/product-lagi
+            - img "Product Lagi" [ref=e113]
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - generic [ref=e116]: Product Lagi
+                - generic [ref=e117]: Rp. 59.000
+              - img [ref=e119]
+          - link "Summer Training Shorts Summer Training Shorts Rp. 459.000" [ref=e121] [cursor=pointer]:
+            - /url: /products/summer-training-shorts
+            - img "Summer Training Shorts" [ref=e123]
+            - generic [ref=e124]:
+              - generic [ref=e125]:
+                - generic [ref=e126]: Summer Training Shorts
+                - generic [ref=e127]: Rp. 459.000
+              - img [ref=e129]
+          - link "Tes Tes Rp. 150.000" [ref=e131] [cursor=pointer]:
+            - /url: /products/tes
+            - img "Tes" [ref=e133]
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - generic [ref=e136]: Tes
+                - generic [ref=e137]: Rp. 150.000
+              - img [ref=e139]
+          - link "El Ligue Home Jersey El Ligue Home Jersey Rp. 899.000" [ref=e141] [cursor=pointer]:
+            - /url: /products/el-ligue-home-jersey
+            - img "El Ligue Home Jersey" [ref=e143]
+            - generic [ref=e144]:
+              - generic [ref=e145]:
+                - generic [ref=e146]: El Ligue Home Jersey
+                - generic [ref=e147]: Rp. 899.000
+              - img [ref=e149]
+          - link "Tes Product Tes Product Rp. 100.000" [ref=e151] [cursor=pointer]:
+            - /url: /products/tes-product
+            - img "Tes Product" [ref=e153]
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - generic [ref=e156]: Tes Product
+                - generic [ref=e157]: Rp. 100.000
+              - img [ref=e159]
+        - button "Scroll Right" [ref=e161] [cursor=pointer]:
+          - img [ref=e162]
+    - generic [ref=e168]:
+      - heading "Explore all Season" [level=2] [ref=e170]
+      - paragraph [ref=e171]: Never stops wearing your passion
+      - generic [ref=e172]:
+        - generic [ref=e173]: Discover our timeless collection that never fades. Crafted with premium materials designed for daily comfort and durability, making sure you always wear your passion with pride.
+        - link "Explore Now" [ref=e174] [cursor=pointer]:
+          - /url: /products
+          - button "Explore Now" [ref=e175]
+    - generic [ref=e177]:
+      - link "tes2 tes2" [ref=e178] [cursor=pointer]:
+        - /url: /season/tes2
+        - img "tes2" [ref=e179]
+        - generic [ref=e181]:
+          - heading "tes2" [level=3] [ref=e182]
+          - img [ref=e184]
+      - link "Summer 2026 Summer 2026" [ref=e186] [cursor=pointer]:
+        - /url: /season/summer-2026
+        - img "Summer 2026" [ref=e187]
+        - generic [ref=e189]:
+          - heading "Summer 2026" [level=3] [ref=e190]
+          - img [ref=e192]
+      - link "Summer Drop Summer Drop" [ref=e194] [cursor=pointer]:
+        - /url: /season/summer-drop
+        - img "Summer Drop" [ref=e195]
+        - generic [ref=e197]:
+          - heading "Summer Drop" [level=3] [ref=e198]
+          - img [ref=e200]
+    - generic [ref=e202]:
+      - generic [ref=e204]:
+        - heading "Lookbook" [level=2] [ref=e205]
+        - link "Summer Training Shorts Rp. 459.000 Explore Summer Training Shorts" [ref=e206] [cursor=pointer]:
+          - /url: /products/summer-training-shorts
+          - generic [ref=e207]:
+            - heading "Summer Training Shorts" [level=3] [ref=e208]
+            - paragraph [ref=e209]: Rp. 459.000
+          - button "Explore Summer Training Shorts" [ref=e210]:
+            - img [ref=e211]
+      - generic [ref=e213]:
+        - link "Summer Training Shorts" [ref=e214] [cursor=pointer]:
+          - /url: /products/summer-training-shorts
+          - img "Summer Training Shorts" [ref=e215]
+        - generic:
+          - link "Tes":
+            - /url: /products/tes
+            - img "Tes"
+        - generic:
+          - link "El Ligue Home Jersey":
+            - /url: /products/el-ligue-home-jersey
+            - img "El Ligue Home Jersey"
+      - button "Previous Slide" [ref=e216] [cursor=pointer]:
+        - img [ref=e217]
+      - button "Next Slide" [ref=e219] [cursor=pointer]:
+        - img [ref=e220]
+      - generic [ref=e222]:
+        - button "Go to slide 1" [ref=e223] [cursor=pointer]
+        - button "Go to slide 2" [ref=e224] [cursor=pointer]
+        - button "Go to slide 3" [ref=e225] [cursor=pointer]
+    - generic [ref=e227]:
+      - link "jersey jersey" [ref=e228] [cursor=pointer]:
+        - /url: /products?category=jersey
+        - img "jersey" [ref=e229]
+        - generic [ref=e231]:
+          - heading "jersey" [level=3] [ref=e232]
+          - img [ref=e234]
+      - link "Jerseys Jerseys" [ref=e236] [cursor=pointer]:
+        - /url: /products?category=jerseys
+        - img "Jerseys" [ref=e237]
+        - generic [ref=e239]:
+          - heading "Jerseys" [level=3] [ref=e240]
+          - img [ref=e242]
+      - link "Shorts Shorts" [ref=e244] [cursor=pointer]:
+        - /url: /products?category=shorts
+        - img "Shorts" [ref=e245]
+        - generic [ref=e247]:
+          - heading "Shorts" [level=3] [ref=e248]
+          - img [ref=e250]
+  - contentinfo [ref=e252]:
+    - img "Diagonals Diamond Logo" [ref=e256]
+    - generic [ref=e257]:
+      - generic [ref=e258]:
+        - generic [ref=e259]:
+          - link "DIAGONALS Logo" [ref=e260] [cursor=pointer]:
+            - /url: /
+            - img "DIAGONALS Logo" [ref=e261]
+          - paragraph [ref=e262]: Lorem ipsum dolor sit amet consectetur. Condimentum elit auctor vivamus elit. Nunc ac orci est elit massa. Diam quis nec tempor felis facilisis commodo. Nulla morbi nisl ac quis ultrices amet.
+          - generic [ref=e263]:
+            - link "Instagram" [ref=e264] [cursor=pointer]:
+              - /url: https://instagram.com
+              - img [ref=e265]
+            - link "Twitter/X" [ref=e268] [cursor=pointer]:
+              - /url: https://twitter.com
+              - img [ref=e269]
+        - generic [ref=e271]:
+          - generic [ref=e272]:
+            - heading "Seasons" [level=3] [ref=e273]
+            - list [ref=e274]:
+              - listitem [ref=e275]:
+                - link "Summer Drop" [ref=e276] [cursor=pointer]:
+                  - /url: /products?season=summer-drop
+              - listitem [ref=e277]:
+                - link "El Ligue Premiere" [ref=e278] [cursor=pointer]:
+                  - /url: /products?season=el-ligue-premiere
+              - listitem [ref=e279]:
+                - link "Summer 2026" [ref=e280] [cursor=pointer]:
+                  - /url: /products?season=summer-2026
+              - listitem [ref=e281]:
+                - link "tes2" [ref=e282] [cursor=pointer]:
+                  - /url: /products?season=tes2
+          - generic [ref=e283]:
+            - heading "Help" [level=3] [ref=e284]
+            - list [ref=e285]:
+              - listitem [ref=e286]:
+                - link "FAQ" [ref=e287] [cursor=pointer]:
+                  - /url: /faq
+              - listitem [ref=e288]:
+                - link "Delivery" [ref=e289] [cursor=pointer]:
+                  - /url: /delivery
+              - listitem [ref=e290]:
+                - link "Return Policy" [ref=e291] [cursor=pointer]:
+                  - /url: /return-policy
+              - listitem [ref=e292]:
+                - link "Contact Us" [ref=e293] [cursor=pointer]:
+                  - /url: /contact
+          - generic [ref=e294]:
+            - heading "Shop" [level=3] [ref=e295]
+            - list [ref=e296]:
+              - listitem [ref=e297]:
+                - link "jersey" [ref=e298] [cursor=pointer]:
+                  - /url: /products?category=jersey
+              - listitem [ref=e299]:
+                - link "Jerseys" [ref=e300] [cursor=pointer]:
+                  - /url: /products?category=jerseys
+              - listitem [ref=e301]:
+                - link "Shorts" [ref=e302] [cursor=pointer]:
+                  - /url: /products?category=shorts
+              - listitem [ref=e303]:
+                - link "Accessories" [ref=e304] [cursor=pointer]:
+                  - /url: /products?category=accessories
+      - generic [ref=e306]:
+        - generic [ref=e307]:
+          - img [ref=e308]
+          - paragraph [ref=e311]: 2026 DIAGONALS. All rights reserved.
+        - generic [ref=e312]:
+          - link "Privacy Policy" [ref=e313] [cursor=pointer]:
+            - /url: /privacy
+          - link "Terms of Service" [ref=e314] [cursor=pointer]:
+            - /url: /terms
+  - generic [ref=e319] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e320]:
+      - img [ref=e321]
+    - generic [ref=e324]:
+      - button "Open issues overlay" [ref=e325]:
+        - generic [ref=e326]:
+          - generic [ref=e327]: "0"
+          - generic [ref=e328]: "1"
+        - generic [ref=e329]: Issue
+      - button "Collapse issues badge" [ref=e330]:
+        - img [ref=e331]
+  - alert [ref=e333]

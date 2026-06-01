@@ -13,7 +13,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, otp
 
 	registerAuthRoutes(api, db, redisClient, otpService)
 	registerCustomerAddressRoutes(api, db, redisClient)
-	registerWilayahRoutes(api, db)
+	registerWilayahRoutes(api, db, redisClient)
 	registerProductRoutes(api, db, redisClient)
 	registerCheckoutRoutes(api, db, redisClient)
 	registerPaymentRoutes(api, db, redisClient)
@@ -27,5 +27,5 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, otp
 	registerCategoryRoutes(api, db, redisClient)
 	registerSeasonRoutes(api, db, redisClient)
 	registerCareGuideRoutes(api, db, redisClient)
-	registerOTPRoutes(api, db, otpService)
+	registerOTPRoutes(api, db, redisClient, otpService)
 }

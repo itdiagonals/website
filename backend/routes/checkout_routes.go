@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/handler"
 	"github.com/itdiagonals/website/backend/middleware"
@@ -8,6 +10,21 @@ import (
 	"github.com/itdiagonals/website/backend/service"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+)
+
+var (
+	checkoutRatesIPRateLimit = service.AuthRateLimitConfig{
+		Scope:    "checkout-rates-ip",
+		Window:   1 * time.Minute,
+		Max:      20,
+		Cooldown: 1 * time.Minute,
+	}
+	checkoutIPRateLimit = service.AuthRateLimitConfig{
+		Scope:    "checkout-ip",
+		Window:   1 * time.Minute,
+		Max:      10,
+		Cooldown: 1 * time.Minute,
+	}
 )
 
 func registerCheckoutRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
@@ -22,8 +39,9 @@ func registerCheckoutRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redi
 	checkoutService := service.NewCheckoutService(userRepository, customerAddressRepository, cartRepository, productRepository, transactionRepository, stockReservationService, shippingService)
 	checkoutHandler := handler.NewCheckoutHandler(checkoutService)
 
+	authRateLimiter := service.NewAuthRateLimiter(redisClient)
 	protected := api.Group("")
 	protected.Use(middleware.RequireAuth(authSessionRepository, userRepository), middleware.RequireRole("customer"))
-	protected.POST("/checkout/rates", checkoutHandler.GetShippingRates)
-	protected.POST("/checkout", checkoutHandler.Checkout)
+	protected.POST("/checkout/rates", middleware.RequireRateLimitByIP(authRateLimiter, checkoutRatesIPRateLimit), checkoutHandler.GetShippingRates)
+	protected.POST("/checkout", middleware.RequireRateLimitByIP(authRateLimiter, checkoutIPRateLimit), checkoutHandler.Checkout)
 }
