@@ -3,10 +3,10 @@
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Search, ShoppingCart, ChevronDown, X, ChevronRight } from 'lucide-react';
+import { Search, ShoppingCart, ChevronDown, X, ChevronRight, Menu, User, LogOut, Loader2, Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { api, type Category, type Season } from '@/src/lib/api';
+import { api, type Category, type Season, type User as UserModel, ApiError } from '@/src/lib/api';
 import NavbarAccountMenu from '@/src/components/auth/navbar-account-menu';
 
 export type NavbarVariant = 'dark' | 'light' | 'transparent';
@@ -78,10 +78,29 @@ function SearchBar({ variant, isScrolled = false, isMobile = false, onClose }: {
 
 export default function Navbar({ variant = 'dark' }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [drawerUser, setDrawerUser] = useState<UserModel | null>(null);
+  const [drawerAuthChecked, setDrawerAuthChecked] = useState(false);
+  const [drawerLoggingOut, setDrawerLoggingOut] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isMobileMenuOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [isMobileMenuOpen]);
 
   const isCartOrProfile = pathname?.startsWith('/cart') || pathname?.startsWith('/profile');
   const activeVariant = isCartOrProfile ? 'light' : variant;
@@ -138,6 +157,66 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    let cancelled = false;
+    setDrawerAuthChecked(false);
+
+    const loadDrawerUser = async () => {
+      try {
+        const currentUser = await api.users.me();
+        if (!cancelled) {
+          setDrawerUser(currentUser);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          if (!(error instanceof ApiError) || error.status !== 401) {
+            console.error('Drawer auth check failed:', error);
+          }
+          setDrawerUser(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setDrawerAuthChecked(true);
+        }
+      }
+    };
+
+    void loadDrawerUser();
+
+    const handleAuthChanged = () => {
+      void loadDrawerUser();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth-changed', handleAuthChanged);
+    }
+
+    return () => {
+      cancelled = true;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('auth-changed', handleAuthChanged);
+      }
+    };
+  }, [isMobileMenuOpen]);
+
+  const handleDrawerLogout = async () => {
+    setDrawerLoggingOut(true);
+    try {
+      await api.auth.logout();
+    } catch {
+    } finally {
+      setDrawerUser(null);
+      setDrawerLoggingOut(false);
+      setIsMobileMenuOpen(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-changed'));
+      }
+      router.push('/auth/sign-in');
+    }
+  };
+
   const activeSeason = seasons.find((season) => season.is_active) ?? null;
   const seasonItems = activeSeason
     ? [activeSeason, ...seasons.filter((season) => season.id !== activeSeason.id)].slice(0, 4)
@@ -177,7 +256,20 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
           isScrolled ? scrolledClasses : defaultClasses[activeVariant]
         )}
       >
-        <div className="max-w-360 mx-auto px-6 md:px-12 lg:px-20 flex items-center justify-between">
+        <div className="max-w-360 mx-auto px-6 md:px-12 lg:px-20 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={isMobileMenuOpen}
+            className={cn(
+              'md:hidden flex items-center justify-center w-9 h-9 -ml-1 transition-all duration-500 ease-in-out hover:scale-110',
+              isScrolled ? scrolledIcon : iconDefault[activeVariant]
+            )}
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
           <Link href="/" className="group flex items-center gap-2 relative w-[120px] h-[40px]">
             <Image
               src="/logo/diagonals-white.svg"
@@ -338,17 +430,6 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
               </div>
             </Suspense>
 
-            <button
-              onClick={() => setShowMobileSearch(!showMobileSearch)}
-              aria-label="Toggle search"
-              className={cn(
-                'md:hidden transition-all duration-500 ease-in-out hover:scale-110',
-                isScrolled ? scrolledIcon : iconDefault[activeVariant]
-              )}
-            >
-              {showMobileSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
-            </button>
-
             <Link
               href="/cart"
               aria-label="View shopping cart"
@@ -360,30 +441,261 @@ export default function Navbar({ variant = 'dark' }: NavbarProps) {
               <ShoppingCart className="w-5 h-5 md:w-5.5 md:h-5.5" />
             </Link>
 
-            <NavbarAccountMenu variant={activeVariant} isScrolled={isScrolled} />
+            <div className="hidden md:block">
+              <NavbarAccountMenu variant={activeVariant} isScrolled={isScrolled} />
+            </div>
           </div>
         </div>
+      </header>
 
-        <div
-          className={cn(
-            'md:hidden overflow-hidden transition-all duration-500 ease-in-out',
-            showMobileSearch ? 'max-h-20 opacity-100 mt-4 px-6' : 'max-h-0 opacity-0'
-          )}
-        >
+      <MobileMenuDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        categories={categories}
+        seasonItems={seasonItems}
+        user={drawerUser}
+        authChecked={drawerAuthChecked}
+        loggingOut={drawerLoggingOut}
+        onLogout={handleDrawerLogout}
+      />
+    </>
+  );
+}
+
+interface MobileMenuDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  categories: Category[];
+  seasonItems: Season[];
+  user: UserModel | null;
+  authChecked: boolean;
+  loggingOut: boolean;
+  onLogout: () => void | Promise<void>;
+}
+
+function MobileMenuDrawer({
+  isOpen,
+  onClose,
+  categories,
+  seasonItems,
+  user,
+  authChecked,
+  loggingOut,
+  onLogout,
+}: MobileMenuDrawerProps) {
+  const [expandedSection, setExpandedSection] = useState<'product' | 'season' | null>(null);
+
+  const linkClass = 'flex items-center justify-between w-full text-base font-semibold uppercase tracking-wide py-3 border-b border-neutral-200 transition-colors hover:text-primary-900';
+  const subLinkClass = 'block text-sm font-medium uppercase tracking-wider py-2 text-primary-500/80 hover:text-primary-500 transition-colors';
+
+  return (
+    <div
+      className={cn(
+        'md:hidden fixed inset-0 z-[60]',
+        isOpen ? 'pointer-events-auto' : 'pointer-events-none'
+      )}
+      aria-hidden={!isOpen}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close menu"
+        tabIndex={-1}
+        className={cn(
+          'absolute inset-0 bg-black/60 transition-opacity duration-300 ease-in-out',
+          isOpen ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation menu"
+        className={cn(
+          'absolute top-0 left-0 h-full w-[88%] max-w-sm bg-neutral-100 text-primary-500 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out will-change-transform',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <div className="flex items-center justify-between px-6 h-20 border-b border-neutral-200 shrink-0">
+          <Link href="/" onClick={onClose} className="relative w-[120px] h-[40px] block">
+            <Image
+              src="/logo/diagonals-black.svg"
+              alt="Diagonals Logo"
+              fill
+              className="object-contain"
+            />
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="flex items-center justify-center w-9 h-9 -mr-1 hover:scale-110 transition-transform"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="px-6 pt-5 shrink-0">
           <Suspense fallback={
-            <div className="relative flex items-center border border-neutral-300/30 rounded-none w-full h-10">
+            <div className="relative flex items-center border border-neutral-300 rounded-none w-full h-10">
               <span className="text-xs text-neutral-400 pl-3">Loading search...</span>
             </div>
           }>
-            <SearchBar
-              variant={activeVariant}
-              isScrolled={isScrolled}
-              isMobile
-              onClose={() => setShowMobileSearch(false)}
-            />
+            <SearchBar variant="light" isMobile onClose={onClose} />
           </Suspense>
         </div>
-      </header>
-    </>
+
+        <nav className="flex-1 overflow-y-auto px-6 py-6">
+          <Link
+            href="/products"
+            onClick={onClose}
+            className={cn(linkClass, 'border-t border-neutral-200')}
+          >
+            New Arrivals
+            <ChevronRight className="w-4 h-4 opacity-60" />
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setExpandedSection((s) => (s === 'product' ? null : 'product'))}
+            aria-expanded={expandedSection === 'product'}
+            className={cn(linkClass, 'w-full text-left')}
+          >
+            All Product
+            {expandedSection === 'product' ? (
+              <Minus className="w-4 h-4 opacity-60" />
+            ) : (
+              <Plus className="w-4 h-4 opacity-60" />
+            )}
+          </button>
+          {expandedSection === 'product' && (
+            <div className="pl-4 pb-2 border-b border-neutral-200">
+              {categories.length > 0 ? (
+                categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/products?category=${encodeURIComponent(category.slug)}`}
+                    onClick={onClose}
+                    className={subLinkClass}
+                  >
+                    {category.name}
+                  </Link>
+                ))
+              ) : (
+                <span className="block text-sm py-2 text-primary-500/40">Loading categories...</span>
+              )}
+              <Link href="/products" onClick={onClose} className={cn(subLinkClass, 'font-bold text-primary-500')}>
+                All Products
+              </Link>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setExpandedSection((s) => (s === 'season' ? null : 'season'))}
+            aria-expanded={expandedSection === 'season'}
+            className={cn(linkClass, 'w-full text-left')}
+          >
+            Season
+            {expandedSection === 'season' ? (
+              <Minus className="w-4 h-4 opacity-60" />
+            ) : (
+              <Plus className="w-4 h-4 opacity-60" />
+            )}
+          </button>
+          {expandedSection === 'season' && (
+            <div className="pl-4 pb-2 border-b border-neutral-200">
+              {seasonItems.length > 0 ? (
+                seasonItems.map((season) => (
+                  <Link
+                    key={season.id}
+                    href={`/season/${encodeURIComponent(season.slug)}`}
+                    onClick={onClose}
+                    className={cn(
+                      subLinkClass,
+                      season.is_active && 'text-yellow-200 font-bold'
+                    )}
+                  >
+                    {season.name}
+                  </Link>
+                ))
+              ) : (
+                <span className="block text-sm py-2 text-primary-500/40">Loading seasons...</span>
+              )}
+              <Link href="/season" onClick={onClose} className={cn(subLinkClass, 'font-bold text-primary-500')}>
+                All Seasons
+              </Link>
+            </div>
+          )}
+
+          <Link
+            href="/cart"
+            onClick={onClose}
+            className={linkClass}
+          >
+            <span className="flex items-center gap-3">
+              <ShoppingCart className="w-5 h-5" />
+              Cart
+            </span>
+            <ChevronRight className="w-4 h-4 opacity-60" />
+          </Link>
+        </nav>
+
+        <div className="border-t border-neutral-200 px-6 py-5 shrink-0">
+          {!authChecked ? (
+            <div className="flex items-center gap-2 text-sm text-primary-500/60">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking account...
+            </div>
+          ) : user ? (
+            <div className="space-y-3">
+              <div className="pb-2">
+                <p className="text-sm font-semibold">{user.name}</p>
+                <p className="truncate text-xs text-primary-500/60">{user.email}</p>
+              </div>
+              <Link
+                href="/profile"
+                onClick={onClose}
+                className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider py-2 hover:text-primary-900 transition-colors"
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </Link>
+              <button
+                type="button"
+                onClick={() => void onLogout()}
+                disabled={loggingOut}
+                className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider py-2 w-full text-left hover:text-primary-900 transition-colors disabled:opacity-50"
+              >
+                {loggingOut ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <LogOut className="w-4 h-4" />
+                )}
+                {loggingOut ? 'Signing out...' : 'Logout'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/auth/sign-in"
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 bg-primary-500 text-neutral-100 text-sm font-semibold uppercase tracking-wider py-3 hover:bg-primary-400 transition-colors"
+              >
+                <User className="w-4 h-4" />
+                Sign In
+              </Link>
+              <Link
+                href="/auth/sign-up"
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 border border-primary-500 text-primary-500 text-sm font-semibold uppercase tracking-wider py-3 hover:bg-primary-500 hover:text-neutral-100 transition-colors"
+              >
+                Create Account
+              </Link>
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }
