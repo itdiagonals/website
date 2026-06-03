@@ -130,8 +130,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${handi.variable} ${inter.variable} antialiased`}>
         <SiteLayout>{children}</SiteLayout>
         <Script
-          src="https://app.sandbox.midtrans.com/snap/snap.js"
-          data-client-key="Mid-client-bWmGIw6dVko6Yz-f2ih-sL12"
+          src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js'}
+          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-bWmGIw6dVko6Yz-f2ih-sL12'}
+          data-environment={process.env.NEXT_PUBLIC_MIDTRANS_ENV || 'sandbox'}
           strategy="lazyOnload"
         />
       </body>
