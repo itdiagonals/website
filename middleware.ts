@@ -10,6 +10,18 @@ function isProtectedPath(pathname: string) {
   )
 }
 
+// Middleware runs server-side: reach the backend over the internal Docker
+// network instead of the public domain, which would loop back through the CDN
+// and fail. Mirrors INTERNAL_API_URL handling in src/lib/api.ts.
+function resolveUpstreamUrl(request: NextRequest, path: string): string {
+  const internal = process.env.INTERNAL_API_URL?.trim()
+  if (internal) {
+    const origin = internal.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '')
+    return `${origin}${path}`
+  }
+  return new URL(path, request.url).toString()
+}
+
 function buildSignInUrl(request: NextRequest) {
   const signInUrl = new URL('/auth/sign-in', request.url)
   signInUrl.searchParams.set(
@@ -58,7 +70,7 @@ async function callUpstream(
   init: RequestInit = {},
 ): Promise<UpstreamAttempt> {
   try {
-    const res = await fetch(new URL(path, request.url), {
+    const res = await fetch(resolveUpstreamUrl(request, path), {
       ...init,
       headers: buildUpstreamHeaders(request),
       cache: 'no-store',
