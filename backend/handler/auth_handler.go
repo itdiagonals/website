@@ -11,6 +11,7 @@ import (
 	"github.com/itdiagonals/website/backend/config"
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/middleware"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/service"
 )
 
@@ -116,22 +117,24 @@ func (handler *AuthHandler) Register(context *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrEmailAlreadyRegistered):
-			context.JSON(http.StatusConflict, ErrorResponse{Message: err.Error()})
+			// Uniform response: do not reveal that the email is already registered.
+			// The original account already exists; the user can still sign in or reset.
+			context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "If the email is not already registered, a verification code has been sent."})
 		case errors.Is(err, service.ErrWeakPassword):
 			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			logger.Error("handler.auth.register_failed", "error", err.Error())
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		}
 		return
 	}
 
 	_, otpErr := handler.otpService.RequestOTP(context.Request.Context(), request.Email, domain.OTPPurposeAccountVerification)
 	if otpErr != nil {
-		context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "Registration successful, but failed to send verification email. Please request a new code."})
-		return
+		logger.Error("handler.auth.register_otp_enqueue_failed", "error", otpErr.Error())
 	}
 
-	context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "Registration successful. Please check your email for the verification code."})
+	context.JSON(http.StatusCreated, StatusResponse{Status: "success", Message: "If the email is not already registered, a verification code has been sent."})
 }
 
 // VerifyRegistration godoc
@@ -166,13 +169,15 @@ func (handler *AuthHandler) VerifyRegistration(context *gin.Context) {
 			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
 			return
 		}
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.verify_registration_otp_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
 	tokens, err := handler.authService.VerifyAndIssueTokens(context.Request.Context(), request.Email, buildSessionMetadata(context))
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.verify_registration_issue_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -220,7 +225,8 @@ func (handler *AuthHandler) Login(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.login_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -254,7 +260,8 @@ func (handler *AuthHandler) Refresh(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.refresh_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -281,7 +288,8 @@ func (handler *AuthHandler) Logout(context *gin.Context) {
 	}
 
 	if err := handler.authService.LogoutCurrentSession(context.Request.Context(), userID, sessionID); err != nil {
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.logout_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -307,7 +315,8 @@ func (handler *AuthHandler) LogoutAll(context *gin.Context) {
 	}
 
 	if err := handler.authService.LogoutAllSessions(context.Request.Context(), userID); err != nil {
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.logout_all_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -334,7 +343,8 @@ func (handler *AuthHandler) ListSessions(context *gin.Context) {
 
 	sessions, err := handler.authService.ListSessions(context.Request.Context(), userID, sessionID)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.list_sessions_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -373,18 +383,18 @@ func (handler *AuthHandler) ResetPassword(context *gin.Context) {
 			context.JSON(http.StatusUnauthorized, ErrorResponse{Message: err.Error()})
 			return
 		}
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.auth.reset_password_otp_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
 	if err := handler.authService.ResetPassword(context.Request.Context(), request.Email, request.NewPassword); err != nil {
 		switch {
-		case errors.Is(err, service.ErrUserNotFound):
-			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		case errors.Is(err, service.ErrWeakPassword):
 			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			logger.Error("handler.auth.reset_password_failed", "error", err.Error())
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		}
 		return
 	}
@@ -403,6 +413,7 @@ func (handler *AuthHandler) ResetPassword(context *gin.Context) {
 func (handler *AuthHandler) CSRF(context *gin.Context) {
 	csrfToken := middleware.CSRFToken(context)
 	if csrfToken == "" {
+		logger.Error("handler.auth.csrf_token_missing")
 		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "failed to issue csrf token"})
 		return
 	}

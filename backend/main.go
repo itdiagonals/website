@@ -52,6 +52,10 @@ func main() {
 	}
 	gin.SetMode(ginMode)
 
+	if ginMode == gin.ReleaseMode && !middleware.CookieSecure() {
+		logger.Fatal("insecure cookie configuration refused to start: COOKIE_SECURE must be true in release mode")
+	}
+
 	config.ConnectDB()
 
 	if err := migrations.Apply(config.DB); err != nil {
@@ -93,7 +97,9 @@ func main() {
 	routes.SetupRoutes(router, config.DB, redisClient, otpService, emailQueue, fromAddress)
 	router.Static("/uploads", "./uploads")
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	if ginMode != gin.ReleaseMode {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})

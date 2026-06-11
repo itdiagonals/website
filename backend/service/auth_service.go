@@ -93,7 +93,7 @@ func (service *authService) Register(context context.Context, input RegisterInpu
 		Name:     strings.TrimSpace(input.Name),
 		Email:    input.Email,
 		Password: hashedPassword,
-		Role:     "customer",
+		Role:     domain.RoleCustomer,
 	}
 
 	if err := service.userRepository.Create(context, user); err != nil {
@@ -132,6 +132,9 @@ func (service *authService) Login(context context.Context, input LoginInput, met
 	user, err := service.userRepository.FindByEmail(context, input.Email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Equalize timing with the found-but-wrong-password path so that
+			// account existence cannot be inferred from response latency.
+			utils.CheckPasswordHash(input.Password, utils.DummyPasswordHash())
 			return nil, ErrInvalidCredentials
 		}
 
@@ -170,6 +173,11 @@ func (service *authService) Refresh(context context.Context, refreshToken string
 	}
 
 	if !utils.VerifyTokenHash(refreshToken, session.RefreshTokenHash) {
+		// The token is syntactically valid (signed, not expired, belongs to
+		// this user) but does not match the session's current hash. That
+		// means it has already been rotated. Treat this as a theft signal
+		// and revoke the entire session family to force re-authentication.
+		_ = service.authSessionRepository.RevokeAllSessions(context, session.UserID, time.Now())
 		return nil, ErrInvalidRefreshToken
 	}
 
@@ -284,7 +292,8 @@ func (service *authService) ResetPassword(context context.Context, email string,
 	user, err := service.userRepository.FindByEmail(context, email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrUserNotFound
+			// Silently succeed to prevent account enumeration.
+			return nil
 		}
 		return err
 	}

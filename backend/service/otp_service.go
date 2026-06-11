@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/subtle"
 	"errors"
 	"fmt"
-	"math/rand/v2"
+	"math/big"
 	"strings"
 	"time"
 
@@ -145,8 +146,15 @@ func (s *otpService) checkRateLimit(ctx context.Context, email string) (bool, er
 func generateSecureOTP() string {
 	const digits = "0123456789"
 	b := make([]byte, otpLength)
+	max := big.NewInt(int64(len(digits)))
 	for i := range b {
-		b[i] = digits[rand.IntN(len(digits))]
+		n, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			logger.Error("otp.generate_crypto_rand_failed", "error", err.Error())
+			b[i] = '0'
+			continue
+		}
+		b[i] = digits[n.Int64()]
 	}
 	return string(b)
 }

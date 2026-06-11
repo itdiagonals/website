@@ -201,7 +201,7 @@ func (h *MediaHandler) GetPresignedURL(c *gin.Context) {
 	signedURL, publicURL, err := h.service.GeneratePresignedURL(c.Request.Context(), objectKey)
 	if err != nil {
 		logger.Error("handler.media.presigned_failed", "error", err.Error())
-		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, err.Error())
+		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, "internal server error")
 		return
 	}
 
@@ -243,7 +243,7 @@ func (h *MediaHandler) ConfirmUpload(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Error("handler.media.confirm_failed", "error", err.Error())
-		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, err.Error())
+		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, "internal server error")
 		return
 	}
 
@@ -303,7 +303,7 @@ func (h *MediaHandler) UploadMedia(c *gin.Context) {
 	)
 	if err != nil {
 		logger.Error("handler.media.upload_convert_upload_failed", "error", err.Error())
-		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, err.Error())
+		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, "internal server error")
 		return
 	}
 

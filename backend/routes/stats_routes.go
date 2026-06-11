@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/handler"
 	"github.com/itdiagonals/website/backend/middleware"
+	"github.com/itdiagonals/website/backend/repository"
 	"github.com/itdiagonals/website/backend/service"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -23,5 +24,14 @@ func registerStatsRoutes(api *gin.RouterGroup, db *gorm.DB, redisClient *redis.C
 	h := handler.NewStatsHandler(statsSvc)
 	authRateLimiter := service.NewAuthRateLimiter(redisClient)
 
-	api.GET("/stats", middleware.RequireRateLimitByIP(authRateLimiter, statsIPRateLimit), h.GetDashboardStats)
+	authSessionRepository := repository.NewAuthSessionRepository(redisClient)
+	userRepository := repository.NewUserRepository(db)
+
+	admin := api.Group("")
+	admin.Use(
+		middleware.RequireAuth(authSessionRepository, userRepository),
+		middleware.RequireRole("admin"),
+		middleware.RequireRateLimitByIP(authRateLimiter, statsIPRateLimit),
+	)
+	admin.GET("/stats", h.GetDashboardStats)
 }

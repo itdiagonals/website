@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -146,16 +147,44 @@ func getSecretForTokenType(tokenType string) (string, error) {
 		envKey = "ACCESS_TOKEN_SECRET"
 	}
 
-	secret := os.Getenv(envKey)
-	if secret == "" {
-		secret = os.Getenv("PAYLOAD_SECRET")
-	}
-
-	if secret == "" {
-		return "", fmt.Errorf("%s is not set", envKey)
+	secret := strings.TrimSpace(os.Getenv(envKey))
+	if err := validateSecretStrength(envKey, secret); err != nil {
+		return "", err
 	}
 
 	return secret, nil
+}
+
+// minSecretLength is the minimum accepted length for token signing secrets.
+// 32 bytes is the floor for HS256 keys per common guidance.
+const minSecretLength = 32
+
+// knownWeakSecrets lists placeholder values that must never be accepted in
+// non-debug environments. The list is intentionally short and must be
+// extended whenever a new placeholder is added to .env.example.
+var knownWeakSecrets = map[string]struct{}{
+	"supersecret":     {},
+	"supersecretkey":  {},
+	"changeme":        {},
+	"change-me":       {},
+	"replace-me":      {},
+	"your-secret-key": {},
+}
+
+func validateSecretStrength(envKey, secret string) error {
+	if secret == "" {
+		return fmt.Errorf("%s is not set", envKey)
+	}
+
+	if len(secret) < minSecretLength {
+		return fmt.Errorf("%s must be at least %d characters of high-entropy random data", envKey, minSecretLength)
+	}
+
+	if _, weak := knownWeakSecrets[strings.ToLower(secret)]; weak {
+		return fmt.Errorf("%s is set to a known placeholder value; replace it with a high-entropy random secret", envKey)
+	}
+
+	return nil
 }
 
 func getTTLForTokenType(tokenType string) time.Duration {
