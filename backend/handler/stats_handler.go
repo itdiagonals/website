@@ -22,7 +22,7 @@ func (h *StatsHandler) GetDashboardStats(c *gin.Context) {
 	stats, err := h.statsService.GetDashboardStats(c.Request.Context())
 	if err != nil {
 		logger.Error("handler.stats.get_failed", "error", err.Error())
-		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, err.Error())
+		response.Error(c, http.StatusInternalServerError, apperror.CodeInternal, "internal server error")
 		return
 	}
 	response.OK(c, stats)

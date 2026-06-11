@@ -203,7 +203,15 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, apperror.CodeValidation, err.Error())
 		return
 	}
-	user := req.ToUser(id)
+
+	existing, err := h.service.GetUserByID(c.Request.Context(), id)
+	if err != nil {
+		logger.Error("handler.users.update_lookup_failed", "id", id, "error", err.Error())
+		response.FromError(c, err)
+		return
+	}
+
+	user := req.ToUser(id, existing.Role)
 
 	logger.Info("handler.users.update", "id", id)
 	if err := h.service.UpdateUser(c.Request.Context(), &user); err != nil {

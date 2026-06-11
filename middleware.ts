@@ -89,10 +89,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  if (meResult.status === 0 || meResult.status >= 500) {
-    return NextResponse.next()
-  }
-
   if (meResult.status === 401 && hasRefresh) {
     const refreshResult = await callUpstream(request, REFRESH_PATH, { method: 'POST' })
 
@@ -101,13 +97,9 @@ export async function middleware(request: NextRequest) {
       copyUpstreamCookies(refreshResult.response, response)
       return response
     }
-
-    if (refreshResult.status === 401) {
-      return NextResponse.redirect(buildSignInUrl(request))
-    }
   }
 
-  return NextResponse.next()
+  return NextResponse.redirect(buildSignInUrl(request))
 }
 
 export const config = {

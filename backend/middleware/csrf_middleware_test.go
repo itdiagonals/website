@@ -109,7 +109,7 @@ func TestCSRF_SkipsExemptWebhookPaths(t *testing.T) {
 func newCSRFTestHandler(t *testing.T) http.Handler {
 	t.Helper()
 	t.Setenv("COOKIE_SECURE", "false")
-	t.Setenv("CSRF_AUTH_KEY", "csrf-test-secret")
+	t.Setenv("CSRF_AUTH_KEY", "csrf-test-secret-32-chars-minimum-required-ok")
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()

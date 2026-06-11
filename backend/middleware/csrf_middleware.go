@@ -87,12 +87,17 @@ func ClearCSRFCookie(context *gin.Context) {
 }
 
 func CookieSecure() bool {
-	value, err := strconv.ParseBool(os.Getenv("COOKIE_SECURE"))
-	if err != nil {
-		return false
+	value := strings.TrimSpace(os.Getenv("COOKIE_SECURE"))
+	if value == "" {
+		return true
 	}
 
-	return value
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return true
+	}
+
+	return parsed
 }
 
 func CookieSameSite() http.SameSite {
@@ -211,23 +216,17 @@ func shouldSkipCSRF(request *http.Request) bool {
 }
 
 func csrfAuthKey() ([]byte, error) {
-	candidates := []string{
-		strings.TrimSpace(os.Getenv("CSRF_AUTH_KEY")),
-		strings.TrimSpace(os.Getenv("PAYLOAD_SECRET")),
-		strings.TrimSpace(os.Getenv("ACCESS_TOKEN_SECRET")),
-		strings.TrimSpace(os.Getenv("REFRESH_TOKEN_SECRET")),
+	key := strings.TrimSpace(os.Getenv("CSRF_AUTH_KEY"))
+	if key == "" {
+		return nil, errors.New("CSRF_AUTH_KEY is not set")
 	}
 
-	for _, candidate := range candidates {
-		if candidate == "" {
-			continue
-		}
-
-		sum := sha256.Sum256([]byte(candidate))
-		return sum[:], nil
+	if len(key) < 32 {
+		return nil, errors.New("CSRF_AUTH_KEY must be at least 32 characters of high-entropy random data")
 	}
 
-	return nil, errors.New("CSRF_AUTH_KEY or another application secret must be set")
+	sum := sha256.Sum256([]byte(key))
+	return sum[:], nil
 }
 
 func csrfSameSiteMode() csrf.SameSiteMode {

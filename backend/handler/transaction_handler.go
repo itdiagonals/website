@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/service"
 )
 
@@ -172,7 +173,8 @@ func (handler *TransactionHandler) GetMyTransactions(context *gin.Context) {
 		case errors.Is(err, service.ErrTransactionHistoryInvalidQuery):
 			context.JSON(http.StatusBadRequest, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			logger.Error("handler.transaction.list_failed", "error", err.Error())
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		}
 		return
 	}
@@ -331,7 +333,8 @@ func (handler *TransactionHandler) GetMyTransactionTracking(context *gin.Context
 		case errors.Is(err, service.ErrTransactionNotFound):
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			logger.Error("handler.transaction.tracking_failed", "error", err.Error())
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		}
 		return
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/service"
 )
 
@@ -118,7 +119,8 @@ func (handler *CustomerAddressHandler) AddAddress(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.address.add_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
@@ -187,7 +189,8 @@ func (handler *CustomerAddressHandler) UpdateAddress(context *gin.Context) {
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 			return
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			logger.Error("handler.address.update_failed", "id", addressIDValue, "error", err.Error())
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 			return
 		}
 	}
@@ -221,7 +224,8 @@ func (handler *CustomerAddressHandler) GetMyAddresses(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		logger.Error("handler.address.list_failed", "error", err.Error())
+		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: "internal server error"})
 		return
 	}
 
