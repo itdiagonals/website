@@ -77,11 +77,24 @@ jobs:
 
       - name: Trigger Dokploy deploy
         shell: bash
+        env:
+          BRANCH: ${{ github.ref_name }}
+          BACKEND_WEBHOOK: ${{ github.ref_name == 'main' && secrets.DOKPLOY_BACKEND_WEBHOOK_URL_PROD || secrets.DOKPLOY_BACKEND_WEBHOOK_URL_DEV }}
+          FRONTEND_WEBHOOK: ${{ github.ref_name == 'main' && secrets.DOKPLOY_FRONTEND_WEBHOOK_URL_PROD || secrets.DOKPLOY_FRONTEND_WEBHOOK_URL_DEV }}
         run: |
+          echo "Deploying branch '${BRANCH}' to Dokploy..."
+
+          if [ -z "${BACKEND_WEBHOOK}" ] || [ -z "${FRONTEND_WEBHOOK}" ]; then
+            echo "::error::Missing webhook secret for branch '${BRANCH}'. Add DOKPLOY_*_WEBHOOK_URL_${BRANCH^^} (or _PROD) to repo secrets."
+            exit 1
+          fi
+
           if [ "${{ matrix.image_name }}" = "diagonals-backend" ]; then
-            curl -X POST "${{ secrets.DOKPLOY_BACKEND_WEBHOOK_URL }}"
+            curl -fsS -X POST "${BACKEND_WEBHOOK}"
+            echo "Triggered backend deploy for branch ${BRANCH}."
           fi
 
           if [ "${{ matrix.image_name }}" = "diagonals-frontend" ]; then
-            curl -X POST "${{ secrets.DOKPLOY_FRONTEND_WEBHOOK_URL }}"
+            curl -fsS -X POST "${FRONTEND_WEBHOOK}"
+            echo "Triggered frontend deploy for branch ${BRANCH}."
           fi
