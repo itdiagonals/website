@@ -34,7 +34,7 @@ const SeasonPage = async () => {
           theme={{
             title: season.name,
             subtitle: season.subtitle || "Theme of the season!",
-            image: season.cover_image?.url || "/image-1.png",
+            image: season.cover_image?.url || "/image-1.webp",
             href: `/season/${season.slug}`,
           }}
         />

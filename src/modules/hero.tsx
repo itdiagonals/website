@@ -33,7 +33,7 @@ function mapSeasonsToSlides(seasons: Season[]): Slide[] {
     id: s.id,
     title: s.name,
     subtitle: s.subtitle || s.description || '',
-    image: s.cover_image?.url || '/Frame1.png',
+    image: s.cover_image?.url || '/Frame1.webp',
     link: `/season/${s.slug}`,
     isCurrent: s.is_active,
   }));

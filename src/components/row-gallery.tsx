@@ -14,17 +14,17 @@ interface RowGalleryProps {
 
 const DEFAULT_ITEMS: GalleryItem[] = [
   {
-    image: "/image-2.png",
+    image: "/image-2.webp",
     title: "Water To\nThe Rescue",
     href: "/products/water-rescue",
   },
   {
-    image: "/image-1.png",
+    image: "/image-1.webp",
     title: "Punk Rocker,\nYes I Am",
     href: "/products/punk-rocker",
   },
   {
-    image: "/image-3.png",
+    image: "/image-3.webp",
     title: "The Hills",
     href: "/products/the-hills",
   },

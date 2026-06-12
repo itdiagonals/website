@@ -19,7 +19,7 @@ export default function NewArrival({ products }: NewArrivalProps) {
     id: p.id,
     name: p.name,
     price: formatRupiah(p.base_price),
-    image: p.cover_image?.url || '/blacktee.png',
+    image: p.cover_image?.url || '/blacktee.webp',
     slug: p.slug,
     category: p.category?.name || 'Product',
   }));

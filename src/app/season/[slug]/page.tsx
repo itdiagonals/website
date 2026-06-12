@@ -181,7 +181,7 @@ export default async function SeasonPage({ params, searchParams }: SeasonPagePro
         theme={{
           title: season.name,
           subtitle: season.subtitle || 'Theme of the season!',
-          image: season.cover_image?.url || '/image-2.png',
+          image: season.cover_image?.url || '/image-2.webp',
         }}
       />
 

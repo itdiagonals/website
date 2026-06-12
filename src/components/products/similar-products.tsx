@@ -23,7 +23,7 @@ export default function SimilarProducts({ products }: SimilarProductsProps) {
           >
             <div className="relative h-[300px] md:h-[404px] w-full overflow-hidden flex items-center justify-center">
               <Image
-                src={product.coverImage?.url ?? "/products/similar-1.png"}
+                src={product.coverImage?.url ?? "/products/similar-1.webp"}
                 alt={product.name}
                 fill
                 className="object-contain p-4 group-hover:scale-105 transition duration-500"

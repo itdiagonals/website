@@ -110,7 +110,7 @@ export default async function Products({ searchParams }: PageProps) {
           theme={{
             title: activeSeason?.name || 'Current Season',
             subtitle: activeSeason?.subtitle || 'Theme of the season!',
-            image: activeSeason?.cover_image?.url || '/CrossPlayer1.png',
+            image: activeSeason?.cover_image?.url || '/CrossPlayer1.webp',
             href: activeSeason?.slug ? `?season=${activeSeason.slug}` : undefined,
           }}
         />

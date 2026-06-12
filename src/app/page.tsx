@@ -31,7 +31,7 @@ export default async function HomePage() {
     .slice(0, 3);
 
   const seasonItems = otherSeasons.map((s) => ({
-    image: s.cover_image?.url || '/image-1.png',
+    image: s.cover_image?.url || '/image-1.webp',
     title: s.name,
     href: `/season/${s.slug}`,
   }));
@@ -54,7 +54,7 @@ export default async function HomePage() {
   }));
 
   const categoryItems = categories.slice(0, 3).map((c) => ({
-    image: c.cover_image?.url || '/image-1.png',
+    image: c.cover_image?.url || '/image-1.webp',
     title: c.name,
     href: `/products?category=${c.slug}`,
   }));

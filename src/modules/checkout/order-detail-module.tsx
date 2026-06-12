@@ -122,7 +122,7 @@ export function OrderDetailModule({ orderId }: OrderDetailModuleProps) {
       color: item.selected_color_name,
       size: item.selected_size,
       price: item.price,
-      image: productInfo?.image || "/products/similar-1.png",
+      image: productInfo?.image || "/products/similar-1.webp",
     };
   });
 
