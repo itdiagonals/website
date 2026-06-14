@@ -168,7 +168,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	user := req.ToUser()
 
 	logger.Info("handler.users.create", "email", user.Email)
-	if err := h.service.CreateUser(c.Request.Context(), &user); err != nil {
+	if err := h.service.CreateUser(c.Request.Context(), &user, req.Password); err != nil {
 		logger.Error("handler.users.create_failed", "error", err.Error())
 		response.FromError(c, err)
 		return
@@ -219,7 +219,14 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		response.FromError(c, err)
 		return
 	}
-	response.OK(c, user)
+
+	updated, err := h.service.GetUserByID(c.Request.Context(), id)
+	if err != nil {
+		logger.Error("handler.users.update_refetch_failed", "id", id, "error", err.Error())
+		response.FromError(c, err)
+		return
+	}
+	response.OK(c, updated)
 }
 
 // DeleteUser godoc

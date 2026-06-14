@@ -67,7 +67,7 @@ func (handler *MidtransNotificationHandler) ReceiveNotification(context *gin.Con
 			// Return 200 to avoid unnecessary Midtrans retries for unknown/obsolete orders.
 			context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "notification ignored"})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.midtrans.notification", err)
 		}
 		return
 	}

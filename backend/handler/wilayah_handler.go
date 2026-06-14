@@ -75,7 +75,7 @@ func (handler *WilayahHandler) Search(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		internalError(context, "handler.wilayah.search", err)
 		return
 	}
 

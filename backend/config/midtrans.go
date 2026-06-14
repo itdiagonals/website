@@ -15,6 +15,7 @@ type MidtransConfig struct {
 	FinishURL               string
 	OverrideNotificationURL string
 	AppendNotificationURL   string
+	IsProduction            bool
 }
 
 func GetMidtransConfig() MidtransConfig {
@@ -25,16 +26,22 @@ func GetMidtransConfig() MidtransConfig {
 		FinishURL:               strings.TrimSpace(os.Getenv("MIDTRANS_FINISH_URL")),
 		OverrideNotificationURL: strings.TrimSpace(os.Getenv("MIDTRANS_OVERRIDE_NOTIFICATION_URL")),
 		AppendNotificationURL:   strings.TrimSpace(os.Getenv("MIDTRANS_APPEND_NOTIFICATION_URL")),
+		IsProduction:            strings.EqualFold(strings.TrimSpace(os.Getenv("MIDTRANS_IS_PRODUCTION")), "true"),
 	}
 }
 
 func InitMidtrans() {
 	settings := GetMidtransConfig()
 
-	client := &snap.Client{}
-	client.New(settings.ServerKey, midtrans.Sandbox)
+	env := midtrans.Sandbox
+	if settings.IsProduction {
+		env = midtrans.Production
+	}
 
-	httpClient := midtrans.GetHttpClient(midtrans.Sandbox)
+	client := &snap.Client{}
+	client.New(settings.ServerKey, env)
+
+	httpClient := midtrans.GetHttpClient(env)
 	httpClient.Logger = &midtrans.LoggerImplementation{LogLevel: midtrans.NoLogging}
 
 	if settings.OverrideNotificationURL != "" {

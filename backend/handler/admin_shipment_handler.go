@@ -47,11 +47,11 @@ func (h *AdminShipmentHandler) BookShipment(c *gin.Context) {
 	}
 
 	if err := h.bookingService.BookShipmentForOrder(c.Request.Context(), orderID); err != nil {
-		statusCode := http.StatusInternalServerError
 		if errors.Is(err, service.ErrShippingOrderNotPaid) || errors.Is(err, service.ErrShippingOrderAlreadyBooked) || errors.Is(err, service.ErrShippingOrderInvalidState) || errors.Is(err, service.ErrMidtransOrderNotFound) {
-			statusCode = http.StatusBadRequest
+			c.JSON(http.StatusBadRequest, ErrorResponse{Message: "failed to book shipment: " + err.Error()})
+			return
 		}
-		c.JSON(statusCode, ErrorResponse{Message: "failed to book shipment: " + err.Error()})
+		internalError(c, "handler.admin_shipment.book", err)
 		return
 	}
 
@@ -72,11 +72,11 @@ func (h *AdminShipmentHandler) MarkPacked(c *gin.Context) {
 	}
 
 	if err := h.bookingService.MarkOrderPacked(c.Request.Context(), orderID); err != nil {
-		statusCode := http.StatusInternalServerError
 		if errors.Is(err, service.ErrShippingOrderNotPaid) || errors.Is(err, service.ErrShippingOrderAlreadyBooked) || errors.Is(err, service.ErrShippingOrderInvalidState) || errors.Is(err, service.ErrMidtransOrderNotFound) {
-			statusCode = http.StatusBadRequest
+			c.JSON(http.StatusBadRequest, ErrorResponse{Message: "failed to mark packed: " + err.Error()})
+			return
 		}
-		c.JSON(statusCode, ErrorResponse{Message: "failed to mark packed: " + err.Error()})
+		internalError(c, "handler.admin_shipment.mark_packed", err)
 		return
 	}
 

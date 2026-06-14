@@ -6,11 +6,11 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"errors"
-	"log"
 	"strings"
 
 	"github.com/itdiagonals/website/backend/config"
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"gorm.io/gorm"
 )
@@ -69,7 +69,7 @@ func (service *biteshipWebhookService) HandleNotification(ctx context.Context, p
 			return err
 		}
 		if !inserted {
-			log.Printf("biteship webhook duplicate ignored event=%s order_id=%s waybill=%s", webhookEvent.EventType, webhookEvent.BiteshipOrderID, webhookEvent.TrackingNumber)
+			logger.Info("biteship.webhook.duplicate_ignored", "event", webhookEvent.EventType, "order_id", webhookEvent.BiteshipOrderID, "waybill", webhookEvent.TrackingNumber)
 			return nil
 		}
 	}
@@ -92,7 +92,7 @@ func (service *biteshipWebhookService) HandleNotification(ctx context.Context, p
 		return ErrBiteshipWebhookOrderMissing
 	}
 
-	log.Printf("biteship webhook processed event=%s order_id=%s status=%s tracking=%s", webhookEvent.EventType, webhookEvent.BiteshipOrderID, shippingStatus, webhookEvent.TrackingNumber)
+	logger.Info("biteship.webhook.processed", "event", webhookEvent.EventType, "order_id", webhookEvent.BiteshipOrderID, "status", shippingStatus, "tracking", webhookEvent.TrackingNumber)
 
 	return nil
 }

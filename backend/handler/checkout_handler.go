@@ -135,7 +135,7 @@ func (handler *CheckoutHandler) GetShippingRates(context *gin.Context) {
 		case errors.Is(err, service.ErrCheckoutAddressNotFound):
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.checkout.create", err)
 		}
 		return
 	}
@@ -202,7 +202,7 @@ func (handler *CheckoutHandler) Checkout(context *gin.Context) {
 		case errors.Is(err, service.ErrCheckoutAddressNotFound):
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.checkout.calculate", err)
 		}
 		return
 	}

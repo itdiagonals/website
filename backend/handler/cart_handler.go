@@ -91,7 +91,7 @@ func (handler *CartHandler) AddToCart(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		internalError(context, "handler.cart.add", err)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (handler *CartHandler) RemoveFromCart(context *gin.Context) {
 		case service.ErrCartItemNotFound:
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.cart.remove", err)
 		}
 		return
 	}
@@ -197,7 +197,7 @@ func (handler *CartHandler) UpdateQuantity(context *gin.Context) {
 		case service.ErrCartItemNotFound:
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.cart.update_quantity", err)
 		}
 		return
 	}
@@ -231,7 +231,7 @@ func (handler *CartHandler) GetCart(context *gin.Context) {
 
 	cart, err := handler.cartService.GetMyCart(context.Request.Context(), typedUserID)
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+		internalError(context, "handler.cart.get", err)
 		return
 	}
 

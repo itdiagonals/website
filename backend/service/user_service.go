@@ -6,6 +6,7 @@ import (
 
 	"github.com/itdiagonals/website/backend/domain"
 	"github.com/itdiagonals/website/backend/repository"
+	"github.com/itdiagonals/website/backend/utils"
 )
 
 type UserService struct {
@@ -24,10 +25,18 @@ func (s *UserService) GetUserByID(ctx context.Context, id string) (*domain.User,
 	return s.repo.FindByID(ctx, id)
 }
 
-func (s *UserService) CreateUser(ctx context.Context, user *domain.User) error {
+func (s *UserService) CreateUser(ctx context.Context, user *domain.User, rawPassword string) error {
 	if user.Email == "" {
 		return fmt.Errorf("email is required")
 	}
+	if rawPassword == "" {
+		return fmt.Errorf("password is required")
+	}
+	hashed, err := utils.HashPassword(rawPassword)
+	if err != nil {
+		return err
+	}
+	user.Password = hashed
 	return s.repo.Create(ctx, user)
 }
 

@@ -117,6 +117,50 @@ func TestAuthRateLimiter_WindowOnlyWithoutCooldown(t *testing.T) {
 	}
 }
 
+func TestAuthRateLimiter_SlidingWindowPreventsBoundaryBurst(t *testing.T) {
+	_, client := newAuthRateLimiterTestClient(t)
+	limiter := &authRateLimiter{redis: client, now: time.Now}
+
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	current := base
+	limiter.now = func() time.Time { return current }
+
+	ctx := context.Background()
+	config := AuthRateLimitConfig{
+		Scope:  "login",
+		Window: time.Minute,
+		Max:    3,
+	}
+
+	for range 3 {
+		allowed, err := limiter.AllowByIP(ctx, "203.0.113.7", config)
+		if err != nil {
+			t.Fatalf("unexpected limiter error: %v", err)
+		}
+		if !allowed {
+			t.Fatal("expected request within max to be allowed")
+		}
+	}
+
+	current = base.Add(59 * time.Second)
+	allowed, err := limiter.AllowByIP(ctx, "203.0.113.7", config)
+	if err != nil {
+		t.Fatalf("unexpected limiter error: %v", err)
+	}
+	if allowed {
+		t.Fatal("sliding window must still block within the original window (no boundary burst)")
+	}
+
+	current = base.Add(61 * time.Second)
+	allowed, err = limiter.AllowByIP(ctx, "203.0.113.7", config)
+	if err != nil {
+		t.Fatalf("unexpected limiter error: %v", err)
+	}
+	if !allowed {
+		t.Fatal("expected request to be allowed once earliest hits age out of the window")
+	}
+}
+
 func newAuthRateLimiterTestClient(t *testing.T) (*miniredis.Miniredis, *redis.Client) {
 	t.Helper()
 

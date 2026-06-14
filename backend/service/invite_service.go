@@ -41,8 +41,7 @@ func (s *InviteService) InviteAdmin(ctx context.Context, email string, inviterNa
 		if user.Role == "admin" {
 			return "", ErrInviteAlreadyAdmin
 		}
-		user.Role = "admin"
-		if err := s.repo.Update(ctx, user); err != nil {
+		if err := s.repo.UpdateRole(ctx, user.ID, "admin"); err != nil {
 			return "", fmt.Errorf("failed to promote user: %w", err)
 		}
 		if err := s.sendPromotedEmail(ctx, email, user.Name); err != nil {
@@ -98,8 +97,7 @@ func (s *InviteService) RedeemInviteToken(ctx context.Context, token string) err
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err == nil && user != nil {
 		if user.Role != "admin" {
-			user.Role = "admin"
-			if err := s.repo.Update(ctx, user); err != nil {
+			if err := s.repo.UpdateRole(ctx, user.ID, "admin"); err != nil {
 				return fmt.Errorf("failed to promote user: %w", err)
 			}
 		}

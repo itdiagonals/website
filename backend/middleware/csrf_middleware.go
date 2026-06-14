@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"crypto/sha256"
-	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/csrf"
+	"github.com/itdiagonals/website/backend/utils"
 )
 
 const (
@@ -217,12 +217,8 @@ func shouldSkipCSRF(request *http.Request) bool {
 
 func csrfAuthKey() ([]byte, error) {
 	key := strings.TrimSpace(os.Getenv("CSRF_AUTH_KEY"))
-	if key == "" {
-		return nil, errors.New("CSRF_AUTH_KEY is not set")
-	}
-
-	if len(key) < 32 {
-		return nil, errors.New("CSRF_AUTH_KEY must be at least 32 characters of high-entropy random data")
+	if err := utils.ValidateSecretStrength("CSRF_AUTH_KEY", key); err != nil {
+		return nil, err
 	}
 
 	sum := sha256.Sum256([]byte(key))

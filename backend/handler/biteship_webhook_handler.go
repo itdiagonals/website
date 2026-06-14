@@ -74,7 +74,7 @@ func (handler *BiteshipWebhookHandler) ReceiveNotification(context *gin.Context)
 		case errors.Is(err, service.ErrBiteshipWebhookOrderMissing):
 			context.JSON(http.StatusOK, StatusResponse{Status: "success", Message: "notification ignored"})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.biteship.webhook", err)
 		}
 		return
 	}

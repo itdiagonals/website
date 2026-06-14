@@ -165,10 +165,10 @@ func mapMidtransStatus(transactionStatus string, fraudStatus string) (string, er
 	case "settlement":
 		return "paid", nil
 	case "capture":
-		if fraud == "challenge" {
-			return "pending", nil
+		if fraud == "accept" {
+			return "paid", nil
 		}
-		return "paid", nil
+		return "pending", nil
 	case "pending":
 		return "pending", nil
 	case "deny", "cancel", "expire", "failure":

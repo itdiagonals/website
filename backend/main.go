@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -90,12 +91,15 @@ func main() {
 	router.Use(middleware.WriteCSRFToken())
 
 	trustedProxies := getTrustedProxies()
+	warnOnBroadTrustedProxies(trustedProxies)
 	if err := router.SetTrustedProxies(trustedProxies); err != nil {
 		logger.Fatal("failed to configure trusted proxies", "error", err.Error())
 	}
 
 	routes.SetupRoutes(router, config.DB, redisClient, otpService, emailQueue, fromAddress)
-	router.Static("/uploads", "./uploads")
+	if ginMode != gin.ReleaseMode {
+		router.Static("/uploads", "./uploads")
+	}
 
 	if ginMode != gin.ReleaseMode {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -158,6 +162,19 @@ func startStockReservationJanitor(db *gorm.DB, redisClient *redis.Client) {
 
 	go janitor.Start(context.Background())
 	logger.Info("stock reservation janitor started")
+}
+
+func warnOnBroadTrustedProxies(proxies []string) {
+	for _, p := range proxies {
+		_, ipNet, err := net.ParseCIDR(strings.TrimSpace(p))
+		if err != nil {
+			continue
+		}
+		ones, bits := ipNet.Mask.Size()
+		if bits-ones >= 16 {
+			logger.Warn("server.trusted_proxies_broad_range", "cidr", p, "hint", "X-Forwarded-For from this range can spoof client IPs; set BACKEND_TRUSTED_PROXIES to exact ingress IPs")
+		}
+	}
 }
 
 func getTrustedProxies() []string {

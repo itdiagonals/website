@@ -13,6 +13,7 @@ type UserRepository interface {
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	Create(ctx context.Context, user *domain.User) error
 	Update(ctx context.Context, user *domain.User) error
+	UpdateRole(ctx context.Context, id string, role string) error
 	Delete(ctx context.Context, id string) error
 	VerifyEmail(ctx context.Context, email string) error
 }
@@ -68,7 +69,20 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *userRepository) Update(ctx context.Context, user *domain.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	return r.db.WithContext(ctx).Model(&domain.User{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"email":   user.Email,
+			"name":    user.Name,
+			"phone":   user.Phone,
+			"address": user.Address,
+		}).Error
+}
+
+func (r *userRepository) UpdateRole(ctx context.Context, id string, role string) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).
+		Where("id = ?", id).
+		Update("role", role).Error
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {

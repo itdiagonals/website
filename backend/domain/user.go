@@ -56,15 +56,16 @@ type CreateUserRequest struct {
 	Address  string `json:"address"`
 }
 
+// ToUser omits Password by design: the raw password must be hashed in the
+// service layer before persistence (see UserService.CreateUser).
 func (r CreateUserRequest) ToUser() User {
 	return User{
-		ID:       uuid.New().String(),
-		Email:    r.Email,
-		Password: r.Password,
-		Name:     r.Name,
-		Role:     NormalizeRole(r.Role),
-		Phone:    r.Phone,
-		Address:  r.Address,
+		ID:      uuid.New().String(),
+		Email:   r.Email,
+		Name:    r.Name,
+		Role:    NormalizeRole(r.Role),
+		Phone:   r.Phone,
+		Address: r.Address,
 	}
 }
 

@@ -184,7 +184,19 @@ func validateSecretStrength(envKey, secret string) error {
 		return fmt.Errorf("%s is set to a known placeholder value; replace it with a high-entropy random secret", envKey)
 	}
 
+	lower := strings.ToLower(secret)
+	if strings.HasPrefix(lower, "change_me") || strings.Contains(lower, "generate_a_32_byte") {
+		return fmt.Errorf("%s is still a .env.example placeholder; replace it with a high-entropy random secret (e.g. `openssl rand -hex 32`)", envKey)
+	}
+
 	return nil
+}
+
+// ValidateSecretStrength enforces the same minimum-entropy and placeholder
+// rejection rules used for token secrets, so other secrets (e.g. CSRF_AUTH_KEY)
+// can share one source of truth.
+func ValidateSecretStrength(envKey, secret string) error {
+	return validateSecretStrength(envKey, secret)
 }
 
 func getTTLForTokenType(tokenType string) time.Duration {

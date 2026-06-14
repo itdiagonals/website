@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/itdiagonals/website/backend/domain"
+	"github.com/itdiagonals/website/backend/pkg/logger"
 	"github.com/itdiagonals/website/backend/repository"
 	"github.com/itdiagonals/website/backend/service"
 )
@@ -56,7 +57,8 @@ func (h *OTPHandler) RequestOTP(c *gin.Context) {
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error("handler.otp.request_failed", "error", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
@@ -93,7 +95,8 @@ func (h *OTPHandler) VerifyOTP(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		logger.Error("handler.otp.verify_failed", "error", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 

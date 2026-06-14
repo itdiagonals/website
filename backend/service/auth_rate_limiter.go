@@ -24,10 +24,11 @@ type AuthRateLimiter interface {
 
 type authRateLimiter struct {
 	redis *redis.Client
+	now   func() time.Time
 }
 
 func NewAuthRateLimiter(redisClient *redis.Client) AuthRateLimiter {
-	return &authRateLimiter{redis: redisClient}
+	return &authRateLimiter{redis: redisClient, now: time.Now}
 }
 
 func (limiter *authRateLimiter) Allow(ctx context.Context, config AuthRateLimitConfig, keyParts ...string) (bool, error) {
@@ -42,18 +43,19 @@ func (limiter *authRateLimiter) Allow(ctx context.Context, config AuthRateLimitC
 		return false, nil
 	}
 
-	count, err := limiter.redis.Incr(ctx, rateKey).Result()
+	now := limiter.now()
+	windowStart := now.Add(-config.Window).UnixNano()
+
+	if err := limiter.redis.ZRemRangeByScore(ctx, rateKey, "0", fmt.Sprintf("%d", windowStart)).Err(); err != nil {
+		return false, err
+	}
+
+	count, err := limiter.redis.ZCard(ctx, rateKey).Result()
 	if err != nil {
 		return false, err
 	}
 
-	if count == 1 {
-		if err := limiter.redis.Expire(ctx, rateKey, config.Window).Err(); err != nil {
-			return false, err
-		}
-	}
-
-	if count > config.Max {
+	if count >= config.Max {
 		if config.Cooldown > 0 {
 			if err := limiter.redis.Del(ctx, rateKey).Err(); err != nil {
 				return false, err
@@ -63,6 +65,14 @@ func (limiter *authRateLimiter) Allow(ctx context.Context, config AuthRateLimitC
 			}
 		}
 		return false, nil
+	}
+
+	member := fmt.Sprintf("%d-%d", now.UnixNano(), count)
+	if err := limiter.redis.ZAdd(ctx, rateKey, redis.Z{Score: float64(now.UnixNano()), Member: member}).Err(); err != nil {
+		return false, err
+	}
+	if err := limiter.redis.Expire(ctx, rateKey, config.Window).Err(); err != nil {
+		return false, err
 	}
 
 	return true, nil

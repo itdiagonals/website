@@ -239,7 +239,7 @@ func (handler *TransactionHandler) GetMyTransactionDetail(context *gin.Context) 
 		case errors.Is(err, service.ErrTransactionNotFound):
 			context.JSON(http.StatusNotFound, ErrorResponse{Message: err.Error()})
 		default:
-			context.JSON(http.StatusInternalServerError, ErrorResponse{Message: err.Error()})
+			internalError(context, "handler.transaction.get_detail", err)
 		}
 		return
 	}

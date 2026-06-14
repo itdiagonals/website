@@ -27,6 +27,8 @@ const (
 	otpRateLimitWindow      = 1 * time.Hour
 	otpMaxRequestsPerWindow = 3
 	otpCooldownAfterMax     = 15 * time.Minute
+	otpGlobalWindow         = 1 * time.Hour
+	otpGlobalMaxPerWindow   = 200
 )
 
 // OTPService handles OTP generation, storage, and verification.
@@ -57,6 +59,14 @@ func NewOTPService(redisClient *redis.Client, sender EmailSender, from domain.Em
 
 func (s *otpService) RequestOTP(ctx context.Context, email string, purpose domain.OTPPurpose) (string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
+
+	globalAllowed, err := s.checkGlobalRateLimit(ctx)
+	if err != nil {
+		return "", fmt.Errorf("global rate limit check failed: %w", err)
+	}
+	if !globalAllowed {
+		return "", ErrOTPRateLimitExceeded
+	}
 
 	allowed, err := s.checkRateLimit(ctx, email)
 	if err != nil {
@@ -141,6 +151,23 @@ func (s *otpService) checkRateLimit(ctx context.Context, email string) (bool, er
 	}
 
 	return true, nil
+}
+
+func (s *otpService) checkGlobalRateLimit(ctx context.Context) (bool, error) {
+	rateKey := "otp:ratelimit:global"
+
+	count, err := s.redis.Incr(ctx, rateKey).Result()
+	if err != nil {
+		return false, err
+	}
+
+	if count == 1 {
+		if err := s.redis.Expire(ctx, rateKey, otpGlobalWindow).Err(); err != nil {
+			return false, err
+		}
+	}
+
+	return count <= otpGlobalMaxPerWindow, nil
 }
 
 func generateSecureOTP() string {
