@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { gsap } from 'gsap'
+import type { gsap as GsapType } from 'gsap'
 import Image from 'next/image';
 import { Button } from './ui/button';
 
@@ -10,57 +10,75 @@ export default function WelcomeAnimation({currentSeason}: {currentSeason: string
   const logoRef = useRef<HTMLDivElement>(null);
   const seasonRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
+  const gsapRef = useRef<typeof GsapType | null>(null);
 
   useEffect(() => {
-    const paths = document.querySelectorAll(".text-animation path");
+    let cancelled = false;
 
-    paths.forEach((path) => {
-      const length = (path as SVGPathElement).getTotalLength();
-      path.setAttribute("stroke", "white");
-      path.setAttribute("stroke-width", "1.2");
-      path.setAttribute("fill", "transparent");
-      path.setAttribute("stroke-dasharray", length.toString());
-      path.setAttribute("stroke-dashoffset", length.toString());
+    import('gsap').then(({ gsap }) => {
+      if (cancelled) return;
+      gsapRef.current = gsap;
+
+      const paths = document.querySelectorAll(".text-animation path");
+
+      paths.forEach((path) => {
+        const length = (path as SVGPathElement).getTotalLength();
+        path.setAttribute("stroke", "white");
+        path.setAttribute("stroke-width", "1.2");
+        path.setAttribute("fill", "transparent");
+        path.setAttribute("stroke-dasharray", length.toString());
+        path.setAttribute("stroke-dashoffset", length.toString());
+      });
+
+      const tl = gsap.timeline({ delay: 0.3 });
+
+      // 1. Draw signature paths starting at 0s
+      tl.to(paths, {
+        strokeDashoffset: 0,
+        duration: 1.6,
+        ease: "power2.inOut",
+        stagger: 0.04,
+      }, 0);
+
+      // 2. Fade in the top diagonals white logo shortly after drawing starts
+      tl.to(logoRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 1.2,
+        ease: "power3.out"
+      }, 0.4);
+
+      // 3. Smoothly transition paths from stroke lines to solid white fill
+      tl.to(paths, {
+        fill: "white",
+        stroke: "transparent",
+        duration: 0.6,
+        ease: "power1.out",
+      }, "-=0.6");
+
+      // 4. Stagger fade-in & slide-up of the season span and the Enter button at the bottom
+      tl.to([seasonRef.current, buttonRef.current], {
+        opacity: 1,
+        y: 0,
+        duration: 1.0,
+        stagger: 0.25,
+        ease: "power3.out"
+      }, "-=0.2");
     });
 
-    const tl = gsap.timeline({ delay: 0.3 });
-
-    // 1. Draw signature paths starting at 0s
-    tl.to(paths, {
-      strokeDashoffset: 0,
-      duration: 1.6,
-      ease: "power2.inOut",
-      stagger: 0.04,
-    }, 0);
-
-    // 2. Fade in the top diagonals white logo shortly after drawing starts
-    tl.to(logoRef.current, {
-      opacity: 1,
-      y: 0,
-      duration: 1.2,
-      ease: "power3.out"
-    }, 0.4);
-
-    // 3. Smoothly transition paths from stroke lines to solid white fill
-    tl.to(paths, {
-      fill: "white",
-      stroke: "transparent",
-      duration: 0.6,
-      ease: "power1.out",
-    }, "-=0.6");
-
-    // 4. Stagger fade-in & slide-up of the season span and the Enter button at the bottom
-    tl.to([seasonRef.current, buttonRef.current], {
-      opacity: 1,
-      y: 0,
-      duration: 1.0,
-      stagger: 0.25,
-      ease: "power3.out"
-    }, "-=0.2");
-
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleEnterClick = () => {
+    const gsap = gsapRef.current;
+    if (!gsap) {
+      if (containerRef.current) {
+        containerRef.current.style.display = "none";
+      }
+      return;
+    }
     gsap.to(containerRef.current, {
       y: "-100%",
       opacity: 0,
@@ -77,9 +95,16 @@ export default function WelcomeAnimation({currentSeason}: {currentSeason: string
   return (
     <div
       ref={containerRef}
-      style={{ backgroundImage: "url(/welcome-background.webp)" }}
-      className="fixed inset-0 bg-neutral-950 flex flex-col items-center justify-center z-[9999] overflow-hidden bg-cover bg-center gap-4"
+      className="fixed inset-0 bg-neutral-950 flex flex-col items-center justify-center z-[9999] overflow-hidden gap-4"
     >
+      <Image
+        src="/welcome-background.webp"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center z-0"
+      />
       <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none" />
       <div ref={logoRef} className="opacity-0 -translate-y-4 z-10">
         <Image src="/logo/diagonals-white.svg" alt="Diagonals Logo" width={163} height={145} />

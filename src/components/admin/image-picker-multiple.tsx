@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Image from 'next/image'
 import { Check, X, Eye, Search } from 'lucide-react'
 import type { Media } from '@/lib/api'
 import MediaUploadButton from '@/components/admin/media-upload-button'
@@ -89,12 +90,14 @@ export default function ImagePickerMultiple({
                 <button
                   type="button"
                   onClick={() => openPreviewAt(index)}
-                  className="h-full w-full"
+                  className="relative h-full w-full"
                 >
-                  <img
+                  <Image
                     src={item.url}
                     alt={item.alt || item.filename}
-                    className="h-full w-full object-cover transition-transform hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 96px, (max-width: 768px) 112px, 128px"
+                    className="object-cover transition-transform hover:scale-105"
                   />
                 </button>
                 <button
@@ -163,10 +166,12 @@ export default function ImagePickerMultiple({
                     onClick={() => toggleSelection(item.id)}
                     className="absolute inset-0 flex items-center justify-center overflow-hidden"
                   >
-                    <img
+                    <Image
                       src={item.url}
                       alt={item.alt || item.filename}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                      fill
+                      sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 20vw"
+                      className="object-cover transition-transform group-hover:scale-[1.02]"
                     />
                     {isSelected && (
                       <>

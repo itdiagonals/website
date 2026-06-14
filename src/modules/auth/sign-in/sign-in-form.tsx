@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 
@@ -8,6 +9,13 @@ import Label from '@/components/ui/label'
 import Input from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { api, ApiError } from '@/lib/api'
+
+function safeRedirectPath(target: string | null): string | null {
+  if (!target) return null
+  if (!target.startsWith('/')) return null
+  if (target.startsWith('//') || target.startsWith('/\\')) return null
+  return target
+}
 
 export default function SignInForm() {
   const router = useRouter()
@@ -35,7 +43,7 @@ export default function SignInForm() {
 
       try {
         await api.users.getAll(1, 1)
-        const redirectTarget = searchParams.get('redirect')
+        const redirectTarget = safeRedirectPath(searchParams.get('redirect'))
         if (redirectTarget && redirectTarget.startsWith('/admin')) {
           router.replace(redirectTarget)
         } else {
@@ -44,7 +52,7 @@ export default function SignInForm() {
         router.refresh()
       } catch (adminCheckError) {
         if (adminCheckError instanceof ApiError && adminCheckError.status === 403) {
-          const redirectTarget = searchParams.get('redirect')
+          const redirectTarget = safeRedirectPath(searchParams.get('redirect'))
           if (redirectTarget && !redirectTarget.startsWith('/admin')) {
             router.replace(redirectTarget)
           } else {
@@ -79,9 +87,12 @@ export default function SignInForm() {
         <div className="w-full rounded-[20px] bg-neutral-100 p-4 sm:p-[22px]">
           <div className="flex flex-col items-center gap-[7px]">
             <div className="flex h-[65px] w-[259px] items-center justify-center">
-              <img
+              <Image
                 src="/logo/diagonals.webp"
                 alt="Logo"
+                width={259}
+                height={65}
+                priority
                 className="h-full w-full object-contain"
               />
             </div>

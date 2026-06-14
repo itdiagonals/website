@@ -20,7 +20,7 @@ export default function ThemeHero({ theme }: ThemeHeroProps) {
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
-      className="relative w-full h-[420px] sm:h-[480px] md:h-[500px] lg:h-205.25 mx-auto overflow-hidden bg-cover text-neutral-100 font-[DorivalUITrial]"
+      className="relative w-full h-[420px] sm:h-[480px] md:h-[500px] lg:h-205.25 mx-auto overflow-hidden bg-cover text-neutral-100 font-heading"
     >
       {/* <div className="absolute top-0 -left-7.25 h-38.5 w-365.5 bg-[linear-gradient(180deg,rgba(0,0,0,0.5)_0%,rgba(0,0,0,0)_100%)]" /> */}
 

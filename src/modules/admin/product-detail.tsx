@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Box, Calendar, ChevronRight, Edit3, Layers, Package, Palette, Ruler, Scale, Tag } from 'lucide-react'
@@ -82,9 +83,11 @@ export default function ProductDetailModule() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-4">
           {product.cover_image?.url && (
-            <img
+            <Image
               src={product.cover_image.url}
               alt={product.cover_image.alt || product.name}
+              width={56}
+              height={56}
               className="h-14 w-14 shrink-0 rounded-lg object-cover ring-1 ring-neutral-200"
             />
           )}
@@ -172,11 +175,13 @@ export default function ProductDetailModule() {
               <div>
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Cover Image</p>
                 {product.cover_image?.url ? (
-                  <div className="relative overflow-hidden rounded-xl bg-neutral-50">
-                    <img
+                  <div className="relative aspect-video overflow-hidden rounded-xl bg-neutral-50">
+                    <Image
                       src={product.cover_image.url}
                       alt={product.cover_image.alt || 'Cover'}
-                      className="aspect-video w-full object-contain"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-contain"
                     />
                     {product.cover_image.alt && (
                       <p className="px-1 pt-2 text-xs text-neutral-500">{product.cover_image.alt}</p>
@@ -199,12 +204,14 @@ export default function ProductDetailModule() {
                       item.image?.url ? (
                         <div
                           key={item.id}
-                          className="group relative overflow-hidden rounded-xl bg-neutral-50"
+                          className="group relative aspect-square overflow-hidden rounded-xl bg-neutral-50"
                         >
-                          <img
+                          <Image
                             src={item.image.url}
                             alt={item.image.alt || `Gallery ${item.id}`}
-                            className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            fill
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         </div>
                       ) : null,

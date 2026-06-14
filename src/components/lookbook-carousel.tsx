@@ -61,7 +61,7 @@ export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCaro
     <section className="relative w-full h-[560px] sm:h-[660px] md:h-[760px] lg:h-[800px] bg-neutral-100 overflow-hidden py-12 flex flex-col justify-between select-none">
       <div className="relative z-20 max-w-full md:max-w-[1440px] w-full mx-auto px-6 md:px-12 lg:px-20 flex flex-col md:flex-row items-start justify-between">
         <div className="flex flex-col">
-          <h2 className="font-[DorivalUITrial] text-xl sm:text-[24px] md:text-[28px] lg:text-[34px] font-bold text-black uppercase tracking-wider">
+          <h2 className="font-heading text-xl sm:text-[24px] md:text-[28px] lg:text-[34px] font-bold text-black uppercase tracking-wider">
             Lookbook
           </h2>
 
@@ -188,7 +188,7 @@ export default function LookbookCarousel({ items = DEFAULT_ITEMS }: LookbookCaro
           />
         ))}
       </div>
-      <Image src="/bg4.webp" alt='' height={40} width={1440} className="object-cover w-full h-auto absolute -bottom-10" />
+      <Image src="/bg4.webp" alt='' height={149} width={1440} sizes="100vw" className="object-cover w-full h-auto absolute -bottom-10" />
     </section>
   );
 }

@@ -26,7 +26,7 @@ export default function NewArrival({ products }: NewArrivalProps) {
 
   return (
     <section className="relative w-full flex flex-col items-center bg-white pb-8 sm:pb-16 md:pb-24 lg:pb-30">
-      <Image src="/bg4.webp" alt='' height={40} width={1440} className="object-cover w-full h-auto scale-102 -left-5 absolute -top-10" />
+      <Image src="/bg4.webp" alt='' height={149} width={1440} sizes="100vw" className="object-cover w-full h-auto scale-102 -left-5 absolute -top-10" />
       <div className="flex flex-col sm:flex-row justify-between w-full items-start sm:items-center gap-4 sm:gap-0 px-4 sm:px-6 md:px-12 lg:px-[80px] py-6 sm:py-10 md:py-15">
         <h2 className="text-black text-xl sm:text-[24px] md:text-[28px] font-bold leading-tight tracking-wide drop-shadow-md">New Arrival</h2>
         <Link href="/products">

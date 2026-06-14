@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 
@@ -60,9 +61,12 @@ export default function NewPasswordForm() {
         <div className="w-full rounded-[20px] bg-neutral-100 p-4 sm:p-[22px]">
           <div className="flex flex-col items-center gap-[7px]">
             <div className="flex h-[65px] w-[259px] items-center justify-center">
-              <img
+              <Image
                 src="/logo/diagonals.webp"
                 alt="Logo"
+                width={259}
+                height={65}
+                priority
                 className="h-full w-full object-contain"
               />
             </div>

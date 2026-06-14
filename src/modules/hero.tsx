@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { cn } from '@/lib/utils';
@@ -83,18 +84,22 @@ export default function Hero({ seasons }: HeroProps) {
         {slides.map((slide, idx) => (
           <div
             key={slide.id}
-            style={{
-              backgroundImage: `url('${slide.image}')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
             className={cn(
-              'absolute inset-0 w-full h-full bg-no-repeat transition-all duration-1000 ease-in-out',
+              'absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out',
               idx === currentIdx
                 ? 'opacity-100 scale-100 z-10'
                 : 'opacity-0 scale-105 z-0'
             )}
-          />
+          >
+            <Image
+              src={slide.image}
+              alt={slide.title}
+              fill
+              priority={idx === 0}
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+          </div>
         ))}
       </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { api, type TransactionHistoryDetail, type Product as BackendProduct } from '@/lib/api'
 import type { TransactionHistoryListItem, TransactionHistoryPagination } from '@/lib/api'
 import { Truck, Loader2, RefreshCw, CheckSquare, Square, PackageCheck, X, MapPin, User, Calendar, CreditCard, Truck as TruckIcon, Printer } from 'lucide-react'
@@ -632,7 +633,7 @@ export default function TransactionsListModule() {
                           <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl border border-neutral-200 bg-white">
                             <div className="h-12 w-12 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0 overflow-hidden">
                               {productInfo?.image ? (
-                                <img src={productInfo.image} alt={productInfo.name} className="h-full w-full object-cover" />
+                                <Image src={productInfo.image} alt={productInfo.name} width={48} height={48} className="h-full w-full object-cover" />
                               ) : (
                                 <PackageCheck className="h-5 w-5 text-neutral-400" />
                               )}

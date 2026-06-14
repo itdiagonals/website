@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Media } from '@/lib/api'
 
@@ -102,10 +103,13 @@ export default function ImagePreviewModal({
         className="mx-12 flex max-h-[85vh] max-w-[90vw] items-center justify-center sm:mx-16 md:mx-20"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
+        <Image
           src={currentImage.url}
           alt={currentImage.alt || currentImage.filename}
-          className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl sm:max-h-[80vh] md:max-h-[85vh]"
+          width={1200}
+          height={1200}
+          sizes="90vw"
+          className="max-h-[85vh] w-auto rounded-lg object-contain shadow-2xl sm:max-h-[80vh] md:max-h-[85vh]"
         />
       </div>
 

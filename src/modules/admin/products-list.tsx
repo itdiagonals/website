@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
@@ -614,7 +615,7 @@ function MediaPreviewCard({ media }: { media: Media }) {
   return (
     <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-3">
       <div className="flex items-start gap-3">
-        <img src={media.url} alt={media.alt} className="h-16 w-16 rounded-md object-cover" />
+        <Image src={media.url} alt={media.alt} width={64} height={64} className="h-16 w-16 rounded-md object-cover" />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-primary-1000">{media.alt || media.filename}</p>
           <p className="truncate text-xs text-neutral-700">#{media.id} • {media.filename}</p>

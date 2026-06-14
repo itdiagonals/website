@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { ImageOff, X } from 'lucide-react'
 import type { Media } from '@/lib/api'
 import MediaUploadButton from '@/components/admin/media-upload-button'
@@ -39,9 +40,11 @@ export default function ImagePickerSingle({
             onClick={() => setPreviewOpen(true)}
             className="overflow-hidden rounded-lg border-2 border-primary-500 shadow-sm transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
           >
-            <img
+            <Image
               src={selectedMedia.url}
               alt={selectedMedia.alt || selectedMedia.filename}
+              width={192}
+              height={192}
               className="h-48 w-48 object-cover"
             />
           </button>
@@ -93,10 +96,12 @@ export default function ImagePickerSingle({
                     isSelected ? 'border-primary-500 shadow-sm' : 'border-neutral-200 hover:border-primary-300'
                   }`}
                 >
-                  <img
+                  <Image
                     src={item.url}
                     alt={item.alt || item.filename}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                    fill
+                    sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 20vw"
+                    className="object-cover transition-transform group-hover:scale-[1.02]"
                   />
                   {isSelected && (
                     <div className="absolute inset-0 bg-primary-500/10" />

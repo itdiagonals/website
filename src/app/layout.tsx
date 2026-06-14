@@ -2,7 +2,6 @@ import React from 'react'
 import './globals.css'
 import localFont from 'next/font/local'
 import { Inter } from 'next/font/google'
-import Script from 'next/script'
 import SiteLayout from '../components/site-layout'
 
 import type { Metadata } from 'next'
@@ -72,12 +71,12 @@ export async function generateMetadata(): Promise<Metadata> {
 const dorivalUITrial = localFont({
   src: [
     {
-      path: '../../public/fonts/DorivalUITrial-Regular.otf',
+      path: '../../public/fonts/DorivalUITrial-Regular.woff2',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../../public/fonts/DorivalUITrial-Bold.otf',
+      path: '../../public/fonts/DorivalUITrial-Bold.woff2',
       weight: '700',
       style: 'normal',
     },
@@ -88,17 +87,17 @@ const dorivalUITrial = localFont({
 const dorivalUINrwTrial = localFont({
   src: [
     {
-      path: '../../public/fonts/DorivalUINrwTrial-Regular.otf',
+      path: '../../public/fonts/DorivalUINrwTrial-Regular.woff2',
       weight: '400',
       style: 'normal',
     },
     {
-      path: '../../public/fonts/DorivalUINrwTrial-Medium.otf',
+      path: '../../public/fonts/DorivalUINrwTrial-Medium.woff2',
       weight: '500',
       style: 'normal',
     },
     {
-      path: '../../public/fonts/DorivalUINrwTrial-Bold.otf',
+      path: '../../public/fonts/DorivalUINrwTrial-Bold.woff2',
       weight: '700',
       style: 'normal',
     },
@@ -109,7 +108,7 @@ const dorivalUINrwTrial = localFont({
 const handi = localFont({
   src: [
     {
-      path: '../../public/fonts/Handi-Regular.ttf',
+      path: '../../public/fonts/Handi-Regular.woff2',
       weight: '400',
       style: 'normal',
     },
@@ -129,12 +128,6 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     <html lang="en">
       <body className={`${dorivalUITrial.variable} ${dorivalUINrwTrial.variable} ${handi.variable} ${inter.variable} antialiased`}>
         <SiteLayout>{children}</SiteLayout>
-        <Script
-          src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js'}
-          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-bWmGIw6dVko6Yz-f2ih-sL12'}
-          data-environment={process.env.NEXT_PUBLIC_MIDTRANS_ENV || 'sandbox'}
-          strategy="lazyOnload"
-        />
       </body>
     </html>
   )

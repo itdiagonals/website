@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { api, ApiError, CartItem, CustomerAddress, TransactionHistoryDetail } from "@/lib/api";
 import { AddressSelector } from "@/components/checkout/address-selector";
@@ -316,6 +318,12 @@ export function CheckoutModule() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f3f3f3]">
+      <Script
+        src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js'}
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-bWmGIw6dVko6Yz-f2ih-sL12'}
+        data-environment={process.env.NEXT_PUBLIC_MIDTRANS_ENV || 'sandbox'}
+        strategy="afterInteractive"
+      />
       <main className="flex-grow pb-20">
         <div className="px-4 sm:px-6 md:px-[24px] max-w-[1440px] mx-auto w-full">
           <h1 className="text-h6 font-bold text-black mt-[14px] mb-[14px]">Checkout</h1>
@@ -462,12 +470,14 @@ export function CheckoutModule() {
                             idx < checkedCartItems.length - 1 && "border-b border-neutral-100"
                           )}
                         >
-                          <div className="w-16 h-16 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
+                          <div className="relative w-16 h-16 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
                             {item.image_url && (
-                              <img
+                              <Image
                                 src={item.image_url}
                                 alt={item.product_name}
-                                className="w-full h-full object-cover"
+                                fill
+                                sizes="64px"
+                                className="object-cover"
                               />
                             )}
                           </div>

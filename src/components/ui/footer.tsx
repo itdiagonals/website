@@ -136,7 +136,7 @@ export default function Footer() {
 
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-4 lg:col-start-7">
             <div className="flex flex-col">
-              <h3 className="font-[DorivalUITrial] text-[20px] font-bold text-black mb-6 uppercase tracking-wider">
+              <h3 className="font-heading text-[20px] font-bold text-black mb-6 uppercase tracking-wider">
                 Seasons
               </h3>
               <ul className="flex flex-col gap-4">
@@ -157,7 +157,7 @@ export default function Footer() {
             </div>
 
             <div className="flex flex-col">
-              <h3 className="font-[DorivalUITrial] text-[20px] font-bold text-black mb-6 uppercase tracking-wider">
+              <h3 className="font-heading text-[20px] font-bold text-black mb-6 uppercase tracking-wider">
                 Help
               </h3>
               <ul className="flex flex-col gap-4">
@@ -185,7 +185,7 @@ export default function Footer() {
             </div>
 
             <div className="flex flex-col col-span-2 sm:col-span-1">
-              <h3 className="font-[DorivalUITrial] text-[20px] font-bold text-black mb-6 uppercase tracking-wider">
+              <h3 className="font-heading text-[20px] font-bold text-black mb-6 uppercase tracking-wider">
                 Shop
               </h3>
               <ul className="flex flex-col gap-4">

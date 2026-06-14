@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #f3f3f3;
@@ -10,7 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: InterFallback, var(--font-dorivaluinrwtrial), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-handi: var(--font-handi), "Handi", cursive;
+  --font-handi: var(--font-handi), cursive;
 
   /* colors */
   --color-neutral-100: #f4f4f4;
@@ -57,18 +56,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: InterFallback, var(--font-dorivaluinrwtrial), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
-
-@font-face {
-  font-family: "Handi";
-  src: url("/fonts/Handi-Regular.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "DorivalUITrial";
-  src: url("/fonts/DorivalUITrial-Regular.otf") format("opentype");
 }
 
 /* Inter fallback for broken glyphs in Dorival */

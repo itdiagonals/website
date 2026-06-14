@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ArrowUpRight, BookOpen, Box, Calendar, ImageIcon, Layers, LoaderCircle, Package, Palette, Ruler, ShieldCheck, ShoppingBag, Users } from 'lucide-react'
 
@@ -164,9 +165,11 @@ export default function DashboardModule() {
                   className="group flex items-center gap-4 rounded-lg px-3 py-3 transition-colors hover:bg-neutral-50"
                 >
                   {item.cover_image?.url ? (
-                    <img
+                    <Image
                       src={item.cover_image.url}
                       alt={item.cover_image.alt || item.name}
+                      width={40}
+                      height={40}
                       className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-neutral-100"
                     />
                   ) : (
@@ -269,7 +272,7 @@ export default function DashboardModule() {
               {activeSeasons.map((season) => (
                 <div key={season.id} className="flex items-center gap-3 rounded-lg px-2 py-2">
                   {season.cover_image?.url ? (
-                    <img src={season.cover_image.url} alt={season.name} className="h-8 w-8 shrink-0 rounded-md object-cover" />
+                    <Image src={season.cover_image.url} alt={season.name} width={32} height={32} className="h-8 w-8 shrink-0 rounded-md object-cover" />
                   ) : (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-400">
                       <Calendar className="h-3.5 w-3.5" />

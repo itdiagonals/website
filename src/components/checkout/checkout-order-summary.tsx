@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { CartItem } from "@/lib/api";
 import { ShippingRate } from "@/lib/api";
 import { CustomerAddress } from "@/lib/api";
@@ -84,12 +85,14 @@ export function CheckoutOrderSummary({
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
             {checkedItems.map((item) => (
               <div key={item.id} className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="relative w-16 h-16 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
                   {item.image_url && (
-                    <img
+                    <Image
                       src={item.image_url}
                       alt={item.product_name}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="64px"
+                      className="object-cover"
                     />
                   )}
                 </div>
